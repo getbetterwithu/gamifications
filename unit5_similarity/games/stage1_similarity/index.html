@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>시밀러의 학당 — 스테이지 1</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif; }
+  body { background: #1a0f08; overflow: hidden; user-select: none; }
+  #game { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+
+  /* ===== 배경 ===== */
+  #bg { position: absolute; inset: 0; transition: opacity 0.6s ease, filter 0.5s ease; }
+  #bg svg { width: 100%; height: 100%; display: block; }
+  #bg.blurred { filter: blur(8px) brightness(0.7); }
+
+  /* 애니메이션 */
+  @keyframes drift { from { transform: translateX(0); } to { transform: translateX(40px); } }
+  @keyframes sway { 0%,100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-3px) rotate(1deg); } }
+  @keyframes shimmer { 0%,100% { opacity: 0.3; } 50% { opacity: 0.6; } }
+  @keyframes flicker { 0%,100% { opacity: 0.7; } 50% { opacity: 1; } }
+  .cloud-drift { animation: drift 30s ease-in-out infinite alternate; }
+  .boat-sway { animation: sway 6s ease-in-out infinite; transform-origin: center bottom; }
+  .water-shimmer { animation: shimmer 4s ease-in-out infinite; }
+  .torch-flicker { animation: flicker 1.5s ease-in-out infinite; }
+
+  /* ===== 캐릭터 ===== */
+  .character {
+    position: absolute; bottom: -22vh; height: 95vh;
+    transition: opacity 0.5s ease, transform 0.5s ease, filter 0.5s ease, bottom 0.5s ease, left 0.5s ease, right 0.5s ease, height 0.5s ease;
+    pointer-events: none;
+  }
+  .character img { height: 100%; width: auto; display: block; }
+  .character.left { left: 4%; }
+  .character.center { left: 50%; transform: translateX(-50%); }
+  .character.right { right: 4%; }
+  .character.hidden { opacity: 0; }
+  .character.left.hidden { transform: translateX(-30px); opacity: 0; }
+  .character.right.hidden { transform: translateX(30px); opacity: 0; }
+  .character.center.hidden { transform: translateX(-50%) translateY(20px); opacity: 0; }
+
+  /* 클로즈업 모드 — 1명만 화면, 상반신 부각 */
+  .character.closeup {
+    height: 160vh; bottom: -65vh; z-index: 2;
+    filter: drop-shadow(0 0 30px rgba(255, 220, 150, 0.5));
+  }
+  .character.closeup.left { left: 2%; right: auto; transform: none; }
+  .character.closeup.right { left: auto; right: 2%; transform: none; }
+  .character.closeup.center { left: 50%; right: auto; transform: translateX(-50%); }
+
+  /* 멀티 모드 — 2~3명 상반신 위주 */
+  .character.multi { height: 130vh; bottom: -45vh; z-index: 2; }
+  .character.multi.left { left: 0%; transform: none; }
+  .character.multi.center { left: 50%; transform: translateX(-50%); }
+  .character.multi.right { right: 0%; left: auto; transform: none; }
+  .character.multi.speaking {
+    transform: scale(1.06); transform-origin: center bottom;
+    filter: drop-shadow(0 0 28px rgba(255, 220, 150, 0.55)); z-index: 3;
+  }
+  .character.multi.speaking.center { transform: translateX(-50%) scale(1.06); }
+  .character.multi.speaking.left { transform: scale(1.06); transform-origin: left bottom; }
+  .character.multi.speaking.right { transform: scale(1.06); transform-origin: right bottom; }
+  .character.multi.dimmed { filter: brightness(0.5) saturate(0.4); opacity: 0.65; }
+  .character.inactive { opacity: 0 !important; }
+
+  /* ===== 삽화 패널 (우측 상단 — 사이드, 보조) ===== */
+  #prop-panel {
+    position: absolute; top: 12vh; right: 3vw;
+    width: 22vw; max-width: 320px; height: 32vh; max-height: 360px;
+    background: rgba(255, 250, 240, 0.96);
+    border: 4px solid #8b6f47; border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    padding: 12px; z-index: 8;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #prop-panel.hidden { opacity: 0; transform: translateY(-20px); pointer-events: none; }
+  #prop-panel svg { width: 100%; height: 100%; display: block; }
+  #prop-panel::before {
+    content: "📜 단서"; position: absolute; top: -12px; left: 16px;
+    background: #8b6f47; color: #fff8e7;
+    padding: 3px 12px; border-radius: 8px; font-size: 13px; font-weight: 700;
+  }
+
+  /* ===== 대사창 (동적 위치 — L자 레이아웃) ===== */
+  #dialog-box {
+    position: absolute;
+    background: rgba(255, 250, 240, 0.98);
+    border: 4px solid #8b6f47; border-radius: 18px;
+    padding: 24px 36px 80px 36px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+    z-index: 20;
+    transition: bottom 0.4s ease, left 0.4s ease, right 0.4s ease, width 0.4s ease, top 0.4s ease, transform 0.4s ease;
+  }
+  #dialog-box.pos-bottom { bottom: 24px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 1280px; min-height: 220px; }
+  #dialog-box.pos-right { bottom: 24px; right: 24px; left: auto; transform: none; width: 58%; min-height: 240px; }
+  #dialog-box.pos-left { bottom: 24px; left: 24px; right: auto; transform: none; width: 58%; min-height: 240px; }
+
+  #speaker-name {
+    display: inline-block; background: #8b6f47; color: #fff8e7;
+    padding: 9px 24px; border-radius: 12px; font-weight: 700;
+    font-size: 26px; margin-bottom: 16px;
+  }
+  #dialog-text {
+    font-size: 30px; line-height: 1.6; color: #3a2818;
+    min-height: 100px; letter-spacing: -0.3px; font-weight: 500;
+  }
+  #dialog-text .caret {
+    display: inline-block; width: 3px; height: 32px; background: #8b6f47;
+    margin-left: 3px; vertical-align: middle;
+    animation: caretBlink 0.7s steps(1) infinite;
+  }
+  @keyframes caretBlink { 0%,50% { opacity: 1; } 51%,100% { opacity: 0; } }
+
+  #next-btn {
+    position: absolute; bottom: 22px; right: 28px;
+    background: #8b6f47; color: #fff8e7;
+    border: 3px solid #5d4a30; padding: 14px 36px;
+    font-size: 22px; font-weight: 700; border-radius: 14px;
+    cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    transition: all 0.15s;
+  }
+  #next-btn:hover { background: #6b4423; transform: translateY(-2px); }
+  #next-btn:active { transform: translateY(0); }
+  #next-btn::after { content: "  ▶"; display: inline-block; animation: nudge 1s ease-in-out infinite; }
+  @keyframes nudge { 0%,100% { transform: translateX(0); } 50% { transform: translateX(4px); } }
+
+  /* 백로그 버튼 */
+  #backlog-btn {
+    position: absolute; top: 18px; right: 18px;
+    background: rgba(255, 250, 240, 0.92);
+    border: 2px solid #8b6f47; color: #5d4a30;
+    padding: 10px 18px; font-size: 15px; font-weight: 700;
+    border-radius: 10px; cursor: pointer; z-index: 5;
+  }
+  #backlog-btn:hover { background: #fff8e7; }
+
+  /* ===== 선택지 (우측 사이드) ===== */
+  #choices {
+    position: absolute; bottom: 24px; right: 24px;
+    display: flex; flex-direction: column; gap: 14px; z-index: 25;
+    width: 52%; max-width: 700px;
+  }
+  .choice-btn {
+    background: rgba(255, 250, 240, 0.98); border: 3px solid #8b6f47;
+    border-radius: 14px; padding: 18px 28px;
+    font-size: 19px; color: #3a2818; cursor: pointer;
+    text-align: left; transition: all 0.2s;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+  }
+  .choice-btn:hover { background: #fff8e7; border-color: #5d4a30; transform: translateY(-2px); }
+
+  /* ===== 스탯 패널 ===== */
+  #stat-panel {
+    position: absolute; top: 16px; left: 16px;
+    background: rgba(255, 250, 240, 0.92);
+    border: 2px solid #8b6f47; border-radius: 12px;
+    padding: 12px 18px; font-size: 15px; color: #3a2818;
+    z-index: 5; min-width: 220px;
+  }
+  #stat-panel .stat-row { display: flex; justify-content: space-between; gap: 16px; margin: 3px 0; }
+  #stat-panel .stat-name { font-weight: 600; }
+  #stat-panel .stat-value { font-weight: 700; color: #6b4423; }
+
+  /* 토스트 */
+  #toast-area {
+    position: absolute; top: 100px; left: 16px; z-index: 50;
+    pointer-events: none; display: flex; flex-direction: column; gap: 8px;
+  }
+  .toast {
+    background: rgba(255, 250, 240, 0.98);
+    border: 2px solid #8b6f47; border-left: 6px solid #6b4423;
+    padding: 10px 16px; border-radius: 10px;
+    font-size: 16px; font-weight: 700; color: #3a2818;
+    animation: toastIn 0.3s ease forwards, toastOut 0.4s ease 1.6s forwards;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  }
+  .toast.up { border-left-color: #4a8b3a; color: #2a5a1a; }
+  .toast.down { border-left-color: #b85a4a; color: #6b2a1a; }
+  @keyframes toastIn { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
+  @keyframes toastOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(-30px); } }
+
+  /* ===== 문제 슬롯 (우측 사이드) ===== */
+  #problem-placeholder {
+    position: absolute; bottom: 24px; right: 24px;
+    background: rgba(255, 250, 240, 0.98);
+    border: 4px dashed #c08a4a; border-radius: 18px;
+    padding: 26px 32px; z-index: 25;
+    text-align: center; width: 52%; max-width: 700px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+  }
+  #problem-placeholder h3 { color: #8b4513; margin-bottom: 14px; font-size: 24px; }
+  #problem-placeholder p { color: #5d4a30; margin: 6px 0; font-size: 16px; }
+  #problem-placeholder .meta {
+    background: #f5e6d3; padding: 12px 16px; border-radius: 10px;
+    margin: 14px 0; text-align: left; font-size: 15px;
+    color: #6b4423; line-height: 1.7;
+  }
+  #problem-placeholder button {
+    margin-top: 18px; background: #8b6f47; color: #fff8e7;
+    border: 3px solid #5d4a30; padding: 14px 30px;
+    font-size: 17px; font-weight: 700; border-radius: 10px;
+    cursor: pointer; margin-right: 10px;
+  }
+  #problem-placeholder button:hover { background: #6b4423; }
+  #problem-placeholder .btn-wrong { background: #b85a4a; border-color: #8b3a2a; }
+  #problem-placeholder .btn-wrong:hover { background: #8b3a2a; }
+
+  /* ===== 타이틀 화면 ===== */
+  #title-screen {
+    position: absolute; inset: 0; z-index: 100;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at center, #4a3520 0%, #1a0f08 100%);
+    color: #fff8e7;
+  }
+  #title-screen .title-bg { position: absolute; inset: 0; opacity: 0.35; }
+  #title-screen h1 {
+    font-size: 72px; font-family: 'Times New Roman', serif;
+    color: #f5d99a; text-shadow: 0 4px 16px rgba(0,0,0,0.7), 0 0 40px rgba(245, 217, 154, 0.3);
+    margin-bottom: 12px; letter-spacing: 4px; z-index: 1;
+  }
+  #title-screen .subtitle { font-size: 24px; color: #e8c895; margin-bottom: 8px; z-index: 1; }
+  #title-screen .stage-name {
+    font-size: 30px; color: #fff8e7; margin-bottom: 50px;
+    font-weight: 700; z-index: 1;
+  }
+  #title-screen .start-btn {
+    background: linear-gradient(180deg, #d4a574 0%, #8b6f47 100%);
+    color: #fff8e7; border: 4px solid #5d4a30;
+    padding: 20px 60px; font-size: 26px; font-weight: 700;
+    border-radius: 14px; cursor: pointer;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    transition: all 0.2s; z-index: 1; letter-spacing: 2px;
+  }
+  #title-screen .start-btn:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,0.6); }
+  #title-screen .credits {
+    position: absolute; bottom: 20px; font-size: 13px;
+    color: #c8a87a; opacity: 0.7; z-index: 1;
+  }
+
+  /* ===== 백로그 모달 ===== */
+  #backlog-modal {
+    position: absolute; inset: 0; background: rgba(0, 0, 0, 0.75);
+    z-index: 200; display: flex; align-items: center; justify-content: center;
+  }
+  #backlog-modal .panel {
+    background: rgba(255, 250, 240, 0.98);
+    border: 4px solid #8b6f47; border-radius: 18px;
+    width: 80%; max-width: 900px; height: 80vh;
+    padding: 24px 32px; display: flex; flex-direction: column;
+  }
+  #backlog-modal h2 { color: #5d4a30; margin-bottom: 16px; font-size: 26px; }
+  #backlog-modal .log-list { flex: 1; overflow-y: auto; padding-right: 12px; }
+  #backlog-modal .log-entry {
+    margin-bottom: 14px; padding-bottom: 12px;
+    border-bottom: 1px dashed #d4b890;
+  }
+  #backlog-modal .log-entry:last-child { border-bottom: none; }
+  #backlog-modal .log-speaker {
+    display: inline-block; background: #8b6f47; color: #fff8e7;
+    padding: 2px 10px; border-radius: 6px; font-size: 14px;
+    font-weight: 700; margin-bottom: 6px;
+  }
+  #backlog-modal .log-text { color: #3a2818; font-size: 17px; line-height: 1.6; }
+  #backlog-modal .close-btn {
+    align-self: flex-end; margin-top: 14px;
+    background: #8b6f47; color: #fff8e7;
+    border: 3px solid #5d4a30; padding: 10px 24px;
+    font-size: 16px; font-weight: 700; border-radius: 10px; cursor: pointer;
+  }
+  #backlog-modal .close-btn:hover { background: #6b4423; }
+  #backlog-modal .log-list::-webkit-scrollbar { width: 8px; }
+  #backlog-modal .log-list::-webkit-scrollbar-thumb { background: #8b6f47; border-radius: 4px; }
+
+  /* ===== 엔딩 화면 ===== */
+  #ending-screen {
+    position: absolute; inset: 0; z-index: 150;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at center, #3a2818 0%, #0a0604 100%);
+    color: #fff8e7; padding: 40px;
+  }
+  #ending-screen h1 {
+    font-size: 56px; font-family: 'Times New Roman', serif;
+    color: #f5d99a; margin-bottom: 24px;
+    text-shadow: 0 4px 16px rgba(0,0,0,0.7);
+  }
+  #ending-screen .ending-tag {
+    font-size: 22px; color: #c8a87a; margin-bottom: 40px;
+  }
+  #ending-screen .ending-text {
+    font-size: 22px; line-height: 1.7; color: #fff8e7;
+    max-width: 800px; text-align: center; margin-bottom: 40px;
+    background: rgba(0,0,0,0.3); padding: 30px 40px;
+    border-radius: 16px; border: 2px solid #8b6f47;
+  }
+  #ending-screen .stat-summary {
+    display: flex; gap: 24px; margin-bottom: 40px;
+  }
+  #ending-screen .stat-summary .item {
+    background: rgba(139, 111, 71, 0.4); padding: 16px 24px;
+    border-radius: 12px; text-align: center; min-width: 140px;
+  }
+  #ending-screen .stat-summary .item .label { font-size: 14px; color: #c8a87a; margin-bottom: 6px; }
+  #ending-screen .stat-summary .item .value { font-size: 32px; font-weight: 700; color: #f5d99a; }
+  #ending-screen .restart-btn {
+    background: linear-gradient(180deg, #d4a574 0%, #8b6f47 100%);
+    color: #fff8e7; border: 4px solid #5d4a30;
+    padding: 16px 50px; font-size: 22px; font-weight: 700;
+    border-radius: 14px; cursor: pointer;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  }
+  #ending-screen .restart-btn:hover { transform: translateY(-3px); }
+
+  /* ===== Scene 전환 안내 (장소명 페이드 인/아웃) ===== */
+  #scene-title {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 90;
+    background: rgba(0, 0, 0, 0.8);
+    color: #f5d99a;
+    padding: 32px 80px;
+    border: 3px solid #8b6f47;
+    border-radius: 14px;
+    text-align: center;
+    font-family: 'Times New Roman', serif;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.7);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+  }
+  #scene-title.show { opacity: 1; }
+  #scene-title .scene-label {
+    font-size: 18px; color: #c8a87a;
+    letter-spacing: 4px; margin-bottom: 8px;
+  }
+  #scene-title .scene-name {
+    font-size: 38px; font-weight: 700;
+    color: #fff8e7; letter-spacing: 2px;
+  }
+
+  .gone { display: none !important; }
+</style>
+</head>
+<body>
+
+<div id="game">
+  <div id="bg"></div>
+
+  <!-- 캐릭터 슬롯 -->
+  <div class="character left hidden" id="char-left"><img src="" alt=""></div>
+  <div class="character center hidden" id="char-center"><img src="" alt=""></div>
+  <div class="character right hidden" id="char-right"><img src="" alt=""></div>
+
+  <!-- 스탯 패널 -->
+  <div id="stat-panel">
+    <div class="stat-row"><span class="stat-name">수학력 (Math)</span><span class="stat-value" id="stat-math">0</span></div>
+    <div class="stat-row"><span class="stat-name">지혜 (Wisdom)</span><span class="stat-value" id="stat-wisdom">0</span></div>
+    <div class="stat-row"><span class="stat-name">통찰력 (Insight)</span><span class="stat-value" id="stat-insight">0</span></div>
+    <div class="stat-row"><span class="stat-name">단서 카드 (Clues)</span><span class="stat-value" id="stat-clues">0 / 5</span></div>
+  </div>
+
+  <button id="backlog-btn" onclick="game.openBacklog()">📜 이전 대사 보기</button>
+  <div id="toast-area"></div>
+  <div id="prop-panel" class="hidden"></div>
+
+  <!-- Scene 전환 안내 -->
+  <div id="scene-title">
+    <div class="scene-label" id="scene-label">SCENE</div>
+    <div class="scene-name" id="scene-name"></div>
+  </div>
+
+  <div id="dialog-box" class="pos-bottom">
+    <div id="speaker-name">시밀러</div>
+    <div id="dialog-text"></div>
+    <button id="next-btn" onclick="game.handleNext()">다음</button>
+  </div>
+
+  <div id="choices" class="gone"></div>
+
+  <div id="problem-placeholder" class="gone">
+    <h3 id="problem-title">문제 슬롯</h3>
+    <div class="meta" id="problem-meta"></div>
+    <p>※ 실제 문제는 추후 채워질 예정입니다.</p>
+    <button onclick="game.solveProblem(true)">정답 시뮬레이션</button>
+    <button class="btn-wrong" onclick="game.solveProblem(false)">오답 시뮬레이션</button>
+  </div>
+
+  <!-- 타이틀 화면 -->
+  <div id="title-screen">
+    <div class="title-bg" id="title-bg"></div>
+    <div class="subtitle">중학교 2학년 5단원 복습 게임</div>
+    <h1>시밀러의 학당</h1>
+    <div class="stage-name">스테이지 1 — 닮음의 신전</div>
+    <button class="start-btn" onclick="game.startGame()">시작하기</button>
+    <div class="credits">© 피타고라스 학당의 견습생 · 비주얼노벨 + 육성 시뮬레이션</div>
+  </div>
+
+  <!-- 백로그 모달 -->
+  <div id="backlog-modal" class="gone">
+    <div class="panel">
+      <h2>📜 이전 대사 기록</h2>
+      <div class="log-list" id="log-list"></div>
+      <button class="close-btn" onclick="game.closeBacklog()">닫기</button>
+    </div>
+  </div>
+
+  <!-- 엔딩 화면 -->
+  <div id="ending-screen" class="gone">
+    <div class="ending-tag" id="ending-tag"></div>
+    <h1 id="ending-title"></h1>
+    <div class="ending-text" id="ending-text"></div>
+    <div class="stat-summary">
+      <div class="item"><div class="label">수학력</div><div class="value" id="end-math">0</div></div>
+      <div class="item"><div class="label">지혜</div><div class="value" id="end-wisdom">0</div></div>
+      <div class="item"><div class="label">통찰력</div><div class="value" id="end-insight">0</div></div>
+      <div class="item"><div class="label">단서 카드</div><div class="value" id="end-clues">0 / 5</div></div>
+    </div>
+    <button class="restart-btn" onclick="location.reload()">다시 시작</button>
+  </div>
+</div>
+
+<!-- 사운드 슬롯 (실제 음원 추후 추가) -->
+<audio id="bgm" loop></audio>
+<audio id="sfx"></audio>
+
+<!-- ===== 외부 데이터 파일 로드 (순서 중요) ===== -->
+<script src="characters.js"></script>
+<script src="props.js"></script>
+<script src="backgrounds.js"></script>
+<script src="scenario.js"></script>
+
+<script>
+// ===== 사운드 슬롯 =====
+const BGM_TRACKS = {
+  title: '', harbor: '', classroom: '', corridor: '', warehouse: '',
+  garden: '', library: '', yard: '', basement: '',
+};
+const SFX = { click: '', correct: '', wrong: '', statUp: '' };
+function playBgm(key) {
+  const url = BGM_TRACKS[key]; if (!url) return;
+  const el = document.getElementById('bgm');
+  if (el.src.endsWith(url)) return;
+  el.src = url; el.volume = 0.5; el.play().catch(() => {});
+}
+
+// ===== 엔딩 정의 =====
+const ENDINGS = {
+  A: {
+    tag: '엔딩 A',
+    title: '피타고라스가 인정한 제자',
+    condition: (s) => s.math >= 24 && s.clues >= 4,
+    text: '"네가 닮음 하나로 여기까지 해냈다. 다음은 더 깊은 진리가 기다리고 있다."\n\n피타고라스는 너를 정식 제자로 받아들였다. 신전 설계 회의에 조수로 참여하게 되며, 다음 스테이지에서는 비례판의 문양을 실제 신전 기둥에 적용하는 작업이 기다린다.',
+  },
+  B: {
+    tag: '엔딩 B',
+    title: '믿음직한 견습생',
+    condition: (s) => s.math >= 14 && s.clues >= 2,
+    text: '"잘했어. 처음치고는 충분해. 다음 단원에서 더 빛날 거야."\n\n탈레스가 어깨를 두드린다. 학당의 정식 견습생으로 자리잡았고, 다음 스테이지에서는 추가 연습 과제가 기다린다.',
+  },
+  C: {
+    tag: '엔딩 C',
+    title: '아직 갈 길이 먼 견습생',
+    condition: () => true,  // fallback
+    text: '"닮음의 문이 아직 열리지 않았구나. 다시 첫 장면부터 돌아보거라."\n\n피타고라스가 한 번 더 기회를 준다. 다음 스테이지는 복습 퀴즈로 시작한다.',
+  },
+};
+
+// ===== 게임 엔진 =====
+const game = {
+  cursor: 0,
+  stats: { math: 0, wisdom: 0, insight: 0, clues: 0 },
+  pendingReaction: null,
+  charSlots: { left: null, center: null, right: null },
+  slotLastSpoken: { left: 0, center: 0, right: 0 },
+  speechCount: 0,
+  log: [],
+  typingTimer: null,
+  isTyping: false,
+  fullText: '',
+
+  init() {
+    this.changeBg('title');
+    document.getElementById('title-bg').innerHTML = BACKGROUNDS.title;
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' || e.code === 'Enter' || e.code === 'ArrowRight') {
+        e.preventDefault();
+        this.handleNext();
+      }
+    });
+  },
+
+  startGame() {
+    document.getElementById('title-screen').classList.add('gone');
+    playBgm('harbor');
+    this.advance();
+  },
+
+  handleNext() {
+    if (!document.getElementById('title-screen').classList.contains('gone')) return;
+    if (!document.getElementById('backlog-modal').classList.contains('gone')) return;
+    if (!document.getElementById('choices').classList.contains('gone')) return;
+    if (!document.getElementById('problem-placeholder').classList.contains('gone')) return;
+    if (!document.getElementById('ending-screen').classList.contains('gone')) return;
+    if (this.isTyping) { this.completeTyping(); return; }
+    this.advance();
+  },
+
+  advance() {
+    if (this.cursor >= STEPS.length) {
+      document.getElementById('next-btn').classList.add('gone');
+      return;
+    }
+    const step = STEPS[this.cursor++];
+    this.execute(step);
+  },
+
+  execute(step) {
+    switch (step.type) {
+      case 'scene':
+        this.changeBg(step.bg);
+        playBgm(step.bg);
+        if (step.clearChars) this.clearAllCharacters();
+        this.showSceneTitle(step.name);
+        // Scene 전환 안내가 표시되는 동안 잠시 대기 후 다음
+        setTimeout(() => this.advance(), 1800);
+        break;
+      case 'dialog':
+        this.handleDialogStep(step);
+        break;
+      case 'enter':
+        this.charSlots[step.position] = step.role;
+        this.placeCharacter(step.role, step.expression, step.position);
+        this.advance();
+        break;
+      case 'choice':
+        this.showChoices(step);
+        break;
+      case 'reaction': {
+        const key = this.pendingReaction;
+        this.pendingReaction = null;
+        const r = step.reactions[key] || step.reactions.A;
+        this.handleDialogStep(r);
+        break;
+      }
+      case 'problem':
+        this.showProblem(step);
+        break;
+      case 'ending':
+        this.showEnding();
+        break;
+    }
+  },
+
+  // ----- 핵심 -----
+  handleDialogStep(step) {
+    const isNarration = (step.speaker === 'narrator' || step.speaker === 'npc');
+    const role = step.role || step.speaker;
+    let position = step.position;
+
+    if (!isNarration) {
+      position = this.ensureCharacterOnScreen(role, position);
+      this.placeCharacter(role, step.expression, position);
+      this.speechCount++;
+      this.slotLastSpoken[position] = this.speechCount;
+    }
+
+    this.applyMode(isNarration, position);
+    this.applyDialogPosition(isNarration, position);
+    this.applyProp(step.prop || null);
+    this.showDialog(NAMES[step.speaker] || step.speaker, step.text);
+  },
+
+  ensureCharacterOnScreen(role, requestedPosition) {
+    for (const pos of ['left', 'center', 'right']) {
+      if (this.charSlots[pos] === role) return pos;
+    }
+    if (requestedPosition && !this.charSlots[requestedPosition]) {
+      this.charSlots[requestedPosition] = role;
+      return requestedPosition;
+    }
+    const preferOrder = ['center', 'left', 'right'];
+    for (const pos of preferOrder) {
+      if (!this.charSlots[pos]) {
+        this.charSlots[pos] = role;
+        return pos;
+      }
+    }
+    let oldest = null, oldestTime = Infinity;
+    for (const pos of ['left', 'center', 'right']) {
+      if (this.slotLastSpoken[pos] < oldestTime) {
+        oldestTime = this.slotLastSpoken[pos];
+        oldest = pos;
+      }
+    }
+    const oldEl = document.getElementById(`char-${oldest}`);
+    oldEl.classList.add('hidden');
+    this.charSlots[oldest] = role;
+    return oldest;
+  },
+
+  applyMode(isNarration, speakingPosition) {
+    const bg = document.getElementById('bg');
+    const occupiedSlots = ['left', 'center', 'right'].filter(pos => this.charSlots[pos]);
+    const isCloseup = !isNarration && occupiedSlots.length === 1;
+    bg.classList.toggle('blurred', isCloseup);
+
+    ['left', 'center', 'right'].forEach(pos => {
+      const el = document.getElementById(`char-${pos}`);
+      el.classList.remove('closeup', 'multi', 'speaking', 'dimmed', 'inactive');
+      if (!this.charSlots[pos]) return;
+      if (isCloseup) {
+        el.classList.add('closeup');
+      } else {
+        el.classList.add('multi');
+        if (!isNarration && pos === speakingPosition) {
+          el.classList.add('speaking');
+        } else if (!isNarration) {
+          el.classList.add('dimmed');
+        }
+      }
+    });
+  },
+
+  applyDialogPosition(isNarration, speakingPosition) {
+    const box = document.getElementById('dialog-box');
+    box.classList.remove('pos-bottom', 'pos-left', 'pos-right');
+    if (isNarration || !speakingPosition || speakingPosition === 'center') {
+      box.classList.add('pos-bottom');
+    } else if (speakingPosition === 'left') {
+      box.classList.add('pos-right');
+    } else if (speakingPosition === 'right') {
+      box.classList.add('pos-left');
+    } else {
+      box.classList.add('pos-bottom');
+    }
+  },
+
+  applyProp(propKey) {
+    const panel = document.getElementById('prop-panel');
+    if (!propKey || !PROPS[propKey]) {
+      panel.classList.add('hidden');
+      panel.innerHTML = '';
+      return;
+    }
+    panel.innerHTML = PROPS[propKey];
+    panel.classList.remove('hidden');
+  },
+
+  // ----- 화면 조작 -----
+  changeBg(name) {
+    document.getElementById('bg').innerHTML = BACKGROUNDS[name] || '';
+  },
+
+  showSceneTitle(fullName) {
+    // "Scene 5 — 창고 현장" 같은 형태에서 라벨/장소명 분리
+    const el = document.getElementById('scene-title');
+    const labelEl = document.getElementById('scene-label');
+    const nameEl = document.getElementById('scene-name');
+    const m = fullName.match(/^(Scene\s*\d+)\s*[—\-:]\s*(.+)$/);
+    if (m) {
+      labelEl.textContent = m[1].toUpperCase();
+      nameEl.textContent = m[2];
+    } else {
+      labelEl.textContent = '';
+      nameEl.textContent = fullName;
+    }
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 1500);
+  },
+
+  clearAllCharacters() {
+    ['left', 'center', 'right'].forEach(pos => {
+      const el = document.getElementById(`char-${pos}`);
+      el.classList.add('hidden');
+      el.classList.remove('closeup', 'multi', 'speaking', 'dimmed', 'inactive');
+      this.charSlots[pos] = null;
+      this.slotLastSpoken[pos] = 0;
+    });
+    this.speechCount = 0;
+    document.getElementById('bg').classList.remove('blurred');
+  },
+
+  placeCharacter(role, expression, position) {
+    const el = document.getElementById(`char-${position}`);
+    const img = el.querySelector('img');
+    img.src = charImg(role, expression);
+    img.alt = NAMES[role] || role;
+    el.classList.remove('hidden');
+    this.charSlots[position] = role;
+  },
+
+  showDialog(speakerName, text) {
+    document.getElementById('speaker-name').textContent = speakerName;
+    document.getElementById('next-btn').classList.remove('gone');
+    document.getElementById('dialog-box').classList.remove('gone');
+    this.log.push({ speaker: speakerName, text });
+    this.startTyping(text);
+  },
+
+  startTyping(text) {
+    if (this.typingTimer) clearInterval(this.typingTimer);
+    const el = document.getElementById('dialog-text');
+    this.fullText = text;
+    this.isTyping = true;
+    let i = 0;
+    el.innerHTML = '<span class="caret"></span>';
+    const speed = 28;
+    this.typingTimer = setInterval(() => {
+      i++;
+      if (i >= text.length) {
+        clearInterval(this.typingTimer);
+        this.typingTimer = null;
+        this.isTyping = false;
+        el.innerHTML = text.slice(0, i);
+        return;
+      }
+      el.innerHTML = text.slice(0, i) + '<span class="caret"></span>';
+    }, speed);
+  },
+
+  completeTyping() {
+    if (this.typingTimer) clearInterval(this.typingTimer);
+    this.typingTimer = null;
+    this.isTyping = false;
+    document.getElementById('dialog-text').innerHTML = this.fullText;
+  },
+
+  // ----- 선택지 -----
+  showChoices(step) {
+    this.applyMode(true, null);
+    this.applyDialogPosition(true, null);
+    this.applyProp(null);
+    const box = document.getElementById('choices');
+    box.innerHTML = '';
+    step.options.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.className = 'choice-btn';
+      btn.textContent = opt.label;
+      btn.onclick = () => this.pickChoice(opt);
+      box.appendChild(btn);
+    });
+    box.classList.remove('gone');
+    document.getElementById('dialog-box').classList.add('gone');
+  },
+
+  pickChoice(opt) {
+    this.applyEffect(opt.effect || {});
+    this.pendingReaction = opt.reactKey || null;
+    document.getElementById('choices').classList.add('gone');
+    document.getElementById('dialog-box').classList.remove('gone');
+    this.advance();
+  },
+
+  // ----- 문제 슬롯 -----
+  showProblem(step) {
+    this.applyMode(true, null);
+    this.applyDialogPosition(true, null);
+    this.applyProp(null);
+    const meta = `<strong>슬롯 ID:</strong> ${step.id}<br>` +
+                 `<strong>종류:</strong> ${step.kind}<br>` +
+                 `<strong>주제:</strong> ${step.topic}<br>` +
+                 `<strong>난이도:</strong> ${step.difficulty}<br>` +
+                 `<strong>형식:</strong> ${step.format}`;
+    document.getElementById('problem-title').textContent = `[문제 슬롯 #${step.id}]`;
+    document.getElementById('problem-meta').innerHTML = meta;
+    this._currentProblem = step;
+    document.getElementById('problem-placeholder').classList.remove('gone');
+    document.getElementById('dialog-box').classList.add('gone');
+  },
+
+  solveProblem(correct) {
+    const p = this._currentProblem;
+    document.getElementById('problem-placeholder').classList.add('gone');
+    document.getElementById('dialog-box').classList.remove('gone');
+    const result = correct ? p.onCorrect : p.onWrong;
+    this.applyEffect(result.stats || {});
+    const d = result.dialog;
+    if (d) {
+      this.handleDialogStep(d);
+    } else {
+      this.advance();
+    }
+  },
+
+  // ----- 스탯 + 토스트 -----
+  applyEffect(effect) {
+    const labels = { math: '수학력', wisdom: '지혜', insight: '통찰력', clues: '단서 카드' };
+    Object.keys(effect).forEach(key => {
+      const delta = effect[key];
+      if (!delta) return;
+      this.stats[key] = (this.stats[key] || 0) + delta;
+      this.showToast(`${labels[key]} ${delta > 0 ? '+' : ''}${delta}`, delta > 0 ? 'up' : 'down');
+    });
+    this.renderStats();
+  },
+
+  renderStats() {
+    document.getElementById('stat-math').textContent = this.stats.math;
+    document.getElementById('stat-wisdom').textContent = this.stats.wisdom;
+    document.getElementById('stat-insight').textContent = this.stats.insight;
+    document.getElementById('stat-clues').textContent = `${this.stats.clues} / 5`;
+  },
+
+  showToast(text, kind) {
+    const area = document.getElementById('toast-area');
+    const t = document.createElement('div');
+    t.className = `toast ${kind}`;
+    t.textContent = text;
+    area.appendChild(t);
+    setTimeout(() => t.remove(), 2200);
+  },
+
+  // ----- 백로그 -----
+  openBacklog() {
+    const list = document.getElementById('log-list');
+    list.innerHTML = '';
+    this.log.forEach(entry => {
+      const div = document.createElement('div');
+      div.className = 'log-entry';
+      div.innerHTML = `<span class="log-speaker">${entry.speaker}</span><div class="log-text">${entry.text}</div>`;
+      list.appendChild(div);
+    });
+    list.scrollTop = list.scrollHeight;
+    document.getElementById('backlog-modal').classList.remove('gone');
+  },
+
+  closeBacklog() {
+    document.getElementById('backlog-modal').classList.add('gone');
+  },
+
+  // ----- 엔딩 -----
+  showEnding() {
+    const s = this.stats;
+    let chosen = ENDINGS.C;
+    if (ENDINGS.A.condition(s)) chosen = ENDINGS.A;
+    else if (ENDINGS.B.condition(s)) chosen = ENDINGS.B;
+
+    document.getElementById('ending-tag').textContent = chosen.tag;
+    document.getElementById('ending-title').textContent = chosen.title;
+    document.getElementById('ending-text').innerText = chosen.text;
+    document.getElementById('end-math').textContent = s.math;
+    document.getElementById('end-wisdom').textContent = s.wisdom;
+    document.getElementById('end-insight').textContent = s.insight;
+    document.getElementById('end-clues').textContent = `${s.clues} / 5`;
+    document.getElementById('ending-screen').classList.remove('gone');
+  },
+};
+
+window.addEventListener('DOMContentLoaded', () => game.init());
+</script>
+</body>
+</html>

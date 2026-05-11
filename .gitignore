@@ -1,0 +1,16 @@
+# macOS 시스템 파일
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# 임시·백업 파일
+*~
+*.tmp
+*.bak
+
+# 에디터 폴더
+.vscode/
+.idea/
+
+# 로그
+*.log
