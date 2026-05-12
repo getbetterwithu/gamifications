@@ -790,27 +790,34 @@ function playBgm(key) {
   el.src = url; el.volume = 0.5; el.play().catch(() => {});
 }
 
-// ===== 엔딩 정의 =====
+// ===== 엔딩 정의 (4단원 — 첫 시도 정답 개수 기준) =====
+// condition 인자: { stats, firstTryCorrect }
+//   firstTryCorrect: 첫 시도에 맞춘 문제 개수 (problemResults 집계)
 const ENDINGS = {
   A: {
     tag: '엔딩 A',
-    title: '피타고라스가 인정한 제자',
-    condition: (s) => s.math >= 24 && s.clues >= 4,
-    text: '"네가 닮음 하나로 여기까지 해냈다. 다음은 더 깊은 진리가 기다리고 있다."\n\n피타고라스는 너를 정식 제자로 받아들였다. 신전 설계 회의에 조수로 참여하게 되며, 다음 스테이지에서는 비례판의 문양을 실제 신전 기둥에 적용하는 작업이 기다린다.',
+    title: '황금의 통찰',
+    condition: (ctx) => ctx.firstTryCorrect >= 9,
+    text: '"폴리곤. 오늘 네가 보여준 것은 단순한 암기가 아니었다. 조건을 이해하고, 관계를 읽고, 오류를 찾아냈다. 학당에서 첫날이 이 정도라면 — 앞으로가 기대되는군."\n\n피타고라스의 말에 탈레스가 환하게 웃는다. 다이달로스는 팔짱을 끼며 "오늘 하루만큼은 인정한다"고 중얼거리고, 이리스는 조용한 미소를 보낸다.\n\n폴리곤은 학당의 첫 번째 시험을 완벽하게 통과했다. 그리고 창고 깊숙이 잠든 황금 비례판은 — 아직 그의 손이 닿지 않는 곳에 있다.',
   },
   B: {
     tag: '엔딩 B',
-    title: '믿음직한 견습생',
-    condition: (s) => s.math >= 14 && s.clues >= 2,
-    text: '"잘했어. 처음치고는 충분해. 다음 단원에서 더 빛날 거야."\n\n탈레스가 어깨를 두드린다. 학당의 정식 견습생으로 자리잡았고, 다음 스테이지에서는 추가 연습 과제가 기다린다.',
+    title: '착실한 한 걸음',
+    condition: (ctx) => ctx.firstTryCorrect >= 5,
+    text: '"틀린 것들 있지? 괜찮아. 오늘 처음 본 거잖아. 틀린 걸 기억해두면 그게 다음에 맞는 발판이 돼."\n\n탈레스가 어깨를 다독인다. 피타고라스는 지나가며 짧게 "복습하라"라고 말한다.\n\n폴리곤은 오늘을 교훈으로 삼았다. 완벽하지 않아도 괜찮다 — 다만 멈추지 않는 것이 중요하다.',
   },
   C: {
     tag: '엔딩 C',
-    title: '아직 갈 길이 먼 견습생',
+    title: '다시 시작하는 자리',
     condition: () => true,  // fallback
-    text: '"닮음의 문이 아직 열리지 않았구나. 다시 첫 장면부터 돌아보거라."\n\n피타고라스가 한 번 더 기회를 준다. 다음 스테이지는 복습 퀴즈로 시작한다.',
+    text: '저녁, 학당 빈 안뜰. 폴리곤 혼자 설계도를 다시 들여다보고 있다. 이리스가 조용히 옆에 앉는다.\n\n"있어도 돼요. 탈레스 선생님이 그랬어요. 학당에서 제일 빠르게 느는 건 제일 많이 틀린 사람이라고."\n\n폴리곤은 설계도를 접었다. 오늘 틀린 것들을 내일 다시 펼칠 것이다. 그것이 학당의 방식이었다.',
   },
 };
+
+// problemResults에서 첫 시도 정답 개수 집계
+function countFirstTryCorrect(problemResults) {
+  return Object.values(problemResults || {}).filter(r => r && r.firstCorrect === true).length;
+}
 
 // ===== 게임 엔진 =====
 const game = {
@@ -1679,9 +1686,10 @@ const game = {
   // ----- 엔딩 -----
   showEnding() {
     const s = this.stats;
+    const ctx = { stats: s, firstTryCorrect: countFirstTryCorrect(this.problemResults) };
     let chosen = ENDINGS.C;
-    if (ENDINGS.A.condition(s)) chosen = ENDINGS.A;
-    else if (ENDINGS.B.condition(s)) chosen = ENDINGS.B;
+    if (ENDINGS.A.condition(ctx)) chosen = ENDINGS.A;
+    else if (ENDINGS.B.condition(ctx)) chosen = ENDINGS.B;
 
     document.getElementById('ending-tag').textContent = chosen.tag;
     document.getElementById('ending-title').textContent = chosen.title;
@@ -1689,7 +1697,7 @@ const game = {
     document.getElementById('end-math').textContent = s.math;
     document.getElementById('end-wisdom').textContent = s.wisdom;
     document.getElementById('end-insight').textContent = s.insight;
-    document.getElementById('end-clues').textContent = `${s.clues} / 5`;
+    document.getElementById('end-clues').textContent = `${ctx.firstTryCorrect} / 12`;
     document.getElementById('ending-screen').classList.remove('gone');
     this._endingReached = true;  // Step 3 이후 PDF 버튼이 이걸 체크
   },
@@ -2341,8 +2349,9 @@ const pdfReport = {
     });
     y += 14;
     let chosenEnding = ENDINGS.C;
-    if (ENDINGS.A.condition(s)) chosenEnding = ENDINGS.A;
-    else if (ENDINGS.B.condition(s)) chosenEnding = ENDINGS.B;
+    const endCtx = { stats: s, firstTryCorrect: countFirstTryCorrect(game.problemResults) };
+    if (ENDINGS.A.condition(endCtx)) chosenEnding = ENDINGS.A;
+    else if (ENDINGS.B.condition(endCtx)) chosenEnding = ENDINGS.B;
 
     doc.setFillColor(245, 217, 154);
     doc.roundedRect(15, y, pageW - 30, 18, 3, 3, 'F');
@@ -2669,8 +2678,9 @@ const pdfReport = {
     y = 255;
     const s = game.stats;
     let chosenEnding = ENDINGS.C;
-    if (ENDINGS.A.condition(s)) chosenEnding = ENDINGS.A;
-    else if (ENDINGS.B.condition(s)) chosenEnding = ENDINGS.B;
+    const coverCtx = { stats: s, firstTryCorrect: countFirstTryCorrect(game.problemResults) };
+    if (ENDINGS.A.condition(coverCtx)) chosenEnding = ENDINGS.A;
+    else if (ENDINGS.B.condition(coverCtx)) chosenEnding = ENDINGS.B;
 
     doc.setFillColor(245, 217, 154);
     doc.roundedRect(30, y, pageW - 60, 22, 3, 3, 'F');
