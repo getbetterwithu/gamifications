@@ -11,18 +11,21 @@
 //   { type: 'problem', id, kind, topic, difficulty, onCorrect, onWrong }
 //   { type: 'ending' }
 //
-// 배경 매핑 메모 (backgrounds.js 자산 재활용):
-//   Scene 1   학당 정문      → yard (임시; 추후 entrance 배경 추가 가능)
-//   Scene 2~7 안뜰·설계도 앞  → yard
-//   Scene 8   나무 그늘      → garden
-//   Scene 9~11 설계도 앞     → yard
-//   Scene 12  저녁 안뜰      → yard (추후 yard_sunset 별도 추가 가능)
+// 배경 매핑 (backgrounds.js 키와 일치):
+//   Scene 1     → entrance     (학당 정문)
+//   Scene 2~7   → yard         (설계도 안뜰)
+//   Scene 8     → garden       (나무 그늘, 5단원 재활용)
+//   Scene 9~11  → yard
+//   Scene 12    → yard_sunset  (안뜰 노을)
+//   엔딩 A      → award_hall   (시상 공간)
+//   엔딩 B      → corridor     (학당 복도, 5단원 재활용)
+//   엔딩 C      → yard_sunset  (저녁 빈 안뜰)
 
 const STEPS = [
   // ============================================================
   // Scene 1 — 첫발을 디디다
   // ============================================================
-  { type: 'scene', name: 'Scene 1 — 첫발을 디디다', bg: 'yard', clearChars: true },
+  { type: 'scene', name: 'Scene 1 — 첫발을 디디다', bg: 'entrance', clearChars: true },
   { type: 'dialog', speaker: 'narrator',
     text: '에게해의 바람이 분다. 케팔로니아 섬, 피타고라스 학당 정문 앞 — 이른 아침. 돌기둥이 늘어선 웅장한 입구.' },
 
@@ -443,7 +446,7 @@ const STEPS = [
   // ============================================================
   // Scene 12 — 별명 예고와 황금 비례판 (5단원 연결 훅)
   // ============================================================
-  { type: 'scene', name: 'Scene 12 — 별명 예고', bg: 'yard', clearChars: true },
+  { type: 'scene', name: 'Scene 12 — 별명 예고', bg: 'yard_sunset', clearChars: true },
   { type: 'dialog', speaker: 'narrator',
     text: '저녁 무렵, 학당 안뜰. 노을이 진다. 분쟁이 해결되고 건축가들이 돌아간 뒤. 탈레스와 폴리곤이 나란히 기둥에 기대 앉아 있다.' },
 
