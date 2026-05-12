@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>시밀러의 학당 — 스테이지 1</title>
+<title>폴리곤의 학당 — 사각형의 시험</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { height: 100%; font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif; }
@@ -641,7 +641,7 @@
   </div>
 
   <div id="dialog-box" class="pos-bottom">
-    <div id="speaker-name">시밀러</div>
+    <div id="speaker-name">폴리곤</div>
     <div id="dialog-text"></div>
     <button id="next-btn" onclick="game.handleNext()">다음</button>
   </div>
@@ -692,9 +692,9 @@
   <!-- 타이틀 화면 -->
   <div id="title-screen">
     <div class="title-bg" id="title-bg"></div>
-    <div class="subtitle">중학교 2학년 5단원 복습 게임</div>
-    <h1>시밀러의 학당</h1>
-    <div class="stage-name">스테이지 1 — 닮음의 신전</div>
+    <div class="subtitle">중학교 2학년 4단원 복습 게임</div>
+    <h1>폴리곤의 학당</h1>
+    <div class="stage-name">사각형의 시험</div>
     <button class="start-btn" onclick="game.startGame()">시작하기</button>
     <div class="credits">© 피타고라스 학당의 견습생 · 비주얼노벨 + 육성 시뮬레이션</div>
   </div>
@@ -2018,7 +2018,7 @@ const pdfReport = {
       document.getElementById('pdf-progress').textContent = '저장 중...';
       // Step 5: 파일명 sanitization (Windows·macOS 모두 안전)
       const safeName = this.sanitizeFilename(this.studentName);
-      const fname = `시밀러의학당_스테이지1_${safeName}_${this.todayStrCompact()}.pdf`;
+      const fname = `폴리곤의학당_사각형의시험_${safeName}_${this.todayStrCompact()}.pdf`;
       doc.save(fname);
     } catch (e) {
       console.error('PDF 생성 실패:', e);
@@ -2499,17 +2499,17 @@ const pdfReport = {
 
     // 메인 타이틀 (한국어 — 이미지로 렌더)
     let y = 50;
-    y = this.addTextToPdf(doc, '시밀러의 학당', pageW / 2 - 80, y, {
+    y = this.addTextToPdf(doc, '폴리곤의 학당', pageW / 2 - 80, y, {
       fontSize: 48, fontWeight: '700', color: '#5d4a30', textAlign: 'center', maxWidth: 600, widthMm: 160
     });
 
     y += 8;
-    this.addTextToPdf(doc, '스테이지 1 — 닮음의 신전', pageW / 2 - 70, y, {
+    this.addTextToPdf(doc, '사각형의 시험', pageW / 2 - 70, y, {
       fontSize: 22, fontWeight: '500', color: '#8b6f47', textAlign: 'center', maxWidth: 500, widthMm: 140
     });
 
     y += 20;
-    this.addTextToPdf(doc, '중학교 2학년 5단원 · 도형의 닮음', pageW / 2 - 60, y, {
+    this.addTextToPdf(doc, '중학교 2학년 4단원 · 사각형의 성질', pageW / 2 - 60, y, {
       fontSize: 16, color: '#6b4423', textAlign: 'center', maxWidth: 400, widthMm: 120
     });
 
