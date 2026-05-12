@@ -1235,7 +1235,8 @@ const game = {
     this._currentProblem = step;
 
     const box = document.getElementById('problem-placeholder');
-    const hasResponse = step.responseType || step.choices || step.acceptedAnswers;
+    const pdataForCheck = (typeof PROBLEMS !== 'undefined' && PROBLEMS[step.id]) || {};
+    const hasResponse = pdataForCheck.type || step.responseType || step.choices || step.acceptedAnswers;
 
     // 응답 데이터가 없으면 기존 placeholder 모드 (개발 안전망)
     if (!hasResponse) {
@@ -1287,9 +1288,9 @@ const game = {
     const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[step.id]) || {};
     const meta = `<strong>${step.id}</strong> · ${step.kind || ''} · ${step.topic || ''} · 난이도 ${step.difficulty || ''}`;
 
-    // 문제 본문 (KaTeX 렌더용 → 별도 div, 후처리로 KaTeX render)
+    // 문제 본문 (KaTeX 렌더용 → 즉시 렌더링)
     const text = pdata.text || step.text || '';
-    const textHtml = text ? `<div class="problem-text" data-katex="block">${this._escapeHtml(text)}</div>` : '';
+    const textHtml = text ? `<div class="problem-text">${this._renderInlineMath(text)}</div>` : '';
 
     // 도형 이미지
     const figureFile = pdata.figure || step.image;
@@ -1451,7 +1452,9 @@ const game = {
   submitChoice(index) {
     const p = this._currentProblem;
     if (!p) return;
-    const correct = (index === p.correctChoice);
+    const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[p.id]) || {};
+    const expected = (pdata.correctChoice !== undefined) ? pdata.correctChoice : p.correctChoice;
+    const correct = (index === expected);
     this._handleAttempt(correct, `보기 ${index + 1}`);
   },
 
