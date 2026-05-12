@@ -1,30 +1,64 @@
 // ===== 시나리오 데이터 (4단원 Stage 1 — 사각형) =====
-// 시나리오는 별도 클로드 채팅에 의뢰 후 받아와 채울 예정.
-// 일단 골격만 두고 빈 STEPS 배열로 시작.
-//
-// step types:
-//   { type: 'scene', name, bg, clearChars }
-//   { type: 'dialog', speaker, expression, position?, text, prop? }
-//   { type: 'choice', prompt, options: [{ label, effect, reactKey }] }
-//   { type: 'reaction', reactions: { A: {...}, ... } }
-//   { type: 'enter', role, expression, position }
-//   { type: 'problem',
-//       id, kind, topic, difficulty, format,
-//       image?: 'M01.png',
-//       responseType: 'choice' | 'shortAnswer' | 'ox',
-//       choices?: ['①', '②', '③', '④'],
-//       correctChoice?: 0,                 // 객관식 정답 인덱스
-//       acceptedAnswers?: ['3:5'],         // 단답형 허용 답안
-//       hints?: ['힌트1', '힌트2', '힌트3'], // 오답 시 순서대로 표시
-//       onCorrect: { stats, dialog },
-//       onWrong:   { stats, dialog }        // (참고용 — 새 시스템에선 사용 안 함)
-//   }
-//   { type: 'ending' }
+// 정식 시나리오는 별도 클로드 채팅에 의뢰 후 받아와 채울 예정.
+// 지금은 12개 문제 슬롯을 일렬로 배치한 데모용 시나리오.
+// 문제 데이터는 problems.js의 PROBLEMS 객체에서 자동으로 가져옴.
 
 const STEPS = [
-  // === 시나리오 받아오면 여기 채움 ===
-  { type: 'scene', name: 'Scene 0 — 임시', bg: 'title', clearChars: true },
+  { type: 'scene', name: 'Scene 0 — 데모', bg: 'title', clearChars: true },
   { type: 'dialog', speaker: 'narrator',
-    text: '4단원 시나리오는 별도 의뢰 후 작성됩니다. 지금은 응답 시스템 데모만 작동합니다.' },
+    text: '4단원 시나리오 데모 — 12개 문제 슬롯을 순서대로 풀어봅니다. 정식 시나리오는 별도 의뢰 후 작성됩니다.' },
+
+  // 12개 문제 슬롯 — id만 일치하면 problems.js의 데이터로 자동 렌더
+  { type: 'problem', id: 'M01', kind: '메인', topic: '평행사변형 조건 ①', difficulty: '하',
+    onCorrect: { stats: { math: 3 }, dialog: { speaker: 'pythagoras', expression: 'smile', text: '옳다. 두 쌍의 대변 길이가 같은 사각형은 평행사변형이다.' } },
+    onWrong: { stats: { math: 0 }, dialog: { speaker: 'pythagoras', expression: 'neutral', text: '다음 문제로 넘어가자.' } },
+  },
+  { type: 'problem', id: 'M02', kind: '메인', topic: '평행사변형 판별 (4개)', difficulty: '중',
+    onCorrect: { stats: { math: 3 }, dialog: { speaker: 'companion', expression: 'smile', text: '잘했어!' } },
+    onWrong: { stats: { math: 0 }, dialog: { speaker: 'thales', expression: 'thinking', text: '다음 문제로.' } },
+  },
+  { type: 'problem', id: 'M03', kind: '메인', topic: '평행사변형 ∠x, ∠y', difficulty: '중',
+    onCorrect: { stats: { math: 3 }, dialog: { speaker: 'apprentice', expression: 'smile', text: '맞췄어!' } },
+    onWrong: { stats: { math: 0 }, dialog: { speaker: 'thales', expression: 'neutral', text: '다음으로.' } },
+  },
+  { type: 'problem', id: 'M04', kind: '메인', topic: '함정 OX', difficulty: '하',
+    onCorrect: { stats: { math: 3 }, dialog: { speaker: 'pythagoras', expression: 'smile', text: '함정을 잘 피했다.' } },
+    onWrong: { stats: { math: 0 }, dialog: { speaker: 'pythagoras', expression: 'neutral', text: '다음으로.' } },
+  },
+  { type: 'problem', id: 'S01', kind: '사이드', topic: '놀이기구 평행사변형', difficulty: '하',
+    onCorrect: { stats: { wisdom: 2 }, dialog: { speaker: 'thales', expression: 'smile', text: '실생활에 평행사변형이 곳곳에 있지!' } },
+    onWrong: { stats: { wisdom: 0 }, dialog: { speaker: 'thales', expression: 'neutral', text: '다음으로.' } },
+  },
+  { type: 'problem', id: 'M05', kind: '메인', topic: '평행사변형 조건 x, y', difficulty: '중',
+    onCorrect: { stats: { math: 3 }, dialog: { speaker: 'companion', expression: 'smile', text: '대각선의 이등분 조건이지.' } },
+    onWrong: { stats: { math: 0 }, dialog: { speaker: 'thales', expression: 'neutral', text: '다음으로.' } },
+  },
+  { type: 'problem', id: 'M06', kind: '메인', topic: 'AB=DC 추가 조건', difficulty: '상',
+    onCorrect: { stats: { math: 4, insight: 1 }, dialog: { speaker: 'pythagoras', expression: 'smile', text: '훌륭하다.' } },
+    onWrong: { stats: { math: 0 }, dialog: { speaker: 'pythagoras', expression: 'neutral', text: '다음으로.' } },
+  },
+  { type: 'problem', id: 'M07', kind: '메인', topic: '정사각형 BD·∠', difficulty: '중',
+    onCorrect: { stats: { math: 3 }, dialog: { speaker: 'companion', expression: 'smile', text: '정사각형은 수직이등분.' } },
+    onWrong: { stats: { math: 0 }, dialog: { speaker: 'thales', expression: 'neutral', text: '다음으로.' } },
+  },
+  { type: 'problem', id: 'S02', kind: '사이드', topic: '풀밭 정사각형 목장', difficulty: '중',
+    onCorrect: { stats: { wisdom: 2, insight: 1 }, dialog: { speaker: 'thales', expression: 'smile', text: '대각선이 원의 지름!' } },
+    onWrong: { stats: { wisdom: 0 }, dialog: { speaker: 'thales', expression: 'neutral', text: '다음으로.' } },
+  },
+  { type: 'problem', id: 'M08', kind: '메인', topic: '직사각형 x, y', difficulty: '중',
+    onCorrect: { stats: { math: 3 }, dialog: { speaker: 'rival', expression: 'neutral', text: '뭐, 이정도쯤이야.' } },
+    onWrong: { stats: { math: 0 }, dialog: { speaker: 'thales', expression: 'neutral', text: '다음으로.' } },
+  },
+  { type: 'problem', id: 'M09', kind: '메인', topic: '마름모 △AOB 넓이', difficulty: '중',
+    onCorrect: { stats: { math: 3 }, dialog: { speaker: 'companion', expression: 'smile', text: '마름모 대각선 수직!' } },
+    onWrong: { stats: { math: 0 }, dialog: { speaker: 'thales', expression: 'neutral', text: '다음으로.' } },
+  },
+  { type: 'problem', id: 'M10', kind: '메인', topic: '조건 만족 사각형 이름', difficulty: '상',
+    onCorrect: { stats: { math: 4, insight: 1 }, dialog: { speaker: 'pythagoras', expression: 'smile', text: '정확하다.' } },
+    onWrong: { stats: { math: 0 }, dialog: { speaker: 'pythagoras', expression: 'neutral', text: '다음으로.' } },
+  },
+
+  { type: 'dialog', speaker: 'thales', expression: 'smile', position: 'center',
+    text: '여기까지가 데모입니다. 정식 시나리오는 곧 작성됩니다.' },
   { type: 'ending' },
 ];

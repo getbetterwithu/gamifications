@@ -194,6 +194,19 @@
   #problem-placeholder.placeholder-mode {
     border-style: dashed;
   }
+  /* 문제 텍스트 (KaTeX 렌더) */
+  .problem-text {
+    font-size: 17px;
+    line-height: 1.6;
+    color: #3a2818;
+    margin: 12px 0;
+    text-align: left;
+    background: #fff8e7;
+    padding: 14px 18px;
+    border-left: 4px solid #8b6f47;
+    border-radius: 8px;
+  }
+  .problem-text .katex { font-size: 1.05em; }
   /* 문제 이미지 */
   .problem-image-wrap {
     margin: 8px 0 14px 0;
@@ -760,6 +773,7 @@
 <script src="characters.js"></script>
 <script src="props.js"></script>
 <script src="backgrounds.js"></script>
+<script src="problems.js"></script>
 <script src="scenario.js"></script>
 
 <script>
@@ -1245,8 +1259,12 @@ const game = {
       // 실제 응답 UI
       box.classList.remove('placeholder-mode');
       box.innerHTML = this._buildProblemUi(step);
-      // KaTeX 미리보기 초기화
-      if (step.responseType === 'shortAnswer' || (!step.responseType && step.acceptedAnswers)) {
+      // KaTeX 본문 렌더 (data-katex 속성 가진 요소들)
+      this._renderKatexInBox(box);
+      // 단답형 미리보기 초기화
+      const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[step.id]) || {};
+      const respType = pdata.type || step.responseType;
+      if (respType === 'shortAnswer' || (!respType && step.acceptedAnswers)) {
         const input = box.querySelector('.short-answer-input');
         if (input) {
           input.addEventListener('input', () => this._renderAnswerPreview(input.value));
@@ -1264,35 +1282,64 @@ const game = {
   },
 
   _buildProblemUi(step) {
-    const meta = `<strong>${step.id}</strong> · ${step.kind} · ${step.topic} · 난이도 ${step.difficulty}`;
+    // PROBLEMS 객체에서 문제 데이터 가져오기 (id 기반)
+    // 없으면 step 자체에서 (구 데이터 호환)
+    const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[step.id]) || {};
+    const meta = `<strong>${step.id}</strong> · ${step.kind || ''} · ${step.topic || ''} · 난이도 ${step.difficulty || ''}`;
+
+    // 문제 본문 (KaTeX 렌더용 → 별도 div, 후처리로 KaTeX render)
+    const text = pdata.text || step.text || '';
+    const textHtml = text ? `<div class="problem-text" data-katex="block">${this._escapeHtml(text)}</div>` : '';
+
+    // 도형 이미지
+    const figureFile = pdata.figure || step.image;
     let imageHtml = '';
-    if (step.image) {
+    if (figureFile) {
       imageHtml = `<div class="problem-image-wrap">
-        <img src="problems/${step.image}" alt="문제 ${step.id}"
-             onerror="this.outerHTML='<div class=problem-image-missing>📷 문제 이미지 (problems/${step.image}) 가 아직 없어요</div>'">
+        <img src="problems/${figureFile}" alt="문제 ${step.id}"
+             onerror="this.outerHTML='<div class=problem-image-missing>📷 도형 이미지 (problems/${figureFile}) 미등록</div>'">
       </div>`;
-    } else {
-      imageHtml = `<div class="problem-image-wrap"><div class="problem-image-missing">📷 문제 이미지 미설정</div></div>`;
     }
 
-    // 응답 타입 결정 — 명시 없으면 추론
-    const respType = step.responseType ||
+    // 응답 형식 결정
+    const respType = pdata.type || step.responseType ||
       (step.choices ? 'choice' : (step.acceptedAnswers ? 'shortAnswer' : null));
 
     let responseHtml = '';
-    if (respType === 'choice' && step.choices) {
-      responseHtml = `<div class="choices-grid">` +
-        step.choices.map((c, i) =>
-          `<button class="choice-option" onclick="game.submitChoice(${i})">${c}</button>`
-        ).join('') +
-        `</div>`;
+    if (respType === 'ox') {
+      // O/X 두 버튼
+      responseHtml = `<div class="choices-grid" style="grid-template-columns:1fr 1fr;">
+        <button class="choice-option" style="font-size:36px;color:#3a6a1a;" onclick="game.submitOx('O')">O</button>
+        <button class="choice-option" style="font-size:36px;color:#8b3a2a;" onclick="game.submitOx('X')">X</button>
+      </div>`;
+    } else if (respType === 'choice' || respType === 'choice-multi') {
+      const choices = pdata.choices || step.choices || [];
+      const isMulti = (respType === 'choice-multi');
+      if (isMulti) {
+        responseHtml = `<div class="choices-grid">` +
+          choices.map((c, i) =>
+            `<label class="choice-option" style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+              <input type="checkbox" class="multi-check" data-idx="${i}" style="width:18px;height:18px;">
+              <span data-katex="inline">${this._escapeHtml(c)}</span>
+            </label>`
+          ).join('') +
+          `</div>
+          <button class="short-submit-btn" onclick="game.submitChoiceMulti()" style="margin-top:14px;">제출</button>`;
+      } else {
+        responseHtml = `<div class="choices-grid">` +
+          choices.map((c, i) =>
+            `<button class="choice-option" onclick="game.submitChoice(${i})"><span data-katex="inline">${this._escapeHtml(c)}</span></button>`
+          ).join('') +
+          `</div>`;
+      }
     } else if (respType === 'shortAnswer') {
+      const askFormat = pdata.askFormat || '답:';
       responseHtml = `
         <div class="short-answer-wrap">
-          <label for="answer-input">답 입력 (문자·숫자·콜론·연산자만):</label>
+          <label for="answer-input"><span data-katex="inline">${this._escapeHtml(askFormat)}</span></label>
           <input type="text" id="answer-input" class="short-answer-input"
-                 placeholder="예: 3:5, a, 30, x+1"
-                 maxlength="50">
+                 placeholder="예: 3:5,  30,  정사각형 등"
+                 maxlength="60">
           <div class="answer-preview" id="answer-preview">
             <span class="preview-label">미리보기 (수식체)</span>
             <span id="preview-content">—</span>
@@ -1305,11 +1352,70 @@ const game = {
 
     return `
       <div style="font-size:13px; color:#6b4423; margin-bottom:8px; text-align:left;">${meta}</div>
+      ${textHtml}
       ${imageHtml}
       ${responseHtml}
       <br>
       <button id="notebook-btn" onclick="notebook.open()" style="background:#5a8b3a; color:#fff8e7; border:3px solid #3a6a1a; padding:10px 18px; font-size:14px; font-weight:700; border-radius:10px; cursor:pointer; margin-top:10px;">✏️ 필기하기</button>
     `;
+  },
+
+  // KaTeX 렌더 후처리 — 모든 data-katex 속성 가진 요소를 렌더
+  _renderKatexInBox(boxEl) {
+    if (!window.katex) return;
+    const items = boxEl.querySelectorAll('[data-katex]');
+    items.forEach(el => {
+      const isBlock = el.getAttribute('data-katex') === 'block';
+      const text = el.textContent;
+      // $...$ 또는 $$...$$ 패턴 처리: 텍스트 내 인라인 수식만 KaTeX로
+      try {
+        el.innerHTML = this._renderInlineMath(text);
+      } catch (e) {
+        // 실패해도 원본 텍스트 유지
+      }
+    });
+  },
+
+  // $...$ 안만 KaTeX로 렌더 (한국어와 수식 혼용)
+  _renderInlineMath(text) {
+    if (!window.katex || !text) return this._escapeHtml(text);
+    const parts = text.split(/(\$\$[^$]+\$\$|\$[^$]+\$)/);
+    return parts.map(part => {
+      if (part.startsWith('$$') && part.endsWith('$$')) {
+        const tex = part.slice(2, -2);
+        try { return katex.renderToString(tex, { throwOnError: false, displayMode: true }); }
+        catch (e) { return this._escapeHtml(part); }
+      } else if (part.startsWith('$') && part.endsWith('$') && part.length > 2) {
+        const tex = part.slice(1, -1);
+        try { return katex.renderToString(tex, { throwOnError: false, displayMode: false }); }
+        catch (e) { return this._escapeHtml(part); }
+      } else {
+        return this._escapeHtml(part).replace(/\n/g, '<br>');
+      }
+    }).join('');
+  },
+
+  submitOx(letter) {
+    const p = this._currentProblem;
+    const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[p.id]) || {};
+    const correct = (letter === (pdata.correctAnswer || p.correctAnswer));
+    this._handleAttempt(correct, letter);
+  },
+
+  submitChoiceMulti() {
+    const p = this._currentProblem;
+    const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[p.id]) || {};
+    const boxes = document.querySelectorAll('.multi-check');
+    const selected = [];
+    boxes.forEach(b => { if (b.checked) selected.push(parseInt(b.dataset.idx, 10)); });
+    if (selected.length === 0) {
+      this.showToast('하나 이상 선택해주세요', 'down');
+      return;
+    }
+    const expected = (pdata.correctChoices || p.correctChoices || []).slice().sort();
+    const got = selected.slice().sort();
+    const correct = expected.length === got.length && expected.every((v, i) => v === got[i]);
+    this._handleAttempt(correct, selected.map(i => i + 1).join(','));
   },
 
   // 단답형 입력값 → 허용 문자만 필터링 → KaTeX로 수식체 렌더
@@ -1338,8 +1444,8 @@ const game = {
 
   _sanitizeAnswerInput(s) {
     if (!s) return '';
-    // 허용: 영문, 숫자, 콜론, 더하기/빼기, 곱하기, 점, 괄호, 공백
-    return s.replace(/[^A-Za-z0-9:+\-*.()\s]/g, '');
+    // 허용: 영문, 숫자, 한글, 콜론, 콤마, 더하기/빼기, 곱하기, 점, 괄호, 공백, °, ㎡ 같은 단위
+    return s.replace(/[^A-Za-z0-9가-힣ㄱ-ㅎㅏ-ㅣ:,+\-*.()°㎡²³√π\s]/g, '');
   },
 
   submitChoice(index) {
@@ -1358,7 +1464,9 @@ const game = {
       return;
     }
     const p = this._currentProblem;
-    const accepted = (p.acceptedAnswers || []).map(a => this._normalizeAnswer(a));
+    const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[p.id]) || {};
+    const acceptedList = pdata.acceptedAnswers || p.acceptedAnswers || [];
+    const accepted = acceptedList.map(a => this._normalizeAnswer(a));
     const userNorm = this._normalizeAnswer(raw);
     const correct = accepted.includes(userNorm);
     this._handleAttempt(correct, raw);
