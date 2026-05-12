@@ -5,7 +5,13 @@
 //   { type: 'choice', prompt, options: [{ label, effect, reactKey }] }
 //   { type: 'reaction', reactions: { A: {...}, B: {...}, C: {...} } }
 //   { type: 'enter', role, expression, position }    // 수동 등장(자동 시스템 우회)
-//   { type: 'problem', id, kind, topic, difficulty, format, onCorrect, onWrong }
+//   { type: 'problem', id, kind, topic, difficulty, format, onCorrect, onWrong,
+//     image?: 'M01.png',                       // 문제 이미지 파일 (problems/ 폴더, 없으면 placeholder)
+//     responseType?: 'choice' | 'shortAnswer', // 응답 형식. 비우면 format 문자열로 자동 추론
+//     choices?: ['①', '②', '③', '④'],        // 객관식 보기 (텍스트 또는 이미지 파일명)
+//     correctChoice?: 2,                       // 객관식 정답 인덱스 (0부터)
+//     acceptedAnswers?: ['3:5', '0.6'],        // 단답형 허용 답안 배열
+//   }
 //   { type: 'ending' }                                // 엔딩 분기 판정 트리거
 
 const STEPS = [
@@ -55,6 +61,11 @@ const STEPS = [
   { type: 'problem',
     id: 'M01', kind: '메인 (수학)', topic: '닮음의 정의 / 기호 표기 (∽)', difficulty: '하',
     format: '객관식 4지선다',
+    // === 데모 응답 데이터 (선생님이 실제 문제로 교체) ===
+    image: 'M01.png',  // problems/M01.png — 없으면 자동으로 안내 표시
+    responseType: 'choice',
+    choices: ['① 합동', '② 닮음', '③ 평행', '④ 대칭'],
+    correctChoice: 1,  // ② 닮음 (0-based index)
     onCorrect: { stats: { math: 3 }, dialog: { speaker: 'pythagoras', expression: 'smile',
       text: '옳다. 닮음은 확대·축소해도 모양이 보존된다는 것. 합동은 닮음의 특별한 경우 — 닮음비가 1:1인 것이지.' } },
     onWrong: { stats: { math: 1 }, dialog: { speaker: 'pythagoras', expression: 'neutral',
@@ -131,6 +142,10 @@ const STEPS = [
   { type: 'problem',
     id: 'M03', kind: '메인 (수학)', topic: '닮음비 계산', difficulty: '중',
     format: '단답형 (수치 입력)',
+    // === 데모 응답 데이터 (단답형 시연용 — 15:25 = 3:5) ===
+    image: 'M03.png',
+    responseType: 'shortAnswer',
+    acceptedAnswers: ['3:5', '3 : 5'],
     onCorrect: { stats: { math: 3, clues: 1 },
       dialog: { speaker: 'companion', expression: 'smile',
         text: '잘했어! 단서 카드가 하나 더 늘었어.' } },
