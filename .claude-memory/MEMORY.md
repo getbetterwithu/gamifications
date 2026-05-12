@@ -1,0 +1,3 @@
+- [5단원 시나리오 전면 재구성 계획](project_unit5_rebuild_plan.md) — 4단원 완성 후 시나리오·문제 모두 갈아엎기, 인물/그림은 보존
+- [4단원 도형 PNG→SVG 전환 (보류)](project_pending_svg_conversion.md) — 시나리오 코드화 완성 후 별도 세션에서 진행
+- [4단원 문제 정답 검수 (보류)](project_pending_answer_review.md) — Claude가 직접 계산한 12개 문제 정답을 사용자가 검수할 화면/문서 필요
