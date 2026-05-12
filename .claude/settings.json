@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"$env:CLAUDE_PROJECT_DIR\\.claude\\hooks\\inject-reminds.ps1\"",
+            "shell": "powershell",
+            "timeout": 10,
+            "statusMessage": "Loading .remind/ items..."
+          }
+        ]
+      }
+    ]
+  }
+}

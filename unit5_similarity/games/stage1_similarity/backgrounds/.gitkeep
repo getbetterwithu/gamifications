@@ -1,0 +1,5 @@
+# 배경 PNG 9장이 들어갈 폴더 (Background PNG folder)
+# 파일명 규칙: harbor.png, classroom.png, corridor.png, warehouse.png,
+#             garden.png, library.png, yard.png, basement.png, title.png
+# 해상도: 1920×1080 (16:9)
+# 생성 가이드: ../../docs/background_prompts.md

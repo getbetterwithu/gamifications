@@ -14,3 +14,6 @@
 
 # 로그
 *.log
+
+# Claude Code 개인 설정 (머신별 권한 부여, 커밋 X)
+.claude/settings.local.json

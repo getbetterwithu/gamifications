@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>스토리보드 — 시밀러의 학당 Stage 1</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+    background: #f4ede0;
+    color: #2a1f15;
+    padding: 24px;
+    line-height: 1.5;
+  }
+  h1 {
+    font-size: 22px;
+    margin-bottom: 4px;
+    color: #5d3a1a;
+  }
+  .subtitle {
+    font-size: 13px;
+    color: #8b6f47;
+    margin-bottom: 24px;
+  }
+  .toolbar {
+    background: #fff8ec;
+    border: 1px solid #d4a574;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 20px;
+    font-size: 12px;
+    color: #5d4a30;
+  }
+  .toolbar code {
+    background: #eed9b5;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-family: monospace;
+  }
+
+  /* Scene header */
+  .scene-header {
+    background: linear-gradient(90deg, #5d3a1a, #8b5a2b);
+    color: #fff8ec;
+    padding: 14px 20px;
+    margin: 28px 0 14px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .scene-header img {
+    width: 96px;
+    height: 54px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 2px solid #fff8ec;
+  }
+  .scene-header h2 {
+    font-size: 18px;
+    margin: 0;
+  }
+  .scene-header .bg-label {
+    font-size: 11px;
+    opacity: 0.8;
+    margin-top: 2px;
+    font-family: monospace;
+  }
+
+  /* Beat card */
+  .beat {
+    background: #fff;
+    border: 1px solid #e0c8a0;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 14px;
+    align-items: flex-start;
+    position: relative;
+  }
+  .beat .beat-num {
+    position: absolute;
+    top: 6px;
+    right: 10px;
+    font-size: 10px;
+    color: #b89968;
+    font-family: monospace;
+  }
+  .beat .portrait {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: #f4ede0;
+    border: 2px solid #d4a574;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+  }
+  .beat .portrait img {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+    object-position: top;
+  }
+  .beat .portrait.no-char {
+    background: #eed9b5;
+    color: #8b6f47;
+    font-size: 11px;
+    text-align: center;
+    align-items: center;
+    font-weight: bold;
+    border-style: dashed;
+  }
+  .beat .body { min-width: 0; }
+  .beat .meta {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+    align-items: center;
+  }
+  .speaker-name { font-weight: bold; color: #5d3a1a; font-size: 14px; }
+  .badge {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-family: monospace;
+  }
+  .badge-exp { background: #fde8b5; color: #6b4a1a; }
+  .badge-pos { background: #d8e8d4; color: #2a4d2a; }
+  .badge-prop { background: #e0d4f0; color: #4a2a6b; }
+  .text {
+    font-size: 14px;
+    color: #2a1f15;
+  }
+  .text.narrator { font-style: italic; color: #6b4a30; }
+
+  /* Choice */
+  .choice {
+    background: #fff8ec;
+    border: 1px solid #d4a574;
+    border-left: 5px solid #d4a574;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+  }
+  .choice-prompt { font-weight: bold; color: #5d3a1a; margin-bottom: 8px; }
+  .choice-prompt::before { content: '🔀 선택지: '; font-weight: normal; font-size: 12px; }
+  .choice-option {
+    padding: 6px 10px;
+    margin: 4px 0;
+    background: #fff;
+    border-radius: 4px;
+    font-size: 13px;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    border: 1px solid #eed9b5;
+  }
+  .choice-effect {
+    font-size: 11px;
+    color: #8b6f47;
+    font-family: monospace;
+    white-space: nowrap;
+  }
+
+  /* Reaction */
+  .reaction {
+    background: #fff;
+    border: 1px dashed #d4a574;
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-bottom: 10px;
+  }
+  .reaction-header { font-size: 12px; color: #8b6f47; margin-bottom: 6px; font-weight: bold; }
+  .reaction-header::before { content: '↩️ 선택별 반응: '; }
+  .reaction-row { padding: 6px 0; border-bottom: 1px dotted #eed9b5; }
+  .reaction-row:last-child { border-bottom: none; }
+  .reaction-key {
+    display: inline-block;
+    width: 22px;
+    height: 22px;
+    background: #d4a574;
+    color: #fff;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 22px;
+    font-size: 11px;
+    font-weight: bold;
+    margin-right: 6px;
+  }
+
+  /* Problem */
+  .problem {
+    background: #ece4d4;
+    border: 1px solid #8b6f47;
+    border-left: 5px solid #8b5a2b;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+  }
+  .problem-header {
+    font-weight: bold;
+    color: #5d3a1a;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .problem-header::before { content: '📝 문제'; font-size: 13px; }
+  .problem-id { font-family: monospace; background: #5d3a1a; color: #fff; padding: 2px 8px; border-radius: 3px; font-size: 12px; }
+  .problem-meta { font-size: 12px; color: #6b4a30; }
+  .problem-branch {
+    background: #fff;
+    border-radius: 4px;
+    padding: 8px 10px;
+    margin-top: 6px;
+    font-size: 13px;
+    border-left: 3px solid #aaa;
+  }
+  .problem-branch.correct { border-left-color: #4a8a4a; }
+  .problem-branch.wrong { border-left-color: #c46a4a; }
+  .branch-label { font-size: 11px; font-weight: bold; margin-bottom: 4px; }
+  .branch-label.correct { color: #2a5a2a; }
+  .branch-label.wrong { color: #8b3a1a; }
+
+  /* Ending marker */
+  .ending {
+    background: #5d3a1a;
+    color: #fff8ec;
+    text-align: center;
+    padding: 20px;
+    border-radius: 8px;
+    margin: 28px 0;
+    font-size: 16px;
+    font-weight: bold;
+  }
+  .ending::before { content: '🏁 '; }
+
+  /* Feedback hint */
+  .feedback-hint {
+    background: #fff8ec;
+    border: 1px dashed #d4a574;
+    padding: 12px 16px;
+    border-radius: 6px;
+    margin-top: 30px;
+    font-size: 13px;
+    color: #5d4a30;
+  }
+  .feedback-hint strong { color: #5d3a1a; }
+</style>
+</head>
+<body>
+
+<h1>📜 스토리보드 — 시밀러의 학당 Stage 1</h1>
+<div class="subtitle">대사 비트별 흐름 검토용 (게임 실행 없이 전체 흐름 확인)</div>
+
+<div class="toolbar">
+  💡 어색한 부분 발견 시 카드 우상단의 비트 번호 (예: <code>S3 · B5</code>) 와 함께 메모해두세요.
+  S = Scene, B = Beat 순번. 게임에는 영향 없음 (이 페이지는 검토 전용).
+</div>
+
+<div id="board">로딩 중...</div>
+
+<div class="feedback-hint">
+  <strong>피드백 방법</strong>: 어색한 카드 발견 시 "S5 B2 — 라이벌 대사가 너무 약함, 더 도발적으로" 같은 식으로 메모하셔서 시밀러(Claude)에게 전달해주세요.
+</div>
+
+<script src="scenario.js"></script>
+<script>
+const CHAR_NAMES = {
+  apprentice: '시밀러',
+  pythagoras: '피타고라스',
+  thales: '탈레스',
+  rival: '다이달로스',
+  companion: '이리스',
+  narrator: '나레이션',
+  npc: '조교 (NPC)',
+};
+
+const CHAR_PATH = (role, expr) => `characters/split_transparent/${role}_${expr || 'neutral'}.png`;
+const BG_PATH   = (name) => `backgrounds/${name}.png`;
+
+const hasCharImage = (role) => ['apprentice','pythagoras','thales','rival','companion'].includes(role);
+
+function renderPortrait(role, expression) {
+  const div = document.createElement('div');
+  div.className = 'portrait' + (hasCharImage(role) ? '' : ' no-char');
+  if (hasCharImage(role)) {
+    const img = document.createElement('img');
+    img.src = CHAR_PATH(role, expression);
+    img.alt = CHAR_NAMES[role] || role;
+    img.onerror = () => { div.classList.add('no-char'); div.innerHTML = CHAR_NAMES[role] || role; };
+    div.appendChild(img);
+  } else {
+    div.textContent = CHAR_NAMES[role] || role;
+  }
+  return div;
+}
+
+function renderDialog(step, sceneNum, beatNum) {
+  const card = document.createElement('div');
+  card.className = 'beat';
+
+  card.appendChild(renderPortrait(step.speaker, step.expression));
+
+  const num = document.createElement('div');
+  num.className = 'beat-num';
+  num.textContent = `S${sceneNum} · B${beatNum}`;
+  card.appendChild(num);
+
+  const body = document.createElement('div');
+  body.className = 'body';
+
+  const meta = document.createElement('div');
+  meta.className = 'meta';
+  const name = document.createElement('span');
+  name.className = 'speaker-name';
+  name.textContent = CHAR_NAMES[step.speaker] || step.speaker;
+  meta.appendChild(name);
+  if (step.expression) {
+    const b = document.createElement('span');
+    b.className = 'badge badge-exp';
+    b.textContent = step.expression;
+    meta.appendChild(b);
+  }
+  if (step.position) {
+    const b = document.createElement('span');
+    b.className = 'badge badge-pos';
+    b.textContent = step.position;
+    meta.appendChild(b);
+  }
+  if (step.prop) {
+    const b = document.createElement('span');
+    b.className = 'badge badge-prop';
+    b.textContent = `prop: ${step.prop}`;
+    meta.appendChild(b);
+  }
+  body.appendChild(meta);
+
+  const txt = document.createElement('div');
+  txt.className = 'text' + (step.speaker === 'narrator' ? ' narrator' : '');
+  txt.textContent = step.text;
+  body.appendChild(txt);
+
+  card.appendChild(body);
+  return card;
+}
+
+function renderChoice(step) {
+  const div = document.createElement('div');
+  div.className = 'choice';
+  const p = document.createElement('div');
+  p.className = 'choice-prompt';
+  p.textContent = step.prompt;
+  div.appendChild(p);
+  for (const opt of step.options) {
+    const o = document.createElement('div');
+    o.className = 'choice-option';
+    const lbl = document.createElement('span');
+    lbl.textContent = opt.label;
+    const eff = document.createElement('span');
+    eff.className = 'choice-effect';
+    const effStr = Object.entries(opt.effect || {}).map(([k,v]) => `${k}:${v>=0?'+':''}${v}`).join(', ') || '효과 없음';
+    eff.textContent = `[${opt.reactKey}] ${effStr}`;
+    o.appendChild(lbl); o.appendChild(eff);
+    div.appendChild(o);
+  }
+  return div;
+}
+
+function renderReaction(step) {
+  const div = document.createElement('div');
+  div.className = 'reaction';
+  const h = document.createElement('div');
+  h.className = 'reaction-header';
+  div.appendChild(h);
+  for (const [key, r] of Object.entries(step.reactions)) {
+    const row = document.createElement('div');
+    row.className = 'reaction-row';
+    const k = document.createElement('span');
+    k.className = 'reaction-key';
+    k.textContent = key;
+    row.appendChild(k);
+    const txt = document.createElement('span');
+    const name = CHAR_NAMES[r.speaker] || r.speaker;
+    txt.innerHTML = `<strong>${name}</strong> <span style="font-size:11px;color:#8b6f47">(${r.expression||'neutral'})</span>: ${r.text}`;
+    row.appendChild(txt);
+    div.appendChild(row);
+  }
+  return div;
+}
+
+function renderProblem(step) {
+  const div = document.createElement('div');
+  div.className = 'problem';
+
+  const header = document.createElement('div');
+  header.className = 'problem-header';
+  const id = document.createElement('span');
+  id.className = 'problem-id';
+  id.textContent = step.id;
+  const meta = document.createElement('span');
+  meta.className = 'problem-meta';
+  meta.textContent = `${step.kind} · ${step.topic} · 난이도: ${step.difficulty} · ${step.format}`;
+  header.appendChild(id);
+  header.appendChild(meta);
+  div.appendChild(header);
+
+  const note = document.createElement('div');
+  note.style.fontSize = '12px';
+  note.style.color = '#8b6f47';
+  note.style.marginTop = '4px';
+  note.textContent = '문제 본문은 별도 파일(stage1_problems.md)에서 관리';
+  div.appendChild(note);
+
+  for (const [branch, key, klass] of [[step.onCorrect, '✅ 정답', 'correct'], [step.onWrong, '❌ 오답', 'wrong']]) {
+    if (!branch) continue;
+    const b = document.createElement('div');
+    b.className = `problem-branch ${klass}`;
+    const lbl = document.createElement('div');
+    lbl.className = `branch-label ${klass}`;
+    const statsStr = Object.entries(branch.stats || {}).map(([k,v]) => `${k}:${v>=0?'+':''}${v}`).join(', ');
+    lbl.textContent = `${key} — 효과: ${statsStr || '없음'}`;
+    b.appendChild(lbl);
+    if (branch.dialog) {
+      const d = branch.dialog;
+      const name = CHAR_NAMES[d.speaker] || d.speaker;
+      const dtxt = document.createElement('div');
+      dtxt.innerHTML = `<strong>${name}</strong> <span style="font-size:11px;color:#8b6f47">(${d.expression||'neutral'})</span>: ${d.text}`;
+      b.appendChild(dtxt);
+    }
+    div.appendChild(b);
+  }
+  return div;
+}
+
+function renderSceneHeader(step, sceneNum) {
+  const div = document.createElement('div');
+  div.className = 'scene-header';
+  const img = document.createElement('img');
+  img.src = BG_PATH(step.bg);
+  img.alt = step.bg;
+  div.appendChild(img);
+  const text = document.createElement('div');
+  text.innerHTML = `<h2>${step.name}</h2><div class="bg-label">배경: ${step.bg}.png · Scene #${sceneNum}</div>`;
+  div.appendChild(text);
+  return div;
+}
+
+function render() {
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  let sceneNum = 0;
+  let beatNum = 0;
+  for (const step of STEPS) {
+    if (step.type === 'scene') {
+      sceneNum++;
+      beatNum = 0;
+      board.appendChild(renderSceneHeader(step, sceneNum));
+    } else if (step.type === 'dialog') {
+      beatNum++;
+      board.appendChild(renderDialog(step, sceneNum, beatNum));
+    } else if (step.type === 'choice') {
+      beatNum++;
+      board.appendChild(renderChoice(step));
+    } else if (step.type === 'reaction') {
+      board.appendChild(renderReaction(step));
+    } else if (step.type === 'problem') {
+      board.appendChild(renderProblem(step));
+    } else if (step.type === 'ending') {
+      const div = document.createElement('div');
+      div.className = 'ending';
+      div.textContent = '엔딩 분기 판정 (스탯 합산 → A/B/C 엔딩)';
+      board.appendChild(div);
+    }
+  }
+}
+
+render();
+</script>
+</body>
+</html>
