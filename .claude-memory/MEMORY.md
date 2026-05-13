@@ -1,3 +1,6 @@
 - [5단원 시나리오 전면 재구성 계획](project_unit5_rebuild_plan.md) — 4단원 완성 후 시나리오·문제 모두 갈아엎기, 인물/그림은 보존
-- [4단원 도형 PNG→SVG 전환 (보류)](project_pending_svg_conversion.md) — 시나리오 코드화 완성 후 별도 세션에서 진행
+- [4단원 stage1 진행 상황 (2026-05-13)](project_unit4_stage1_progress.md) — 매칭형 type 인프라 + 정답 검수 대기 중 (M01·M03·M04·M05·S01)
 - [4단원 문제 정답 검수 (보류)](project_pending_answer_review.md) — Claude가 직접 계산한 12개 문제 정답을 사용자가 검수할 화면/문서 필요
+- [4단원 도형 PNG→SVG 전환 (폐기됨)](project_pending_svg_conversion.md) — 2026-05-13 폐기. PDF 캡처 PNG 방식으로 결정
+- [도형 자산은 PDF 캡처 PNG](feedback_figure_assets.md) — 도형은 SVG 직접 그리지 말고 교과서 PDF에서 캡처한 PNG로
+- [match type 게임 엔진 인프라](feedback_match_type_infra.md) — 매칭형 문제 'match' type 구현. 향후 단원 재사용
