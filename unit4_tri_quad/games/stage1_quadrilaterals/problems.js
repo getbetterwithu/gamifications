@@ -164,4 +164,18 @@ const PROBLEMS = {
     acceptedAnswers: ['정사각형'],
     hints: [],
   },
+
+  // 특별 문제 — 점수·리포트 집계 제외, 정답 전 진행 불가 (Scene 8↔9 사이)
+  SPECIAL: {
+    type: 'shortAnswer-pair',
+    text: '3주간 열심히 우리를 가르쳐주신 수학교생선생님의 성함을 쓰세요.',
+    figure: null,
+    fields: [
+      { label: '남자선생님 성함', unit: '선생님', placeholder: '○○○', accepted: ['황인수'] },
+      { label: '여자선생님 성함', unit: '선생님', placeholder: '○○○', accepted: ['김시원'] },
+    ],
+    mustPass: true,
+    excludeFromScore: true,
+    hints: [],
+  },
 };

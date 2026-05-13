@@ -1142,9 +1142,13 @@ const ENDINGS = {
   },
 };
 
-// problemResults에서 첫 시도 정답 개수 집계
+// problemResults에서 첫 시도 정답 개수 집계 (excludeFromScore 문제 제외)
 function countFirstTryCorrect(problemResults) {
-  return Object.values(problemResults || {}).filter(r => r && r.firstCorrect === true).length;
+  return Object.values(problemResults || {}).filter(r => {
+    if (!r || r.firstCorrect !== true) return false;
+    const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[r.id]) || {};
+    return !pdata.excludeFromScore;
+  }).length;
 }
 
 // ===== 게임 엔진 =====
@@ -2207,13 +2211,20 @@ const game = {
         </div>`;
     } else if (respType === 'shortAnswer-pair') {
       const fields = pdata.fields || [];
-      const rowsHtml = fields.map((f, i) => `
+      const rowsHtml = fields.map((f, i) => {
+        const label = f.label || '';
+        // LaTeX 라벨($로 둘러싸임)이면 '=', 일반 텍스트 라벨이면 ':' 자동 분기
+        const isLatex = /\$/.test(label);
+        const sep = isLatex ? ' =' : ' :';
+        const placeholder = f.placeholder || '값';
+        return `
         <div class="pair-row">
-          <span class="pair-label" data-katex="inline">${this._escapeHtml(f.label || '')} =</span>
+          <span class="pair-label" data-katex="inline">${this._escapeHtml(label)}${sep}</span>
           <input type="text" class="pair-input" data-idx="${i}"
-                 maxlength="20" placeholder="값">
+                 maxlength="20" placeholder="${this._escapeHtml(placeholder)}">
           ${f.unit ? `<span class="pair-unit">${this._escapeHtml(f.unit)}</span>` : ''}
-        </div>`).join('');
+        </div>`;
+      }).join('');
       responseHtml = `
         <div class="short-answer-wrap pair-wrap">
           ${rowsHtml}
@@ -2374,9 +2385,11 @@ const game = {
   submitShortAnswerPair() {
     const p = this._currentProblem;
     if (!p) return;
+    const pdataGuard = (typeof PROBLEMS !== 'undefined' && PROBLEMS[p.id]) || {};
     // 가드: 이미 해결되었거나 3회 끝난 문제는 추가 제출 무시
+    // mustPass 문제는 횟수 가드 무시 — 정답 전까지 무한 재시도
     const prev = this.problemResults[p.id];
-    if (prev && (prev.solvedAt || (prev.attempts && prev.attempts.length >= 3))) {
+    if (prev && (prev.solvedAt || (!pdataGuard.mustPass && prev.attempts && prev.attempts.length >= 3))) {
       return;
     }
     const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[p.id]) || {};
@@ -2394,11 +2407,25 @@ const game = {
     }
 
     // 각 필드 채점
-    const perFieldCorrect = fields.map((f, i) => {
-      const accepted = (f.accepted || []).map(a => this._normalizeAnswer(a));
-      const userNorm = this._normalizeAnswer(userVals[i]);
-      return accepted.includes(userNorm);
-    });
+    let perFieldCorrect;
+    if (pdata.matchUnordered) {
+      // 순서 무관: 두 칸 합쳐서 각 필드의 accepted 집합과 매칭. 같은 값을 두 번 쓰는 건 X.
+      const userNormVals = userVals.map(v => this._normalizeAnswer(v));
+      const allAccepted = fields.map(f => (f.accepted || []).map(a => this._normalizeAnswer(a)));
+      // 입력값들이 서로 다르고, 각각 어느 필드든 accepted에 들어 있으면 OK
+      const distinct = new Set(userNormVals).size === userNormVals.length;
+      // 모든 입력이 합쳐진 accepted 풀에 있고, distinct 하면 모두 정답
+      const pool = new Set(allAccepted.flat());
+      const allInPool = userNormVals.every(v => pool.has(v));
+      const passUnordered = distinct && allInPool;
+      perFieldCorrect = userVals.map(() => passUnordered);
+    } else {
+      perFieldCorrect = fields.map((f, i) => {
+        const accepted = (f.accepted || []).map(a => this._normalizeAnswer(a));
+        const userNorm = this._normalizeAnswer(userVals[i]);
+        return accepted.includes(userNorm);
+      });
+    }
     const allCorrect = perFieldCorrect.every(Boolean);
 
     // problemResults 기록 초기화 (없으면 생성)
@@ -2445,7 +2472,8 @@ const game = {
     } else {
       const attemptNo = existing.attempts.length;
       const MAX = 3;
-      if (attemptNo >= MAX) {
+      // mustPass 문제는 3회 도달해도 정답 공개 X, 계속 재시도 강제
+      if (attemptNo >= MAX && !pdata.mustPass) {
         existing.resolved = false;
         this._showAnswerReveal(p);
       } else {
@@ -2455,7 +2483,9 @@ const game = {
         const correctCount = perFieldCorrect.filter(Boolean).length;
         const wrongCount = perFieldCorrect.length - correctCount;
         let situationText;
-        if (correctCount === 0) {
+        if (pdata.mustPass) {
+          situationText = '정답을 맞춰야 다음 화면으로 넘어갈 수 있습니다. 다시 입력해주세요.';
+        } else if (correctCount === 0) {
           situationText = '두 값 모두 다시 계산해봐.';
         } else if (wrongCount === 1) {
           situationText = '한 쪽만 맞았어. 틀린 값을 다시 계산해봐.';
@@ -2467,7 +2497,8 @@ const game = {
           '문제의 조건을 다시 살펴보고 어떤 사각형의 성질을 써야 하는지 떠올려봐.',
           '한 번 더 도전! 그래도 안 되면 정답을 알려줄게.',
         ];
-        const hintText = hints[hintIdx] || defaultHints[hintIdx] || defaultHints[0];
+        // mustPass면 매번 같은 안내 메시지 사용
+        const hintText = pdata.mustPass ? situationText : (hints[hintIdx] || defaultHints[hintIdx] || defaultHints[0]);
         // 어느 필드가 맞고 어느 필드가 틀렸는지 표시 (LaTeX 명령어 깔끔하게 변환)
         const fieldStatus = perFieldCorrect.map((ok, i) => {
           const label = this._labelToPlain(fields[i].label || `(${i+1})`);
@@ -2523,9 +2554,11 @@ const game = {
     const p = this._currentProblem;
     if (!p) return;
 
+    const pdataGuard = (typeof PROBLEMS !== 'undefined' && PROBLEMS[p.id]) || {};
     // 가드: 이미 해결되었거나 3회 시도가 끝난 문제는 추가 제출 무시 (정답공개 후 재클릭 방지)
+    // mustPass 문제는 횟수 가드 무시 — 정답 전까지 무한 재시도
     const prev = this.problemResults[p.id];
-    if (prev && (prev.solvedAt || (prev.attempts && prev.attempts.length >= 3))) {
+    if (prev && (prev.solvedAt || (!pdataGuard.mustPass && prev.attempts && prev.attempts.length >= 3))) {
       return;
     }
 
@@ -2563,23 +2596,25 @@ const game = {
     } else {
       const attemptNo = existing.attempts.length;
       const MAX = 3;
-      if (attemptNo >= MAX) {
+      const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[p.id]) || {};
+      // mustPass: 3회 도달해도 정답 공개 X, 계속 재시도 강제
+      if (attemptNo >= MAX && !pdata.mustPass) {
         // 3회 실패 — 정답 공개 후 강제 진행
         existing.resolved = false;
         this._showAnswerReveal(p);
       } else {
         // 재시도 + 힌트 — problems.js의 PROBLEMS[id].hints 를 우선 참조
         const hintIdx = attemptNo - 1;
-        const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[p.id]) || {};
         const hints = pdata.hints && pdata.hints.length ? pdata.hints : (p.hints || []);
         const defaultHints = [
           '다시 한 번 천천히 생각해봐. 어떤 조건이 적용되는지 확인해봐.',
           '문제의 조건을 처음부터 다시 읽고, 핵심 단어에 집중해봐.',
           '한 번 더 도전! 그래도 안 되면 정답을 알려줄게.',
         ];
-        const hintText = hints[hintIdx] || defaultHints[hintIdx] || defaultHints[0];
+        const mustPassMsg = '정답을 맞춰야 다음 화면으로 넘어갈 수 있습니다. 다시 입력해주세요.';
+        const hintText = pdata.mustPass ? mustPassMsg : (hints[hintIdx] || defaultHints[hintIdx] || defaultHints[0]);
         this._showHintBanner(hintText, attemptNo);
-        this.showToast(`오답 (${attemptNo}회 기록됨)`, 'down');
+        this.showToast(pdata.mustPass ? '오답 — 다시 입력' : `오답 (${attemptNo}회 기록됨)`, 'down');
       }
     }
   },
@@ -2605,16 +2640,26 @@ const game = {
     const old = document.getElementById('hint-banner');
     if (old) old.remove();
 
+    const p = this._currentProblem;
+    const pdata = (p && typeof PROBLEMS !== 'undefined' && PROBLEMS[p.id]) || {};
+    const isMustPass = !!pdata.mustPass;
+
     const hint = document.createElement('div');
     hint.id = 'hint-banner';
     hint.style.cssText = 'background:linear-gradient(180deg,#fff5d6,#f5d99a);border:3px solid #c8a87a;border-radius:12px;padding:14px 18px;margin:10px 0;text-align:left;font-size:15px;color:#5d4a30;line-height:1.6;';
+    const headerText = isMustPass
+      ? `⚠️ 다시 입력해주세요 (${attemptNo}회 시도)`
+      : `💡 탈레스의 힌트 (${attemptNo}회 시도 후)`;
+    const footerText = isMustPass
+      ? '※ 이 문제는 정답을 맞춰야만 다음으로 넘어갈 수 있습니다.'
+      : '※ 이 문제는 오답으로 기록됐어. 다시 풀어보자!';
     hint.innerHTML = `
       <div style="font-weight:700;color:#8b6f47;margin-bottom:6px;">
-        💡 탈레스의 힌트 (${attemptNo}회 시도 후)
+        ${headerText}
       </div>
       <div>${this._escapeHtml(hintText)}</div>
       <div style="margin-top:8px;font-size:12px;color:#8b6f47;">
-        ※ 이 문제는 오답으로 기록됐어. 다시 풀어보자!
+        ${footerText}
       </div>
     `;
     const responseArea = box.querySelector('.choices-grid, .short-answer-wrap, .match-grid');
@@ -2729,8 +2774,8 @@ const game = {
     document.getElementById('stat-math').textContent = this.stats.math;
     document.getElementById('stat-wisdom').textContent = this.stats.wisdom;
     document.getElementById('stat-insight').textContent = this.stats.insight;
-    // 첫시도 정답 = problemResults에서 firstCorrect=true인 항목 수
-    const firstTryCount = Object.values(this.problemResults || {}).filter(r => r.firstCorrect === true).length;
+    // 첫시도 정답 = problemResults에서 firstCorrect=true인 항목 수 (특별 문제 제외)
+    const firstTryCount = countFirstTryCorrect(this.problemResults);
     document.getElementById('stat-clues').textContent = `${firstTryCount} / 12`;
   },
 
@@ -2769,8 +2814,9 @@ const game = {
     if (ENDINGS.A.condition(ctx)) chosen = ENDINGS.A;
     else if (ENDINGS.B.condition(ctx)) chosen = ENDINGS.B;
 
-    document.getElementById('ending-tag').textContent = chosen.tag;
-    document.getElementById('ending-title').textContent = chosen.title;
+    // 엔딩 라벨·이름은 노출하지 않음 (개발자 정보). 결론 텍스트만 표시.
+    document.getElementById('ending-tag').textContent = '';
+    document.getElementById('ending-title').textContent = '';
     document.getElementById('ending-text').innerText = chosen.text;
     document.getElementById('end-math').textContent = s.math;
     document.getElementById('end-wisdom').textContent = s.wisdom;
@@ -3477,24 +3523,7 @@ const pdfReport = {
 
     y += 84 + lineH * 2;  // 박스 + 추가 행 여유
 
-    // 엔딩 섹션
-    y = ensureRoom(y, 36);
-    this.addTextToPdf(doc, '도달한 엔딩', 15, y, {
-      fontSize: 20, fontWeight: '700', color: '#5d4a30', maxWidth: 400, widthMm: 80
-    });
-    y += 14;
-    let chosenEnding = ENDINGS.C;
-    const endCtx = { stats: s, firstTryCorrect: countFirstTryCorrect(game.problemResults) };
-    if (ENDINGS.A.condition(endCtx)) chosenEnding = ENDINGS.A;
-    else if (ENDINGS.B.condition(endCtx)) chosenEnding = ENDINGS.B;
-
-    doc.setFillColor(245, 217, 154);
-    doc.roundedRect(15, y, pageW - 30, 18, 3, 3, 'F');
-    this.addTextToPdf(doc, `${chosenEnding.tag} — ${chosenEnding.title}`, 22, y + 4, {
-      fontSize: 16, fontWeight: '700', color: '#3a2818', maxWidth: 700, widthMm: pageW - 44
-    });
-    y += 28;
-
+    // 엔딩 섹션 — 학생 리포트에는 엔딩 라벨·이름 노출하지 않음 (개발자 정보)
     // 격려 메시지
     const encouragement = this.pickEncouragement(mainCorrect, main.length, writtenSolutions, problemSlots.length);
     y = ensureRoom(y, 60);
@@ -3589,6 +3618,9 @@ const pdfReport = {
     const slots = [];
     for (const step of STEPS) {
       if (step.type === 'problem') {
+        // 점수·리포트 집계에서 제외되는 특별 문제는 슬롯에 포함하지 않음
+        const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[step.id]) || {};
+        if (pdata.excludeFromScore) continue;
         slots.push({
           id: step.id, kind: step.kind, topic: step.topic,
           difficulty: step.difficulty, format: step.format,

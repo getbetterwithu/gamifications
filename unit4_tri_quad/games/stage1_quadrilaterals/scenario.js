@@ -279,6 +279,30 @@ const STEPS = [
     text: '직사각형, 마름모, 정사각형, 등변사다리꼴… 다 다르게 생겼지만 다 연결돼 있어. 이쪽 구획들 봐봐.' },
 
   // ============================================================
+  // Scene 8.5 — 잠깐 멈추기 (특별 문제, 점수·리포트 제외)
+  // ============================================================
+  { type: 'scene', name: 'Scene 8.5 — 잠깐 멈추기', bg: 'yard', clearChars: true },
+  { type: 'enter', role: 'thales', expression: 'smile', position: 'left' },
+  { type: 'enter', role: 'apprentice', expression: 'thinking', position: 'right' },
+  { type: 'dialog', speaker: 'thales', expression: 'smile',
+    text: '잠깐. 다음 구획으로 넘어가기 전에 한 가지만 확인하고 가자.' },
+  { type: 'dialog', speaker: 'apprentice', expression: 'surprised',
+    text: '뭔데요?' },
+  { type: 'dialog', speaker: 'thales', expression: 'smile',
+    text: '지난 3주 동안 너희를 가르쳐주신 두 분 선생님 성함, 잊지 않았지? 적어봐.' },
+
+  { type: 'problem', id: 'SPECIAL', kind: '특별', topic: '잠깐 멈추기', difficulty: '하',
+    onCorrect: {
+      stats: {},
+      dialog: { speaker: 'thales', expression: 'smile',
+        text: '좋아. 잊지 않았구나. 그럼 계속 가자.' } },
+    onWrong: {
+      stats: {},
+      dialog: { speaker: 'thales', expression: 'thinking',
+        text: '정답을 맞춰야 다음으로 넘어갈 수 있어. 다시 떠올려봐.' } },
+  },
+
+  // ============================================================
   // Scene 9 — 직사각형 + 정사각형 풀밭 (M08, S02)
   // ============================================================
   { type: 'scene', name: 'Scene 9 — 이리스의 발견', bg: 'yard', clearChars: true },
@@ -317,7 +341,7 @@ const STEPS = [
         text: '맞아요. … 당신도 눈이 좋아요.' } },
     onWrong: { stats: { wisdom: 0 },
       dialog: { speaker: 'companion', expression: 'thinking',
-        text: '정사각형은 대각선 길이가 변의 √2배. 그 관계가 키예요.' } },
+        text: '정사각형은 마름모니까, 넓이는 (1/2) × 대각선 × 대각선으로 구할 수 있어요.' } },
   },
 
   { type: 'dialog', speaker: 'apprentice', expression: 'smile',
