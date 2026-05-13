@@ -516,7 +516,17 @@ function renderProblem(step) {
   }
 
   // 보기 / 정답 정보 (검토 편의용)
-  if (pdata.choices) {
+  if (pdata.type === 'match') {
+    const KOR = ['ㄱ','ㄴ','ㄷ','ㄹ','ㅁ','ㅂ'];
+    const matches = pdata.correctMatches || [];
+    const items = pdata.items || [];
+    const matched = items.map((it, i) => `${it}→${KOR[matches[i]] ?? '?'}`).join(', ');
+    const choicesStr = (pdata.choices || []).map((c, i) => `${KOR[i]}. ${c}`).join(' / ');
+    const ch = document.createElement('div');
+    ch.style.cssText = 'font-size:12px;color:#5d4a30;margin-top:6px;padding-left:8px;';
+    ch.innerHTML = `<strong>매칭 정답:</strong> <span style="color:#2a5a2a;font-weight:bold">${matched}</span><br><strong>보기:</strong> ${choicesStr}`;
+    div.appendChild(ch);
+  } else if (pdata.choices) {
     const ch = document.createElement('div');
     ch.style.cssText = 'font-size:12px;color:#5d4a30;margin-top:6px;padding-left:8px;';
     const correctIdx = pdata.correctChoice !== undefined ? [pdata.correctChoice] : (pdata.correctChoices || []);

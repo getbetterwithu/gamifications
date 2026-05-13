@@ -250,6 +250,52 @@
     border-color: #5d4a30;
     transform: translateY(-1px);
   }
+  /* 매칭형 (좌측 항목 — 우측 보기) */
+  .match-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 20px;
+    margin-top: 14px;
+    text-align: left;
+    align-items: start;
+  }
+  .match-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #3a2818;
+  }
+  .match-item {
+    min-width: 32px;
+  }
+  .match-select {
+    font-size: 15px;
+    font-weight: 700;
+    padding: 6px 10px;
+    border: 2px solid #8b6f47;
+    border-radius: 8px;
+    background: #fff8e7;
+    color: #3a2818;
+    cursor: pointer;
+    min-width: 70px;
+  }
+  .match-choices {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .match-choice {
+    background: rgba(255,255,255,0.7);
+    border: 1px solid #d4b890;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #3a2818;
+    line-height: 1.5;
+  }
   /* 단답형 입력 영역 */
   .short-answer-wrap {
     margin-top: 14px;
@@ -1340,6 +1386,27 @@ const game = {
           ).join('') +
           `</div>`;
       }
+    } else if (respType === 'match') {
+      const items = pdata.items || [];
+      const choices = pdata.choices || [];
+      const KOR = ['ㄱ','ㄴ','ㄷ','ㄹ','ㅁ','ㅂ'];
+      const itemRows = items.map((it, i) => `
+        <div class="match-row">
+          <span class="match-item">${this._escapeHtml(it)}</span>
+          <select class="match-select" data-idx="${i}">
+            <option value="">선택</option>
+            ${choices.map((_, j) => `<option value="${j}">${KOR[j]}</option>`).join('')}
+          </select>
+        </div>`).join('');
+      const choicesHtml = choices.map((c, i) =>
+        `<div class="match-choice"><strong>${KOR[i]}.</strong> <span data-katex="inline">${this._escapeHtml(c)}</span></div>`
+      ).join('');
+      responseHtml = `
+        <div class="match-grid">
+          <div class="match-items">${itemRows}</div>
+          <div class="match-choices">${choicesHtml}</div>
+        </div>
+        <button class="short-submit-btn" onclick="game.submitMatch()" style="margin-top:14px;">제출</button>`;
     } else if (respType === 'shortAnswer') {
       const askFormat = pdata.askFormat || '답:';
       responseHtml = `
@@ -1424,6 +1491,27 @@ const game = {
     const got = selected.slice().sort();
     const correct = expected.length === got.length && expected.every((v, i) => v === got[i]);
     this._handleAttempt(correct, selected.map(i => i + 1).join(','));
+  },
+
+  submitMatch() {
+    const p = this._currentProblem;
+    const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[p.id]) || {};
+    const selects = document.querySelectorAll('.match-select');
+    const got = [];
+    let allFilled = true;
+    selects.forEach(s => {
+      if (s.value === '') allFilled = false;
+      got.push(parseInt(s.value, 10));
+    });
+    if (!allFilled) {
+      this.showToast('모든 항목을 매칭해주세요', 'down');
+      return;
+    }
+    const expected = pdata.correctMatches || [];
+    const correct = expected.length === got.length && expected.every((v, i) => v === got[i]);
+    const KOR = ['ㄱ','ㄴ','ㄷ','ㄹ','ㅁ','ㅂ'];
+    const display = got.map(i => KOR[i] || '?').join(',');
+    this._handleAttempt(correct, display);
   },
 
   // 단답형 입력값 → 허용 문자만 필터링 → KaTeX로 수식체 렌더
@@ -1568,7 +1656,7 @@ const game = {
         ※ 이 문제는 오답으로 기록됐어. 다시 풀어보자!
       </div>
     `;
-    const responseArea = box.querySelector('.choices-grid, .short-answer-wrap');
+    const responseArea = box.querySelector('.choices-grid, .short-answer-wrap, .match-grid');
     if (responseArea) box.insertBefore(hint, responseArea);
     else box.appendChild(hint);
 
@@ -1592,12 +1680,18 @@ const game = {
     const old = document.getElementById('hint-banner');
     if (old) old.remove();
 
+    const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[p.id]) || {};
     let answerText = '';
     if (p.responseType === 'choice' && typeof p.correctChoice === 'number') {
       const choice = (p.choices || [])[p.correctChoice] || '';
       answerText = `정답: ${this._escapeHtml(choice)} (${p.correctChoice + 1}번)`;
     } else if (p.responseType === 'shortAnswer' && p.acceptedAnswers && p.acceptedAnswers.length) {
       answerText = `정답: ${this._escapeHtml(p.acceptedAnswers[0])}`;
+    } else if (pdata.type === 'match' && pdata.correctMatches) {
+      const KOR = ['ㄱ','ㄴ','ㄷ','ㄹ','ㅁ','ㅂ'];
+      const items = pdata.items || [];
+      const matched = items.map((it, i) => `${it}→${KOR[pdata.correctMatches[i]] || '?'}`);
+      answerText = `정답: ${matched.join(', ')}`;
     } else {
       answerText = '정답 정보 없음';
     }
@@ -1616,7 +1710,7 @@ const game = {
         다음으로 →
       </button>
     `;
-    const responseArea = box.querySelector('.choices-grid, .short-answer-wrap');
+    const responseArea = box.querySelector('.choices-grid, .short-answer-wrap, .match-grid');
     if (responseArea) responseArea.style.display = 'none';
     box.appendChild(reveal);
   },
