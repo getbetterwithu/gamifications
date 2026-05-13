@@ -34,29 +34,27 @@ const PROBLEMS = {
     text: '다음 그림은 모두 평행사변형이다. 각각이 평행사변형이 되는 이유를 보기에서 선택하시오. (단, 점 $O$는 두 대각선의 교점이다.)',
     figure: 'M02.png',
     items: ['(1)', '(2)', '(3)', '(4)'],
+    // choices 순서를 의도적으로 섞어 정답이 [0,1,2,3] 같은 순서대로가 아니게 함
     choices: [
-      '두 쌍의 대변의 길이가 같다',
-      '두 쌍의 대각의 크기가 같다',
-      '한 쌍의 대변이 평행하고 그 길이가 같다',
-      '두 대각선이 서로 이등분한다',
+      '두 대각선이 서로 이등분한다',                  // ㄱ → (4)
+      '두 쌍의 대변의 길이가 같다',                    // ㄴ → (1)
+      '한 쌍의 대변이 평행하고 그 길이가 같다',        // ㄷ → (3)
+      '두 쌍의 대각의 크기가 같다',                    // ㄹ → (2)
     ],
-    // (1) → ㄱ (두 쌍 대변 길이 같음)
-    // (2) → ㄴ (두 쌍 대각 크기 같음)
-    // (3) → ㄷ (한 쌍 대변 평행+길이 같음)
-    // (4) → ㄹ (두 대각선 이등분) — 사용자 검수 확인 완료 2026-05-13
-    correctMatches: [0, 1, 2, 3],
+    // (1) → ㄴ(1), (2) → ㄹ(3), (3) → ㄷ(2), (4) → ㄱ(0)
+    correctMatches: [1, 3, 2, 0],
     hints: [],
   },
 
   M03: {
-    type: 'shortAnswer',
+    type: 'shortAnswer-pair',
     text: '오른쪽 $\\square ABCD$에서 $\\angle x, \\angle y$의 크기를 각각 구하시오.',
     figure: 'M03.png',
-    // 평행사변형: ∠A=120°, ∠B=x, ∠C=y. 대각: ∠A=∠C=120°, ∠B=∠D=60°
-    // 그런데 그림에서 x는 ∠B 위치, y는 ∠C 위치
-    // 평행사변형 인접각 합 180° → ∠B=180-120=60, ∠C=120
-    askFormat: '$\\angle x = $ ___ °, $\\angle y = $ ___ °',
-    acceptedAnswers: ['60,120', '60°,120°', '60도,120도', '60 120', '60,120도'],
+    // 평행사변형 인접각 합 180° → ∠x=60°, ∠y=120°
+    fields: [
+      { label: '$\\angle x$', unit: '°', accepted: ['60', '60도'] },
+      { label: '$\\angle y$', unit: '°', accepted: ['120', '120도'] },
+    ],
     hints: [],
   },
 
@@ -69,23 +67,23 @@ const PROBLEMS = {
   },
 
   S01: {
-    type: 'ox',
-    text: '빙글빙글 돌아가는 놀이기구가 항상 수평을 유지하는 것은 평행사변형의 성질을 이용한 것이다.',
+    type: 'choice',
+    text: '빙글빙글 돌아가는 놀이기구가 항상 수평을 유지하는 것은 ○○의 성질을 이용한 것이다. ○○에 들어갈 알맞은 단어는?',
     figure: 'S01.png',
-    correctAnswer: 'O',
-    hints: [],
+    choices: ['평행사변형', '직사각형', '정사각형', '마름모'],
+    correctChoice: 0,
+    hints: ['AD는 수평으로 고정된 BC와 항상 ○○하기 때문에 기울어지지 않는다.'],
   },
 
   M05: {
-    type: 'shortAnswer',
+    type: 'shortAnswer-pair',
     text: '오른쪽 $\\square ABCD$가 평행사변형이 되도록 하는 $x, y$의 값을 각각 구하시오. (단, 점 $O$는 두 대각선의 교점이다.)',
     figure: 'M05.png',
-    // 평행사변형: 두 대각선이 서로 다른 것을 이등분 → AO=OC, BO=OD
-    // 그림 정보: AD=8cm, ∠OAD=x°, ∠OCB=35°, BC=2y cm
-    // AD∥BC이므로 ∠OAD=∠OCB (엇각) → x=35
-    // AD=BC → 8=2y → y=4
-    askFormat: '$x = $ ___, $y = $ ___',
-    acceptedAnswers: ['35,4', '35 4', '35,4cm'],
+    // AD∥BC 엇각 → x=35 / AD=BC → 8=2y → y=4
+    fields: [
+      { label: '$x$', unit: '', accepted: ['35'] },
+      { label: '$y$', unit: '', accepted: ['4'] },
+    ],
     hints: [],
   },
 
@@ -106,14 +104,14 @@ const PROBLEMS = {
   // ===== 406: 여러 가지 사각형의 성질 =====
 
   M07: {
-    type: 'shortAnswer',
+    type: 'shortAnswer-pair',
     text: '오른쪽 정사각형 $ABCD$에서 두 대각선의 교점이 $O$이고 $\\overline{BD}=14$ cm일 때, $x, y$의 값을 각각 구하시오.',
     figure: 'M07.png',
-    // 정사각형: 두 대각선 길이 같고 수직이등분
-    // BD=14 → OD=7, AC=14, OC=7 → x=7 (OC 또는 OD)
-    // 두 대각선 수직이등분 → 교점 각 90° → y=90
-    askFormat: '$x = $ ___ cm, $y = $ ___ °',
-    acceptedAnswers: ['7,90', '7 90', '7cm,90도'],
+    // 정사각형: 대각선 길이 같고 수직이등분 → x=7, y=90
+    fields: [
+      { label: '$x$', unit: 'cm', accepted: ['7', '7cm'] },
+      { label: '$y$', unit: '°', accepted: ['90', '90도'] },
+    ],
     hints: [],
   },
 
@@ -130,16 +128,14 @@ const PROBLEMS = {
   },
 
   M08: {
-    type: 'shortAnswer',
+    type: 'shortAnswer-pair',
     text: '오른쪽 직사각형 $ABCD$에서 두 대각선의 교점이 $O$이고 $\\overline{BD}=8$ cm, $\\angle OAB=50°$일 때, $x, y$의 값을 각각 구하시오.',
     figure: 'M08.png',
-    // 직사각형: 두 대각선 길이 같고 서로 다른 것 이등분
-    // BD=8 → AC=8, OA=OB=4 → x=4 (OD나 OC 길이)
-    // △OAB 이등변(OA=OB) → ∠OAB=∠OBA=50° → ∠AOB=80°
-    // ∠y는 ∠OCB. △OBC 이등변(OB=OC) → ∠OBC=∠OCB
-    // ∠ABC=90°, ∠OBA=50° → ∠OBC=40° → y=40
-    askFormat: '$x = $ ___ cm, $y = $ ___ °',
-    acceptedAnswers: ['4,40', '4 40', '4cm,40도'],
+    // 직사각형: 대각선 길이 같고 서로 다른 것 이등분 → x=4, y=40
+    fields: [
+      { label: '$x$', unit: 'cm', accepted: ['4', '4cm'] },
+      { label: '$y$', unit: '°', accepted: ['40', '40도'] },
+    ],
     hints: [],
   },
 

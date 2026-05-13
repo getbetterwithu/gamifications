@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>폴리곤의 학당 — 사각형의 시험</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -10,9 +11,15 @@
   #game { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
 
   /* ===== 배경 ===== */
-  #bg { position: absolute; inset: 0; transition: opacity 0.6s ease, filter 0.5s ease; }
+  #bg { position: absolute; inset: 0; transition: opacity 0.35s ease, filter 0.5s ease; opacity: 1; }
   #bg svg { width: 100%; height: 100%; display: block; }
   #bg.blurred { filter: blur(8px) brightness(0.7); }
+  #bg.fading { opacity: 0; }
+  /* scene 전환 중 dialog/choices/problem 일시 숨김 */
+  #dialog-box.scene-fading,
+  #choices.scene-fading,
+  #problem-placeholder.scene-fading { opacity: 0; pointer-events: none; }
+  #dialog-box, #choices, #problem-placeholder { transition: opacity 0.3s ease, bottom 0.4s ease, left 0.4s ease, right 0.4s ease, width 0.4s ease, top 0.4s ease, transform 0.4s ease; }
 
   /* 애니메이션 */
   @keyframes drift { from { transform: translateX(0); } to { transform: translateX(40px); } }
@@ -87,26 +94,26 @@
     position: absolute;
     background: rgba(255, 250, 240, 0.98);
     border: 4px solid #8b6f47; border-radius: 18px;
-    padding: 24px 36px 80px 36px;
+    padding: 28px 40px 88px 40px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.45);
     z-index: 20;
     transition: bottom 0.4s ease, left 0.4s ease, right 0.4s ease, width 0.4s ease, top 0.4s ease, transform 0.4s ease;
   }
-  #dialog-box.pos-bottom { bottom: 24px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 1280px; min-height: 220px; }
-  #dialog-box.pos-right { bottom: 24px; right: 24px; left: auto; transform: none; width: 58%; min-height: 240px; }
-  #dialog-box.pos-left { bottom: 24px; left: 24px; right: auto; transform: none; width: 58%; min-height: 240px; }
+  #dialog-box.pos-bottom { bottom: 24px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 1280px; min-height: 240px; }
+  #dialog-box.pos-right { bottom: 24px; right: 24px; left: auto; transform: none; width: 58%; min-height: 260px; }
+  #dialog-box.pos-left { bottom: 24px; left: 24px; right: auto; transform: none; width: 58%; min-height: 260px; }
 
   #speaker-name {
     display: inline-block; background: #8b6f47; color: #fff8e7;
-    padding: 9px 24px; border-radius: 12px; font-weight: 700;
-    font-size: 26px; margin-bottom: 16px;
+    padding: 10px 26px; border-radius: 12px; font-weight: 700;
+    font-size: 30px; margin-bottom: 18px;
   }
   #dialog-text {
-    font-size: 30px; line-height: 1.6; color: #3a2818;
-    min-height: 100px; letter-spacing: -0.3px; font-weight: 500;
+    font-size: 36px; line-height: 1.55; color: #3a2818;
+    min-height: 110px; letter-spacing: -0.3px; font-weight: 500;
   }
   #dialog-text .caret {
-    display: inline-block; width: 3px; height: 32px; background: #8b6f47;
+    display: inline-block; width: 3px; height: 38px; background: #8b6f47;
     margin-left: 3px; vertical-align: middle;
     animation: caretBlink 0.7s steps(1) infinite;
   }
@@ -116,10 +123,23 @@
     position: absolute; bottom: 22px; right: 28px;
     background: #8b6f47; color: #fff8e7;
     border: 3px solid #5d4a30; padding: 14px 36px;
-    font-size: 22px; font-weight: 700; border-radius: 14px;
+    font-size: 24px; font-weight: 700; border-radius: 14px;
     cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     transition: all 0.15s;
   }
+  /* 이전 대사 버튼 — next 왼쪽 */
+  #prev-btn {
+    position: absolute; bottom: 22px; right: 180px;
+    background: #c8a87a; color: #3a2818;
+    border: 3px solid #8b6f47; padding: 14px 24px;
+    font-size: 20px; font-weight: 700; border-radius: 14px;
+    cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    transition: all 0.15s;
+  }
+  #prev-btn:hover { background: #d4b890; transform: translateY(-2px); }
+  #prev-btn:active { transform: translateY(0); }
+  #prev-btn:disabled { background: #d4c4a8; color: #a89070; border-color: #c0a880; cursor: not-allowed; }
+  #prev-btn:disabled:hover { background: #d4c4a8; transform: none; }
   #next-btn:hover { background: #6b4423; transform: translateY(-2px); }
   #next-btn:active { transform: translateY(0); }
   #next-btn::after { content: "  ▶"; display: inline-block; animation: nudge 1s ease-in-out infinite; }
@@ -357,6 +377,26 @@
     border-color: #a89e80;
     cursor: not-allowed;
   }
+  /* shortAnswer-pair: 입력칸 2개 분리 */
+  .pair-wrap { display: flex; flex-direction: column; gap: 10px; }
+  .pair-row {
+    display: flex; align-items: center; gap: 10px;
+    background: #fff8e7; border: 2px solid #8b6f47; border-radius: 10px;
+    padding: 10px 14px;
+  }
+  .pair-label {
+    min-width: 60px; font-size: 20px; color: #3a2818; font-weight: 700;
+    font-family: 'KaTeX_Main', 'Pretendard', sans-serif;
+  }
+  .pair-input {
+    flex: 1; padding: 8px 12px; font-size: 20px;
+    border: 2px solid #c8a87a; border-radius: 8px;
+    background: #fff; color: #3a2818;
+    font-family: 'KaTeX_Main', 'Pretendard', sans-serif;
+    text-align: center;
+  }
+  .pair-input:focus { outline: none; border-color: #5d4a30; box-shadow: 0 0 0 3px rgba(139,111,71,0.2); }
+  .pair-unit { font-size: 18px; color: #5d4a30; font-weight: 600; min-width: 30px; }
   #problem-placeholder h3 { color: #8b4513; margin-bottom: 14px; font-size: 24px; }
   #problem-placeholder p { color: #5d4a30; margin: 6px 0; font-size: 16px; }
   #problem-placeholder .meta {
@@ -445,41 +485,109 @@
   #ending-screen {
     position: absolute; inset: 0; z-index: 150;
     display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
+    align-items: center; justify-content: flex-start;
     background: radial-gradient(ellipse at center, #3a2818 0%, #0a0604 100%);
-    color: #fff8e7; padding: 40px;
+    color: #fff8e7; padding: 24px 32px 40px;
+    overflow-y: auto;
   }
   #ending-screen h1 {
-    font-size: 56px; font-family: 'Times New Roman', serif;
-    color: #f5d99a; margin-bottom: 24px;
+    font-size: 48px; font-family: 'Times New Roman', serif;
+    color: #f5d99a; margin-bottom: 14px;
     text-shadow: 0 4px 16px rgba(0,0,0,0.7);
   }
   #ending-screen .ending-tag {
-    font-size: 22px; color: #c8a87a; margin-bottom: 40px;
+    font-size: 20px; color: #c8a87a; margin-bottom: 20px;
   }
   #ending-screen .ending-text {
-    font-size: 22px; line-height: 1.7; color: #fff8e7;
-    max-width: 800px; text-align: center; margin-bottom: 40px;
-    background: rgba(0,0,0,0.3); padding: 30px 40px;
+    font-size: 20px; line-height: 1.65; color: #fff8e7;
+    max-width: 800px; text-align: center; margin-bottom: 24px;
+    background: rgba(0,0,0,0.3); padding: 22px 32px;
     border-radius: 16px; border: 2px solid #8b6f47;
   }
   #ending-screen .stat-summary {
-    display: flex; gap: 24px; margin-bottom: 40px;
+    display: flex; gap: 18px; margin-bottom: 24px; flex-wrap: wrap; justify-content: center;
   }
   #ending-screen .stat-summary .item {
-    background: rgba(139, 111, 71, 0.4); padding: 16px 24px;
-    border-radius: 12px; text-align: center; min-width: 140px;
+    background: rgba(139, 111, 71, 0.4); padding: 12px 20px;
+    border-radius: 12px; text-align: center; min-width: 120px;
   }
-  #ending-screen .stat-summary .item .label { font-size: 14px; color: #c8a87a; margin-bottom: 6px; }
-  #ending-screen .stat-summary .item .value { font-size: 32px; font-weight: 700; color: #f5d99a; }
+  #ending-screen .stat-summary .item .label { font-size: 13px; color: #c8a87a; margin-bottom: 4px; }
+  #ending-screen .stat-summary .item .value { font-size: 28px; font-weight: 700; color: #f5d99a; }
   #ending-screen .restart-btn {
     background: linear-gradient(180deg, #d4a574 0%, #8b6f47 100%);
     color: #fff8e7; border: 4px solid #5d4a30;
-    padding: 16px 50px; font-size: 22px; font-weight: 700;
+    padding: 14px 44px; font-size: 20px; font-weight: 700;
     border-radius: 14px; cursor: pointer;
     box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    margin: 8px 0;
   }
   #ending-screen .restart-btn:hover { transform: translateY(-3px); }
+  #ending-screen .restart-btn:disabled {
+    background: linear-gradient(180deg, #999, #666) !important;
+    border-color: #555 !important;
+    color: #ddd; cursor: not-allowed; opacity: 0.6;
+  }
+  #ending-screen .restart-btn:disabled:hover { transform: none; }
+
+  /* ===== 다시 보기 (리뷰) 모드 오버레이 ===== */
+  #review-overlay {
+    position: absolute; inset: 0; z-index: 200; pointer-events: none;
+  }
+  #review-overlay.gone { display: none; }
+  #review-overlay .rv-top {
+    position: absolute; top: 0; left: 0; right: 0; height: 56px;
+    background: rgba(40, 25, 10, 0.85);
+    display: flex; align-items: center; padding: 0 20px; gap: 16px;
+    pointer-events: auto; z-index: 201;
+  }
+  #review-overlay .rv-tag {
+    background: #c8a87a; color: #3a2818; padding: 6px 16px;
+    border-radius: 8px; font-weight: 700; font-size: 15px;
+  }
+  #review-overlay .rv-pos {
+    color: #f5d99a; font-weight: 700; font-size: 17px; flex: 1; text-align: center;
+  }
+  #review-overlay .rv-close {
+    background: #b85a4a; color: #fff; border: 2px solid #6b2a1a;
+    padding: 8px 16px; font-size: 14px; font-weight: 700;
+    border-radius: 8px; cursor: pointer;
+  }
+  #review-overlay .rv-close:hover { background: #8b3a2a; }
+  #review-overlay .rv-side {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    pointer-events: auto;
+  }
+  #review-overlay .rv-side-left { left: 16px; }
+  #review-overlay .rv-side-right { right: 16px; }
+  #review-overlay .rv-side button {
+    background: rgba(139, 111, 71, 0.92); color: #fff8e7;
+    border: 3px solid #5d4a30; width: 60px; height: 80px;
+    font-size: 28px; font-weight: 700; border-radius: 14px;
+    cursor: pointer; box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+  }
+  #review-overlay .rv-side button:hover { background: #6b4423; }
+  #review-overlay .rv-side button:disabled {
+    background: #888; border-color: #555; opacity: 0.5; cursor: not-allowed;
+  }
+
+  /* 리뷰 모드일 때 일반 게임 컨트롤·잔존 dialog 모두 숨김 */
+  body.review-mode #next-btn,
+  body.review-mode #prev-btn,
+  body.review-mode #backlog-btn,
+  body.review-mode #stat-panel,
+  body.review-mode #admin-nav,
+  body.review-mode #admin-badge,
+  body.review-mode #dialog-box,
+  body.review-mode #choices { display: none !important; }
+  body.review-mode #problem-placeholder #notebook-btn { display: none !important; }
+  /* 리뷰 오버레이가 ending-screen(z=150)보다 항상 위 */
+  body.review-mode #review-overlay { z-index: 200; }
+  /* 리뷰 모드일 때 문제 패널의 위치를 화면 중앙 가까이로 조정 (좌우 화살표 가리지 않게) */
+  body.review-mode #problem-placeholder {
+    bottom: 24px; right: 90px; left: 90px; width: auto; max-width: none;
+    top: 80px;  /* rv-top 56px + 여유 */
+    max-height: none; height: auto;
+  }
 
   /* ===== 필기 영역 (Step 1: 풀이용 칠판 모달) ===== */
   /* 문제 슬롯 우상단에 ✏️ 버튼이 등장 → 클릭 시 풀스크린 모달로 */
@@ -615,6 +723,43 @@
   }
   .nb-history:disabled:hover { background: #d4c4a8; }
 
+  /* 필기 작업 영역 — 좌측 문제 패널 + 우측 캔버스 */
+  #notebook-work-area {
+    flex: 1;
+    display: flex;
+    gap: 12px;
+    min-height: 0;
+  }
+  #nb-problem-area {
+    width: 28%;
+    min-width: 240px;
+    max-width: 380px;
+    background: #fff8e7;
+    border: 3px solid #8b6f47;
+    border-radius: 14px;
+    padding: 14px 16px;
+    overflow-y: auto;
+    color: #3a2818;
+  }
+  #nb-problem-meta {
+    font-size: 13px;
+    color: #6b4423;
+    margin-bottom: 8px;
+    font-weight: 700;
+  }
+  #nb-problem-text {
+    font-size: 15px;
+    line-height: 1.55;
+    margin-bottom: 12px;
+    color: #3a2818;
+  }
+  #nb-problem-figure img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border: 1px solid #c8a87a;
+    border-radius: 8px;
+  }
   /* 캔버스 영역 — 모눈 배경 */
   #notebook-canvas-wrap {
     flex: 1;
@@ -623,6 +768,7 @@
     border-radius: 14px;
     overflow: hidden;
     position: relative;
+    min-width: 0;
   }
   #notebook-canvas {
     display: block;
@@ -669,6 +815,100 @@
   }
 
   .gone { display: none !important; }
+
+  /* ===== Admin 모드 ===== */
+  #admin-badge {
+    position: absolute; top: 12px; right: 50%; transform: translateX(50%);
+    background: rgba(180, 60, 60, 0.92); color: #fff;
+    padding: 6px 14px; font-size: 13px; font-weight: 700;
+    border-radius: 8px; z-index: 60; letter-spacing: 1px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.4);
+    display: none;
+  }
+  body.admin #admin-badge { display: block; }
+  /* Admin 네비게이션 — ADMIN 뱃지 바로 아래 가운데 고정. 이전/다음 한 쌍 */
+  #admin-nav {
+    position: fixed; top: 50px; left: 50%; transform: translateX(-50%);
+    z-index: 100; display: none; gap: 8px;
+  }
+  body.admin #admin-nav { display: flex; }
+  #admin-skip-btn, #admin-prev-btn {
+    background: #b85a4a; color: #fff;
+    border: 2px solid #6b2a1a; padding: 10px 18px;
+    font-size: 15px; font-weight: 700; border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  }
+  #admin-prev-btn { background: #6b8b3a; border-color: #3a5a1a; }
+  #admin-skip-btn:hover { background: #8b3a2a; }
+  #admin-prev-btn:hover { background: #4a6b1a; }
+  #admin-skip-btn:disabled, #admin-prev-btn:disabled {
+    background: #aaa; border-color: #777; cursor: not-allowed; opacity: 0.6;
+  }
+  /* ADMIN 뱃지도 fixed로 — 항상 화면 위 노출 */
+  #admin-badge {
+    position: fixed !important;
+  }
+
+  /* ===== 모바일 대응 (가로/세로 공통, 폭 기준) ===== */
+  @media (max-width: 900px) {
+    /* 대사창 — 모바일에서 화면 폭 거의 전체 사용 */
+    #dialog-box { padding: 18px 22px 70px 22px; border-width: 3px; }
+    #dialog-box.pos-bottom { width: 96%; min-height: 200px; bottom: 12px; }
+    #dialog-box.pos-right,
+    #dialog-box.pos-left { width: 96%; left: 2%; right: 2%; transform: none; min-height: 200px; bottom: 12px; }
+    #speaker-name { font-size: 24px; padding: 7px 18px; margin-bottom: 12px; }
+    #dialog-text { font-size: 26px; line-height: 1.5; min-height: 80px; }
+    #dialog-text .caret { height: 28px; }
+    #next-btn { font-size: 19px; padding: 11px 26px; bottom: 16px; right: 18px; }
+
+    /* 스탯 패널 — 모바일에서 좀 더 컴팩트 */
+    #stat-panel { padding: 8px 12px; font-size: 13px; min-width: 0; }
+    #stat-panel .stat-row { gap: 10px; margin: 2px 0; }
+
+    /* 백로그 버튼 */
+    #backlog-btn { padding: 7px 12px; font-size: 13px; top: 12px; right: 12px; }
+
+    /* 선택지 — 모바일에서 가로 전폭 */
+    #choices { width: 96%; left: 2%; right: 2%; bottom: 12px; max-width: none; }
+    .choice-btn { padding: 14px 20px; font-size: 17px; }
+
+    /* 문제 패널 — 모바일에서 가로 전폭 + 글자 키움 */
+    #problem-placeholder { width: 96%; left: 2%; right: 2%; bottom: 12px; padding: 16px 18px; max-width: none; max-height: 86vh; }
+    #problem-placeholder h3 { font-size: 21px; }
+    .problem-text { font-size: 19px !important; }
+
+    /* 삽화 패널 — 모바일에서 작게 */
+    #prop-panel { width: 38vw; max-width: 220px; height: 22vh; max-height: 220px; top: 8vh; right: 2vw; }
+
+    /* 캐릭터 — 모바일은 더 작게 (모바일 화면이 세로로 길면 캐릭터 비율 조정) */
+    .character { height: 80vh; bottom: -18vh; }
+    .character.closeup { height: 130vh; bottom: -55vh; }
+    .character.multi { height: 110vh; bottom: -38vh; }
+
+    /* Scene title */
+    #scene-title .scene-label { font-size: 14px; }
+    #scene-title .scene-name { font-size: 26px; }
+
+    /* 타이틀 화면 */
+    #title-screen h1 { font-size: 48px !important; }
+    #title-screen .subtitle { font-size: 17px !important; }
+    #title-screen .stage-name { font-size: 22px !important; }
+    #title-screen .start-btn { padding: 14px 36px !important; font-size: 20px !important; }
+
+    /* 필기 모달 — 모바일은 세로 분할 (위:문제 / 아래:캔버스) */
+    #notebook-work-area { flex-direction: column; gap: 8px; }
+    #nb-problem-area { width: 100%; max-width: none; min-width: 0; max-height: 30vh; }
+    #nb-problem-text { font-size: 13px; }
+    /* 모바일 필기 툴바 — 줄바꿈 허용 */
+    #notebook-modal .toolbar { flex-wrap: wrap; gap: 6px; padding: 8px 10px; }
+    #notebook-modal .toolbar .group { padding: 0 6px; border-right: none; }
+    .nb-tool, .nb-clear, .nb-history { padding: 6px 10px; font-size: 13px; }
+    .nb-color { width: 26px; height: 26px; }
+    .nb-close { padding: 8px 14px; font-size: 14px; }
+    .nb-meta { font-size: 12px; width: 100%; }
+    .nb-spacer { display: none; }
+  }
 </style>
 </head>
 <body>
@@ -686,7 +926,7 @@
     <div class="stat-row"><span class="stat-name">수학력 (Math)</span><span class="stat-value" id="stat-math">0</span></div>
     <div class="stat-row"><span class="stat-name">지혜 (Wisdom)</span><span class="stat-value" id="stat-wisdom">0</span></div>
     <div class="stat-row"><span class="stat-name">통찰력 (Insight)</span><span class="stat-value" id="stat-insight">0</span></div>
-    <div class="stat-row"><span class="stat-name">단서 카드 (Clues)</span><span class="stat-value" id="stat-clues">0 / 5</span></div>
+    <div class="stat-row"><span class="stat-name">첫시도 정답</span><span class="stat-value" id="stat-clues">0 / 12</span></div>
   </div>
 
   <button id="backlog-btn" onclick="game.openBacklog()">📜 이전 대사 보기</button>
@@ -702,7 +942,14 @@
   <div id="dialog-box" class="pos-bottom">
     <div id="speaker-name">폴리곤</div>
     <div id="dialog-text"></div>
+    <button id="prev-btn" onclick="game.handlePrev()" title="이전 대사 다시 보기">◀ 이전</button>
     <button id="next-btn" onclick="game.handleNext()">다음</button>
+  </div>
+
+  <div id="admin-badge">🛠 ADMIN</div>
+  <div id="admin-nav">
+    <button id="admin-prev-btn" onclick="game.adminSkipToPrevProblem()" title="이전 문제로 점프">◀ 이전 문제</button>
+    <button id="admin-skip-btn" onclick="game.adminSkipToNextProblem()" title="다음 문제로 점프">다음 문제 ▶</button>
   </div>
 
   <div id="choices" class="gone"></div>
@@ -743,19 +990,26 @@
       <div class="nb-spacer"></div>
       <button class="nb-close" onclick="notebook.close()">✓ 완료</button>
     </div>
-    <div id="notebook-canvas-wrap">
-      <canvas id="notebook-canvas"></canvas>
+    <div id="notebook-work-area">
+      <div id="nb-problem-area">
+        <div id="nb-problem-meta"></div>
+        <div id="nb-problem-text"></div>
+        <div id="nb-problem-figure"></div>
+      </div>
+      <div id="notebook-canvas-wrap">
+        <canvas id="notebook-canvas"></canvas>
+      </div>
     </div>
   </div>
 
   <!-- 타이틀 화면 -->
   <div id="title-screen">
     <div class="title-bg" id="title-bg"></div>
-    <div class="subtitle">중학교 2학년 4단원 복습 게임</div>
+    <div class="subtitle">피타고라스 학당의 첫 시험</div>
     <h1>폴리곤의 학당</h1>
     <div class="stage-name">사각형의 시험</div>
     <button class="start-btn" onclick="game.startGame()">시작하기</button>
-    <div class="credits">© 피타고라스 학당의 견습생 · 비주얼노벨 + 육성 시뮬레이션</div>
+    <div class="credits">2026 서울사대부중 2학년 수학B 허철호 선생님 © All rights reserved</div>
   </div>
 
   <!-- 백로그 모달 -->
@@ -776,19 +1030,47 @@
       <div class="item"><div class="label">수학력</div><div class="value" id="end-math">0</div></div>
       <div class="item"><div class="label">지혜</div><div class="value" id="end-wisdom">0</div></div>
       <div class="item"><div class="label">통찰력</div><div class="value" id="end-insight">0</div></div>
-      <div class="item"><div class="label">단서 카드</div><div class="value" id="end-clues">0 / 5</div></div>
+      <div class="item"><div class="label">첫시도 정답</div><div class="value" id="end-clues">0 / 12</div></div>
     </div>
     <button class="restart-btn" id="pdf-submit-btn" onclick="pdfReport.openNameDialog()" style="background: linear-gradient(180deg, #5a8b3a, #3a6a1a); margin-right: 12px;">📄 풀이 제출하기 (PDF)</button>
-    <button class="restart-btn" onclick="game.confirmRestart()">다시 시작</button>
+    <button class="restart-btn" id="review-btn" onclick="game.openReviewMode()" style="background: linear-gradient(180deg, #c8a87a, #8b6f47); margin-right: 12px;">🔍 다시 보기</button>
+    <button class="restart-btn" id="restart-btn" onclick="game.confirmRestart()" disabled title="먼저 PDF로 풀이를 제출하면 활성화됩니다">다시 시작</button>
+  </div>
+
+  <!-- 다시 보기 모드 오버레이 — 좌우 이동 + 종료 -->
+  <div id="review-overlay" class="gone">
+    <div class="rv-top">
+      <span class="rv-tag">🔍 다시 보기 모드</span>
+      <span id="review-pos-label" class="rv-pos">1 / 12</span>
+      <button class="rv-close" onclick="game.closeReviewMode()">✕ 닫기</button>
+    </div>
+    <div class="rv-side rv-side-left">
+      <button id="review-prev" onclick="game.reviewPrev()" title="이전 문제">◀</button>
+    </div>
+    <div class="rv-side rv-side-right">
+      <button id="review-next" onclick="game.reviewNext()" title="다음 문제">▶</button>
+    </div>
   </div>
 
   <!-- Step 3: 학생 이름 입력 모달 -->
   <div id="name-dialog" class="gone" style="position: absolute; inset: 0; z-index: 250; background: rgba(0,0,0,0.78); display: flex; align-items: center; justify-content: center;">
-    <div style="background: #fff8e7; border: 4px solid #8b6f47; border-radius: 18px; padding: 30px 40px; min-width: 420px; box-shadow: 0 12px 40px rgba(0,0,0,0.5);">
-      <h2 style="color: #5d4a30; margin-bottom: 18px; font-size: 24px;">📄 풀이 제출 — 이름 입력</h2>
-      <p style="color: #5d4a30; font-size: 15px; margin-bottom: 12px;">PDF에 포함될 학생 이름을 적어주세요.</p>
-      <input type="text" id="name-input" placeholder="예: 홍길동" style="width: 100%; padding: 12px 16px; font-size: 18px; border: 2px solid #8b6f47; border-radius: 10px; margin-bottom: 16px; background: #fff8e7; color: #3a2818;" maxlength="20" />
-      <p style="color: #6b4423; font-size: 13px; margin-bottom: 18px;">반·번호를 함께 적어도 됩니다 (예: 2학년 3반 15번 홍길동).</p>
+    <div style="background: #fff8e7; border: 4px solid #8b6f47; border-radius: 18px; padding: 30px 40px; min-width: 460px; box-shadow: 0 12px 40px rgba(0,0,0,0.5);">
+      <h2 style="color: #5d4a30; margin-bottom: 18px; font-size: 24px;">📄 풀이 제출</h2>
+      <p style="color: #5d4a30; font-size: 15px; margin-bottom: 14px;">PDF에 포함될 학번과 이름을 적어주세요.</p>
+      <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+        <div style="flex: 0 0 140px;">
+          <label for="student-id-input" style="display: block; font-size: 13px; color: #6b4423; font-weight: 700; margin-bottom: 6px;">학번 (4자리)</label>
+          <input type="text" id="student-id-input" placeholder="예: 2315"
+            inputmode="numeric" pattern="[0-9]*" maxlength="4"
+            style="width: 100%; padding: 12px 14px; font-size: 18px; border: 2px solid #8b6f47; border-radius: 10px; background: #fff8e7; color: #3a2818; text-align: center; letter-spacing: 4px;" />
+        </div>
+        <div style="flex: 1;">
+          <label for="name-input" style="display: block; font-size: 13px; color: #6b4423; font-weight: 700; margin-bottom: 6px;">이름</label>
+          <input type="text" id="name-input" placeholder="예: 홍길동" maxlength="20"
+            style="width: 100%; padding: 12px 16px; font-size: 18px; border: 2px solid #8b6f47; border-radius: 10px; background: #fff8e7; color: #3a2818;" />
+        </div>
+      </div>
+      <p style="color: #6b4423; font-size: 12px; margin-bottom: 18px;">※ 학번은 숫자 4자리 (예: 학년-반-번호 조합)</p>
       <div style="text-align: right;">
         <button onclick="pdfReport.closeNameDialog()" style="background: #c8a87a; color: #fff8e7; border: 2px solid #8b6f47; padding: 10px 22px; font-size: 15px; font-weight: 700; border-radius: 10px; cursor: pointer; margin-right: 8px;">취소</button>
         <button onclick="pdfReport.confirmAndGenerate()" style="background: #5a8b3a; color: #fff8e7; border: 3px solid #3a6a1a; padding: 10px 28px; font-size: 16px; font-weight: 700; border-radius: 10px; cursor: pointer;">📄 PDF 만들기</button>
@@ -874,6 +1156,8 @@ const game = {
   slotLastSpoken: { left: 0, center: 0, right: 0 },
   speechCount: 0,
   log: [],
+  _logCursor: null,  // 이전 대사 보기 커서 (null = 현재 대사)
+  _pdfSaved: false,  // PDF 저장 완료 여부 (다시 시작 활성화 조건)
   typingTimer: null,
   isTyping: false,
   fullText: '',
@@ -883,14 +1167,221 @@ const game = {
   init() {
     this.changeBg('title');
     document.getElementById('title-bg').innerHTML = BACKGROUNDS.title;
+    // Admin 모드 진입: 백틱(`) 키 3회 연속 (1.5초 이내) — 어떤 OS·브라우저와도 충돌 없음
+    this._adminTaps = [];
     document.addEventListener('keydown', (e) => {
+      // 백틱 3회 트리거
+      if (e.code === 'Backquote') {
+        const now = Date.now();
+        this._adminTaps = this._adminTaps.filter(t => now - t < 1500);
+        this._adminTaps.push(now);
+        if (this._adminTaps.length >= 3) {
+          this._adminTaps = [];
+          e.preventDefault();
+          this.toggleAdmin();
+          return;
+        }
+      }
+      // 백업 단축키: Ctrl+Shift+A (Mac 크롬 기본 단축키와 충돌 없음)
+      if (e.ctrlKey && e.shiftKey && e.code === 'KeyA') {
+        e.preventDefault();
+        this.toggleAdmin();
+        return;
+      }
       if (e.code === 'Space' || e.code === 'Enter' || e.code === 'ArrowRight') {
         e.preventDefault();
+        // 리뷰 모드면 다음 문제로
+        if (this._reviewMode) { this.reviewNext(); return; }
         this.handleNext();
       }
+      if (e.code === 'ArrowLeft') {
+        e.preventDefault();
+        // 리뷰 모드면 이전 문제로, 일반 모드면 이전 대사로
+        if (this._reviewMode) { this.reviewPrev(); return; }
+        this.handlePrev();
+      }
     });
-    // Step 2: 이전 진행이 있는지 확인하고 타이틀 화면에 "이어서 하기" 버튼 표시
-    this.checkResumeAvailable();
+    this._setupAdminTouchTrigger();
+    console.log('[game] init 완료. Admin 진입: 백틱(`) 3회 또는 Ctrl+Shift+A');
+    // "이어서 하기" 버튼은 노출하지 않음 (자동저장 코드는 그대로 유지 — 실수로 새로고침 시 복구 안전망)
+    // this.checkResumeAvailable();
+  },
+
+  // ===== Admin 모드 =====
+  toggleAdmin() {
+    const on = !document.body.classList.contains('admin');
+    document.body.classList.toggle('admin', on);
+    console.log('[admin]', on ? 'ON' : 'OFF');
+    // 토스트로 상태 표시
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = on ? '🛠 Admin 모드 ON' : 'Admin 모드 OFF';
+    document.getElementById('toast-area').appendChild(toast);
+    setTimeout(() => toast.remove(), 2200);
+  },
+  // 모바일 진입: 화면 우상단 모서리 영역 5회 연속 탭 (2초 이내)
+  _setupAdminTouchTrigger() {
+    let taps = [];
+    document.addEventListener('touchstart', (e) => {
+      const t = e.touches[0];
+      if (!t) return;
+      const w = window.innerWidth;
+      // 우상단 200x200 영역
+      if (t.clientX > w - 200 && t.clientY < 200) {
+        const now = Date.now();
+        taps = taps.filter(x => now - x < 2000);
+        taps.push(now);
+        if (taps.length >= 5) {
+          taps = [];
+          this.toggleAdmin();
+        }
+      } else {
+        taps = [];
+      }
+    }, { passive: true });
+  },
+  // 현재 cursor 이후 첫 problem step 직전까지 점프
+  // 점프 도중 scene/enter는 효과 적용해서 상태 일관성 유지, dialog/choice/reaction은 스킵
+  adminSkipToNextProblem() {
+    console.log('[admin] === skip clicked === cursor=', this.cursor, '/ STEPS len=', (typeof STEPS !== 'undefined' ? STEPS.length : 'STEPS undefined!'));
+    if (!document.body.classList.contains('admin')) {
+      console.warn('[admin] not in admin mode, abort');
+      return;
+    }
+    if (typeof STEPS === 'undefined') {
+      console.error('[admin] STEPS is undefined!');
+      return;
+    }
+    // 진행 중인 typing/timeout 정리
+    if (this.typingTimer) { clearInterval(this.typingTimer); this.typingTimer = null; }
+    this.isTyping = false;
+    // STEPS에서 cursor 이후 첫 problem 찾기
+    let target = -1;
+    for (let i = this.cursor; i < STEPS.length; i++) {
+      if (STEPS[i] && STEPS[i].type === 'problem') { target = i; break; }
+    }
+    console.log('[admin] target problem idx=', target, target >= 0 ? STEPS[target].id : '(none)');
+    if (target < 0) {
+      const toast = document.createElement('div');
+      toast.className = 'toast down';
+      toast.textContent = '남은 문제 없음';
+      document.getElementById('toast-area').appendChild(toast);
+      setTimeout(() => toast.remove(), 2000);
+      return;
+    }
+    // cursor를 target까지 이동시키면서 scene/enter만 사이드이펙트 적용
+    let skippedCount = 0;
+    for (let i = this.cursor; i < target; i++) {
+      const s = STEPS[i];
+      if (!s) continue;
+      try {
+        if (s.type === 'scene') {
+          this.changeBg(s.bg);
+          if (typeof playBgm === 'function') playBgm(s.bg);
+          if (s.clearChars) this.clearAllCharacters();
+        } else if (s.type === 'enter') {
+          this.charSlots[s.position] = s.role;
+          this.placeCharacter(s.role, s.expression, s.position);
+        }
+      } catch (err) {
+        console.warn('[admin] skip side-effect err at', i, err);
+      }
+      skippedCount++;
+    }
+    console.log('[admin] skipped', skippedCount, 'steps. now executing problem at idx=', target);
+    // 대사창·선택지·전환효과 정리
+    document.getElementById('dialog-box').classList.add('gone');
+    document.getElementById('choices').classList.add('gone');
+    document.getElementById('next-btn').classList.add('gone');
+    document.getElementById('bg').classList.remove('fading');
+    document.getElementById('dialog-box').classList.remove('scene-fading');
+    document.getElementById('choices').classList.remove('scene-fading');
+    document.getElementById('problem-placeholder').classList.remove('scene-fading');
+    // cursor를 target+1로 두고(advance가 cursor++ 안 하도록 직접 실행) showProblem 직접 호출
+    this.cursor = target + 1;
+    this.saveProgress(this._lastBg);
+    try {
+      this.showProblem(STEPS[target]);
+      console.log('[admin] showProblem called for', STEPS[target].id);
+    } catch (err) {
+      console.error('[admin] showProblem failed:', err);
+    }
+  },
+
+  // Admin — 현재 cursor 이전의 마지막 problem 으로 점프
+  // 정답·오답 처리 화면을 다시 보기 위함. problemResults 기록은 보존(중복 채점 X).
+  adminSkipToPrevProblem() {
+    console.log('[admin] === prev clicked === cursor=', this.cursor);
+    if (!document.body.classList.contains('admin')) {
+      console.warn('[admin] not in admin mode, abort');
+      return;
+    }
+    if (typeof STEPS === 'undefined') return;
+    // 진행 중인 typing·timeout 정리
+    if (this.typingTimer) { clearInterval(this.typingTimer); this.typingTimer = null; }
+    this.isTyping = false;
+
+    // 현재 보고 있는 문제 인덱스 식별 (cursor는 "다음에 실행할 step")
+    // - problem 화면에 머물러 있는 상태에서는 cursor-1이 현재 problem step
+    // - 일반 dialog 진행 중이면 cursor-1은 dialog 등 다른 type
+    let currentProblemIdx = -1;
+    if (this.cursor - 1 >= 0 && STEPS[this.cursor - 1] && STEPS[this.cursor - 1].type === 'problem') {
+      currentProblemIdx = this.cursor - 1;
+    }
+    // 현재 문제 이전(strict less) 마지막 problem 찾기
+    const searchFrom = (currentProblemIdx >= 0 ? currentProblemIdx : this.cursor) - 1;
+    let target = -1;
+    for (let i = Math.min(searchFrom, STEPS.length - 1); i >= 0; i--) {
+      if (STEPS[i] && STEPS[i].type === 'problem') { target = i; break; }
+    }
+    console.log('[admin] prev target=', target, target >= 0 ? STEPS[target].id : '(none)');
+    if (target < 0) {
+      const toast = document.createElement('div');
+      toast.className = 'toast down';
+      toast.textContent = '이전 문제 없음';
+      document.getElementById('toast-area').appendChild(toast);
+      setTimeout(() => toast.remove(), 2000);
+      return;
+    }
+
+    // scene/enter 사이드이펙트만 적용해서 배경·캐릭터 상태 복원
+    // 0부터 target까지 모두 다시 훑기 (앞쪽이 어디까지 정리됐는지 모르므로 안전하게)
+    this.clearAllCharacters();
+    for (let i = 0; i <= target; i++) {
+      const s = STEPS[i];
+      if (!s) continue;
+      try {
+        if (s.type === 'scene') {
+          this.changeBg(s.bg);
+          if (typeof playBgm === 'function') playBgm(s.bg);
+          if (s.clearChars) this.clearAllCharacters();
+        } else if (s.type === 'enter') {
+          this.charSlots[s.position] = s.role;
+          this.placeCharacter(s.role, s.expression, s.position);
+        }
+      } catch (err) {
+        console.warn('[admin] prev side-effect err at', i, err);
+      }
+    }
+
+    // UI 정리
+    document.getElementById('dialog-box').classList.add('gone');
+    document.getElementById('choices').classList.add('gone');
+    document.getElementById('next-btn').classList.add('gone');
+    document.getElementById('bg').classList.remove('fading');
+    document.getElementById('dialog-box').classList.remove('scene-fading');
+    document.getElementById('choices').classList.remove('scene-fading');
+    document.getElementById('problem-placeholder').classList.remove('scene-fading');
+
+    // cursor를 target+1로 두고 showProblem 직접 호출
+    this.cursor = target + 1;
+    this.saveProgress(this._lastBg);
+    try {
+      this.showProblem(STEPS[target]);
+      console.log('[admin] showProblem called for', STEPS[target].id);
+    } catch (err) {
+      console.error('[admin] showProblem failed:', err);
+    }
   },
 
   // 이전에 풀던 게임이 있는지 확인
@@ -928,9 +1419,167 @@ const game = {
   },
 
   confirmRestart() {
-    if (confirm('처음부터 다시 시작하면 지금까지의 풀이와 점수가 모두 사라집니다. 계속하시겠습니까?')) {
-      this.clearAllProgress();
-      this.startGame();
+    // 가드 1: PDF 저장 완료 전이면 다시 시작 차단
+    if (!this._pdfSaved) {
+      alert('먼저 "📄 풀이 제출하기 (PDF)"로 결과를 저장한 뒤에 다시 시작할 수 있습니다.\n저장하지 않으면 풀이·점수가 모두 사라집니다.');
+      return;
+    }
+    // 가드 2: 암호 확인
+    const PASSWORD = '허철호짱';
+    const input = prompt('다시 시작하려면 암호를 입력하세요:\n(점수·풀이가 모두 초기화됩니다)');
+    if (input === null) return;
+    if (input.trim() !== PASSWORD) {
+      alert('암호가 일치하지 않습니다. 다시 시작이 취소되었습니다.');
+      return;
+    }
+    this._pdfSaved = false;
+    this.clearAllProgress();
+    this.startGame();
+  },
+
+  // ===== 다시 보기 (리뷰) 모드 =====
+  // 엔딩 후 학생이 자신의 풀이 과정을 처음부터 끝까지 살펴볼 수 있는 읽기전용 모드
+  // 좌우 화살표로 문제 단위 이동, 모든 입력은 비활성화
+  openReviewMode() {
+    if (typeof STEPS === 'undefined') return;
+    console.log('[review] open clicked');
+    document.body.classList.add('review-mode');
+    // 오버레이 먼저 표시 (혹시 render에서 에러 던져도 좌우 버튼은 보이도록)
+    document.getElementById('review-overlay').classList.remove('gone');
+    document.getElementById('ending-screen').classList.add('gone');
+    // 잔존 UI 모두 정리
+    document.getElementById('dialog-box').classList.add('gone');
+    document.getElementById('choices').classList.add('gone');
+    document.getElementById('next-btn').classList.add('gone');
+    document.getElementById('prev-btn')?.classList.add('gone');
+    this._reviewMode = true;
+    // 첫 문제부터
+    this._reviewProblemIndices = [];
+    for (let i = 0; i < STEPS.length; i++) {
+      if (STEPS[i] && STEPS[i].type === 'problem') this._reviewProblemIndices.push(i);
+    }
+    console.log('[review] problem indices:', this._reviewProblemIndices.length);
+    this._reviewPos = 0;
+    try {
+      this._renderReviewProblem();
+    } catch (err) {
+      console.error('[review] render error:', err);
+      alert('리뷰 모드 렌더 중 오류: ' + err.message);
+    }
+  },
+
+  closeReviewMode() {
+    document.body.classList.remove('review-mode');
+    document.getElementById('review-overlay').classList.add('gone');
+    this._reviewMode = false;
+    // 게임 화면 정리
+    document.getElementById('problem-placeholder').classList.add('gone');
+    document.getElementById('dialog-box').classList.add('gone');
+    document.getElementById('choices').classList.add('gone');
+    // 잔존 transition 상태 정리
+    document.getElementById('bg').classList.remove('fading');
+    this.clearAllCharacters();
+    // 엔딩 화면 복귀
+    document.getElementById('ending-screen').classList.remove('gone');
+  },
+
+  reviewNext() {
+    if (!this._reviewMode) return;
+    if (this._reviewPos < this._reviewProblemIndices.length - 1) {
+      this._reviewPos++;
+      this._renderReviewProblem();
+    }
+  },
+  reviewPrev() {
+    if (!this._reviewMode) return;
+    if (this._reviewPos > 0) {
+      this._reviewPos--;
+      this._renderReviewProblem();
+    }
+  },
+
+  _renderReviewProblem() {
+    const target = this._reviewProblemIndices[this._reviewPos];
+    if (target == null) return;
+    const step = STEPS[target];
+    // 배경·캐릭터 일관성 복원 (target 이전의 마지막 scene/enter 적용)
+    this.clearAllCharacters();
+    let lastBg = null;
+    for (let i = 0; i <= target; i++) {
+      const s = STEPS[i];
+      if (!s) continue;
+      if (s.type === 'scene') {
+        lastBg = s.bg;
+        if (s.clearChars) this.clearAllCharacters();
+      } else if (s.type === 'enter') {
+        this.charSlots[s.position] = s.role;
+        this.placeCharacter(s.role, s.expression, s.position);
+      }
+    }
+    if (lastBg) this.changeBg(lastBg);
+    // 문제 UI 표시 (showProblem 재활용하되 입력은 잠금)
+    this._currentProblem = step;
+    document.getElementById('dialog-box').classList.add('gone');
+    document.getElementById('choices').classList.add('gone');
+    const box = document.getElementById('problem-placeholder');
+    box.classList.remove('placeholder-mode', 'gone', 'scene-fading');
+    box.innerHTML = this._buildProblemUi(step);
+    this._renderKatexInBox(box);
+    // 모든 입력 요소 disabled, 제출·필기 버튼 숨김 — 학생이 풀 수 없게
+    box.querySelectorAll('input, select, button, .choice-option').forEach(el => {
+      if (el.tagName === 'BUTTON') el.style.display = 'none';
+      else el.disabled = true;
+    });
+    // 학생이 실제로 입력했던 답·정답·점수 정보 표시
+    this._appendReviewBadge(step);
+    // 페이지 표시 (1/12 같은)
+    document.getElementById('review-pos-label').textContent =
+      `${this._reviewPos + 1} / ${this._reviewProblemIndices.length} · ${step.id}`;
+    // 좌우 버튼 활성화 상태
+    document.getElementById('review-prev').disabled = this._reviewPos === 0;
+    document.getElementById('review-next').disabled = this._reviewPos === this._reviewProblemIndices.length - 1;
+  },
+
+  _appendReviewBadge(step) {
+    const result = this.problemResults[step.id];
+    const box = document.getElementById('problem-placeholder');
+    const badge = document.createElement('div');
+    badge.style.cssText = 'background:linear-gradient(180deg,#fff5d6,#f5d99a);border:3px solid #c8a87a;border-radius:12px;padding:14px 18px;margin:12px 0;text-align:left;color:#5d4a30;';
+    let resultText, resultColor;
+    if (!result || !result.attempts || result.attempts.length === 0) {
+      resultText = '미응시'; resultColor = '#888';
+    } else if (result.firstCorrect === true) {
+      resultText = '✓ 첫 시도 정답'; resultColor = '#3a6a1a';
+    } else if (result.resolved === true) {
+      resultText = '△ 재시도 후 정답'; resultColor = '#a87a1a';
+    } else {
+      resultText = '✗ 미해결'; resultColor = '#8b3a2a';
+    }
+    let attemptsHtml = '';
+    if (result && result.attempts && result.attempts.length) {
+      const list = result.attempts.map((a, i) => {
+        const mark = a.correct ? '✅' : '❌';
+        return `${i+1}회: ${this._escapeHtml(String(a.answer))} ${mark}`;
+      }).join(' · ');
+      attemptsHtml = `<div style="font-size:13px;color:#6b4423;margin-top:6px;">시도 기록: ${list}</div>`;
+    }
+    badge.innerHTML = `
+      <div style="font-size:15px;font-weight:700;color:${resultColor};">결과: ${resultText}</div>
+      ${attemptsHtml}
+    `;
+    box.appendChild(badge);
+  },
+
+  // 다시 시작 버튼 활성화/비활성화 상태 갱신
+  _updateRestartBtn() {
+    const btn = document.getElementById('restart-btn');
+    if (!btn) return;
+    if (this._pdfSaved) {
+      btn.disabled = false;
+      btn.title = '점수·풀이가 모두 초기화됩니다';
+    } else {
+      btn.disabled = true;
+      btn.title = '먼저 PDF로 풀이를 제출하면 활성화됩니다';
     }
   },
 
@@ -1000,12 +1649,24 @@ const game = {
   },
 
   startGame() {
+    // 모든 오버레이/모달 닫기 (다시 시작 시 엔딩 화면 등이 남아있지 않게)
     document.getElementById('title-screen').classList.add('gone');
+    document.getElementById('ending-screen').classList.add('gone');
+    document.getElementById('problem-placeholder').classList.add('gone');
+    document.getElementById('choices').classList.add('gone');
+    document.getElementById('backlog-modal').classList.add('gone');
+    document.getElementById('notebook-modal').classList.add('gone');
+    document.getElementById('name-dialog').classList.add('gone');
     // 새 게임이므로 이전 진행 초기화
     this.clearAllProgress();
     this.stats = { math: 0, wisdom: 0, insight: 0, clues: 0 };
     this.cursor = 0;
     this.log = [];
+    this.problemResults = {};
+    this._endingReached = false;
+    this._logCursor = null;
+    this._pdfSaved = false;
+    this._updateRestartBtn();
     this.renderStats();
     playBgm('harbor');
     this.advance();
@@ -1019,7 +1680,62 @@ const game = {
     if (!document.getElementById('ending-screen').classList.contains('gone')) return;
     if (!document.getElementById('notebook-modal').classList.contains('gone')) return;
     if (this.isTyping) { this.completeTyping(); return; }
+    // 이전 대사 보기 상태에서 next 누르면 현재 대사로 복귀 (advance X)
+    if (this._logCursor !== null && this._logCursor !== undefined) {
+      this._logCursor = null;
+      this._restoreCurrentDialog();
+      return;
+    }
     this.advance();
+  },
+
+  // ← 이전 대사 보기 (대사 텍스트만 변경, 게임 진행 상태는 그대로)
+  handlePrev() {
+    // 모달·문제·선택지 상태에서는 동작 안 함
+    if (!document.getElementById('title-screen').classList.contains('gone')) return;
+    if (!document.getElementById('backlog-modal').classList.contains('gone')) return;
+    if (!document.getElementById('choices').classList.contains('gone')) return;
+    if (!document.getElementById('problem-placeholder').classList.contains('gone')) return;
+    if (!document.getElementById('ending-screen').classList.contains('gone')) return;
+    if (!document.getElementById('notebook-modal').classList.contains('gone')) return;
+    if (!this.log || this.log.length === 0) return;
+
+    // 타이핑 중이면 먼저 완료
+    if (this.isTyping) this.completeTyping();
+
+    // _logCursor가 null이면 현재 대사 (log의 마지막) — prev 1번 누르면 log.length - 2 위치
+    if (this._logCursor === null || this._logCursor === undefined) {
+      this._logCursor = this.log.length - 2;  // 직전 대사
+    } else {
+      this._logCursor = Math.max(0, this._logCursor - 1);
+    }
+    if (this._logCursor < 0) {
+      this._logCursor = 0;
+    }
+    const entry = this.log[this._logCursor];
+    if (!entry) return;
+    // 대사창에 직접 표시 (타이핑 없이 즉시)
+    document.getElementById('speaker-name').textContent = entry.speaker || '';
+    document.getElementById('dialog-text').textContent = entry.text || '';
+    this._updatePrevBtn();
+  },
+
+  _restoreCurrentDialog() {
+    // _logCursor를 null로 리셋한 후 가장 최근(현재) 대사 복원
+    if (!this.log || this.log.length === 0) return;
+    const entry = this.log[this.log.length - 1];
+    if (!entry) return;
+    document.getElementById('speaker-name').textContent = entry.speaker || '';
+    document.getElementById('dialog-text').textContent = entry.text || '';
+    this._updatePrevBtn();
+  },
+
+  _updatePrevBtn() {
+    const btn = document.getElementById('prev-btn');
+    if (!btn) return;
+    // 보여줄 이전 대사가 없으면 비활성화
+    const minIdx = this._logCursor === null || this._logCursor === undefined ? this.log.length - 2 : this._logCursor - 1;
+    btn.disabled = minIdx < 0;
   },
 
   advance() {
@@ -1038,12 +1754,8 @@ const game = {
   execute(step) {
     switch (step.type) {
       case 'scene':
-        this.changeBg(step.bg);
         playBgm(step.bg);
-        if (step.clearChars) this.clearAllCharacters();
-        this.showSceneTitle(step.name);
-        // Scene 전환 안내가 표시되는 동안 잠시 대기 후 다음
-        setTimeout(() => this.advance(), 1800);
+        this.sceneTransition(step.bg, !!step.clearChars, step.name, () => this.advance());
         break;
       case 'dialog':
         this.handleDialogStep(step);
@@ -1074,6 +1786,11 @@ const game = {
 
   // ----- 핵심 -----
   handleDialogStep(step) {
+    // 안전장치: 어떤 경로로든 배경/대사창이 fading 상태로 남아있으면 강제 해제
+    document.getElementById('bg').classList.remove('fading');
+    document.getElementById('dialog-box').classList.remove('scene-fading', 'gone');
+    document.getElementById('choices').classList.remove('scene-fading');
+    document.getElementById('problem-placeholder').classList.remove('scene-fading');
     const isNarration = (step.speaker === 'narrator' || step.speaker === 'npc');
     const role = step.role || step.speaker;
     let position = step.position;
@@ -1176,8 +1893,59 @@ const game = {
 
   // ----- 화면 조작 -----
   changeBg(name) {
-    document.getElementById('bg').innerHTML = BACKGROUNDS[name] || '';
+    const bg = document.getElementById('bg');
+    const html = BACKGROUNDS[name];
+    if (!html) {
+      console.warn('[changeBg] 알 수 없는 배경 키:', name, '- 이전 배경 유지');
+      // 배경 유지하되 fading은 강제 해제 (검정 화면 방지)
+      bg.classList.remove('fading');
+      return;
+    }
+    bg.innerHTML = html;
+    // 배경을 새로 설정했으면 fading 상태는 무조건 해제 (안전장치)
+    bg.classList.remove('fading');
     this._lastBg = name;  // Step 2: 이어서 하기용
+  },
+
+  // scene 전환 흐름:
+  // 1) 페이드아웃 (350ms): 배경·대사창·캐릭터 opacity 0
+  // 2) 교체 + 대사창 완전 숨김 (gone) → 이전 대사가 새 scene 위에 나타나지 않음
+  // 3) 배경 페이드인 (350ms)
+  // 4) 배경 페이드인 완료 후 scene title 표시 (1500ms) — 전환과 분리되어 또렷이 보임
+  // 5) title 사라진 뒤 다음 step으로
+  sceneTransition(bgName, clearChars, sceneName, doneCb) {
+    const bg = document.getElementById('bg');
+    const dialogBox = document.getElementById('dialog-box');
+    const choices = document.getElementById('choices');
+    const problem = document.getElementById('problem-placeholder');
+    // 1) 페이드아웃
+    bg.classList.add('fading');
+    dialogBox.classList.add('scene-fading');
+    choices.classList.add('scene-fading');
+    problem.classList.add('scene-fading');
+    ['left', 'center', 'right'].forEach(pos => {
+      document.getElementById(`char-${pos}`).classList.add('hidden');
+    });
+
+    setTimeout(() => {
+      // 2) 페이드아웃 완료 — 실제 교체
+      this.changeBg(bgName);
+      if (clearChars) this.clearAllCharacters();
+      // 대사창은 완전히 숨김 (이전 대사가 새 scene 위에 다시 나타나는 것 방지)
+      // scene-fading 클래스도 정리 (다음 dialog step에서 보일 때를 위해)
+      dialogBox.classList.add('gone');
+      dialogBox.classList.remove('scene-fading');
+      choices.classList.remove('scene-fading');
+      problem.classList.remove('scene-fading');
+      // 3) 배경 페이드인 시작
+      bg.classList.remove('fading');
+      // 4) 배경 페이드인 완료 후 scene title 표시 (배경 전환과 시간차 분리)
+      setTimeout(() => {
+        this.showSceneTitle(sceneName);
+        // 5) title 표시 1500ms + 여유 → 다음 step
+        setTimeout(doneCb, 1600);
+      }, 400);
+    }, 350);
   },
 
   showSceneTitle(fullName) {
@@ -1223,6 +1991,8 @@ const game = {
     document.getElementById('next-btn').classList.remove('gone');
     document.getElementById('dialog-box').classList.remove('gone');
     this.log.push({ speaker: speakerName, text });
+    this._logCursor = null;  // 새 대사 등장 → 이전 보기 상태 리셋
+    this._updatePrevBtn();
     this.startTyping(text);
   },
 
@@ -1313,6 +2083,8 @@ const game = {
       // 실제 응답 UI
       box.classList.remove('placeholder-mode');
       box.innerHTML = this._buildProblemUi(step);
+      // 문제 등장과 동시에 표시되는 안내 힌트 (problems.js의 hints[0]) — 오답 후 힌트와 다른 톤
+      this._renderInitialHint(step);
       // KaTeX 본문 렌더 (data-katex 속성 가진 요소들)
       this._renderKatexInBox(box);
       // 단답형 미리보기 초기화
@@ -1328,6 +2100,18 @@ const game = {
           this._renderAnswerPreview('');
           setTimeout(() => input.focus(), 50);
         }
+      } else if (respType === 'shortAnswer-pair') {
+        const inputs = box.querySelectorAll('.pair-input');
+        inputs.forEach((inp, i) => {
+          inp.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+              // 마지막이면 제출, 아니면 다음 input으로 포커스
+              if (i === inputs.length - 1) this.submitShortAnswerPair();
+              else inputs[i+1].focus();
+            }
+          });
+        });
+        if (inputs.length) setTimeout(() => inputs[0].focus(), 50);
       }
     }
 
@@ -1413,13 +2197,27 @@ const game = {
         <div class="short-answer-wrap">
           <label for="answer-input"><span data-katex="inline">${this._escapeHtml(askFormat)}</span></label>
           <input type="text" id="answer-input" class="short-answer-input"
-                 placeholder="예: 3:5,  30,  정사각형 등"
+                 placeholder="예: 3:5,  30,  이등변삼각형 등"
                  maxlength="60">
           <div class="answer-preview" id="answer-preview">
             <span class="preview-label">미리보기 (수식체)</span>
             <span id="preview-content">—</span>
           </div>
           <button class="short-submit-btn" onclick="game.submitShortAnswer()">제출</button>
+        </div>`;
+    } else if (respType === 'shortAnswer-pair') {
+      const fields = pdata.fields || [];
+      const rowsHtml = fields.map((f, i) => `
+        <div class="pair-row">
+          <span class="pair-label" data-katex="inline">${this._escapeHtml(f.label || '')} =</span>
+          <input type="text" class="pair-input" data-idx="${i}"
+                 maxlength="20" placeholder="값">
+          ${f.unit ? `<span class="pair-unit">${this._escapeHtml(f.unit)}</span>` : ''}
+        </div>`).join('');
+      responseHtml = `
+        <div class="short-answer-wrap pair-wrap">
+          ${rowsHtml}
+          <button class="short-submit-btn" onclick="game.submitShortAnswerPair()" style="margin-top:14px;">제출</button>
         </div>`;
     } else {
       responseHtml = `<p style="color:#b85a4a;">⚠️ 응답 형식 미설정</p>`;
@@ -1570,9 +2368,149 @@ const game = {
     this._handleAttempt(correct, raw);
   },
 
+  // 2개 입력칸 문제 채점 — 각 항목 독립 채점 + 반반 배점
+  // x·y 각각 "첫 시도에 정답" 시 onCorrect.stats의 50%씩 부여
+  // 둘 다 맞아야 다음 문제로 진행, 하나라도 오답이면 재시도(공통 _handleAttempt 흐름)
+  submitShortAnswerPair() {
+    const p = this._currentProblem;
+    if (!p) return;
+    // 가드: 이미 해결되었거나 3회 끝난 문제는 추가 제출 무시
+    const prev = this.problemResults[p.id];
+    if (prev && (prev.solvedAt || (prev.attempts && prev.attempts.length >= 3))) {
+      return;
+    }
+    const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[p.id]) || {};
+    const fields = pdata.fields || [];
+    const box = document.getElementById('problem-placeholder');
+    const inputs = box.querySelectorAll('.pair-input');
+    if (!inputs.length) return;
+
+    // 각 input 값 수집·정규화
+    const userVals = [];
+    for (let i = 0; i < inputs.length; i++) {
+      const raw = this._sanitizeAnswerInput(inputs[i].value).trim();
+      if (!raw) { inputs[i].focus(); return; }
+      userVals.push(raw);
+    }
+
+    // 각 필드 채점
+    const perFieldCorrect = fields.map((f, i) => {
+      const accepted = (f.accepted || []).map(a => this._normalizeAnswer(a));
+      const userNorm = this._normalizeAnswer(userVals[i]);
+      return accepted.includes(userNorm);
+    });
+    const allCorrect = perFieldCorrect.every(Boolean);
+
+    // problemResults 기록 초기화 (없으면 생성)
+    const existing = this.problemResults[p.id] || {
+      id: p.id, kind: p.kind, topic: p.topic, difficulty: p.difficulty, format: p.format,
+      attempts: [], firstCorrect: null, resolved: false, gainedStats: {}, solvedAt: null,
+      pairFieldFirstAttempts: {},  // { 0: true/false, 1: true/false } — 각 필드 첫 시도에 맞았는지
+    };
+
+    const userAnswerStr = userVals.join(', ');
+    existing.attempts.push({ answer: userAnswerStr, correct: allCorrect, at: Date.now(), perField: perFieldCorrect });
+
+    // 각 필드별 첫 시도 채점 — 이전에 시도한 적 없는 필드의 결과를 기록
+    if (!existing.pairFieldFirstAttempts) existing.pairFieldFirstAttempts = {};
+    fields.forEach((_, i) => {
+      if (!(i in existing.pairFieldFirstAttempts)) {
+        existing.pairFieldFirstAttempts[i] = perFieldCorrect[i];
+        // 첫 시도에 정답이면 반반 배점 적용
+        if (perFieldCorrect[i]) {
+          const baseStats = (p.onCorrect && p.onCorrect.stats) || {};
+          const halfStats = {};
+          for (const k in baseStats) {
+            halfStats[k] = Math.round(baseStats[k] * 0.5 * 10) / 10;
+          }
+          // gainedStats에 누적
+          for (const k in halfStats) {
+            existing.gainedStats[k] = (existing.gainedStats[k] || 0) + halfStats[k];
+          }
+          this.applyEffect(halfStats);
+        }
+      }
+    });
+
+    this.problemResults[p.id] = existing;
+
+    if (allCorrect) {
+      existing.resolved = true;
+      existing.solvedAt = Date.now();
+      // firstCorrect는 두 필드 모두 첫 시도에 정답인 경우만 true
+      if (existing.firstCorrect === null) {
+        existing.firstCorrect = Object.values(existing.pairFieldFirstAttempts).every(Boolean);
+      }
+      this._proceedAfterProblem(p, true);
+    } else {
+      const attemptNo = existing.attempts.length;
+      const MAX = 3;
+      if (attemptNo >= MAX) {
+        existing.resolved = false;
+        this._showAnswerReveal(p);
+      } else {
+        const hintIdx = attemptNo - 1;
+        const hints = pdata.hints && pdata.hints.length ? pdata.hints : (p.hints || []);
+        // 맞은 필드 수에 따른 안내 분기
+        const correctCount = perFieldCorrect.filter(Boolean).length;
+        const wrongCount = perFieldCorrect.length - correctCount;
+        let situationText;
+        if (correctCount === 0) {
+          situationText = '두 값 모두 다시 계산해봐.';
+        } else if (wrongCount === 1) {
+          situationText = '한 쪽만 맞았어. 틀린 값을 다시 계산해봐.';
+        } else {
+          situationText = '맞춘 값은 그대로 두고, 나머지를 다시 계산해봐.';
+        }
+        const defaultHints = [
+          situationText,
+          '문제의 조건을 다시 살펴보고 어떤 사각형의 성질을 써야 하는지 떠올려봐.',
+          '한 번 더 도전! 그래도 안 되면 정답을 알려줄게.',
+        ];
+        const hintText = hints[hintIdx] || defaultHints[hintIdx] || defaultHints[0];
+        // 어느 필드가 맞고 어느 필드가 틀렸는지 표시 (LaTeX 명령어 깔끔하게 변환)
+        const fieldStatus = perFieldCorrect.map((ok, i) => {
+          const label = this._labelToPlain(fields[i].label || `(${i+1})`);
+          return `${label}: ${ok ? '✅' : '❌'}`;
+        }).join(' / ');
+        this._showHintBanner(`${fieldStatus}\n\n${hintText}`, attemptNo);
+        this.showToast(`오답 (${attemptNo}회) — ${fieldStatus}`, 'down');
+        // input 재포커스 (틀린 첫 번째 input)
+        const firstWrong = perFieldCorrect.findIndex(ok => !ok);
+        if (firstWrong >= 0 && inputs[firstWrong]) {
+          setTimeout(() => inputs[firstWrong].focus(), 100);
+        }
+      }
+    }
+  },
+
+  // LaTeX 라벨을 일반 텍스트로 (UI 토스트·힌트용 — KaTeX 렌더가 안 되는 곳에서 사용)
+  _labelToPlain(s) {
+    if (!s) return '';
+    return String(s)
+      .replace(/\$/g, '')
+      .replace(/\\angle\s*/g, '∠')
+      .replace(/\\triangle\s*/g, '△')
+      .replace(/\\square\s*/g, '□')
+      .replace(/\\overline\{([^}]+)\}/g, '$1')
+      .trim();
+  },
+
   _normalizeAnswer(s) {
     if (!s) return '';
-    return String(s).toLowerCase().replace(/\s+/g, '');
+    return String(s)
+      .toLowerCase()
+      .replace(/\s+/g, '')
+      // 동의어 정규화: 학생 표기 다양성 흡수
+      .replace(/°/g, '도')
+      .replace(/²/g, '2')
+      .replace(/³/g, '3')
+      .replace(/\^2/g, '2')
+      .replace(/\^3/g, '3')
+      .replace(/제곱센티미터/g, 'cm2')
+      .replace(/제곱미터/g, 'm2')
+      .replace(/센티미터/g, 'cm')
+      .replace(/센티/g, 'cm');
   },
 
   // ===== 새 평가 시스템 (4단원 표준) =====
@@ -1584,6 +2522,12 @@ const game = {
   _handleAttempt(correct, userAnswer) {
     const p = this._currentProblem;
     if (!p) return;
+
+    // 가드: 이미 해결되었거나 3회 시도가 끝난 문제는 추가 제출 무시 (정답공개 후 재클릭 방지)
+    const prev = this.problemResults[p.id];
+    if (prev && (prev.solvedAt || (prev.attempts && prev.attempts.length >= 3))) {
+      return;
+    }
 
     // 기존 기록 (없으면 새로 생성)
     const existing = this.problemResults[p.id] || {
@@ -1624,9 +2568,10 @@ const game = {
         existing.resolved = false;
         this._showAnswerReveal(p);
       } else {
-        // 재시도 + 힌트
+        // 재시도 + 힌트 — problems.js의 PROBLEMS[id].hints 를 우선 참조
         const hintIdx = attemptNo - 1;
-        const hints = p.hints || [];
+        const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[p.id]) || {};
+        const hints = pdata.hints && pdata.hints.length ? pdata.hints : (p.hints || []);
         const defaultHints = [
           '다시 한 번 천천히 생각해봐. 어떤 조건이 적용되는지 확인해봐.',
           '문제의 조건을 처음부터 다시 읽고, 핵심 단어에 집중해봐.',
@@ -1637,6 +2582,22 @@ const game = {
         this.showToast(`오답 (${attemptNo}회 기록됨)`, 'down');
       }
     }
+  },
+
+  // 문제 등장 시 같이 표시되는 안내 힌트 (problems.js의 hints[0]) — 오답 전부터 노출
+  _renderInitialHint(step) {
+    const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[step.id]) || {};
+    const hints = pdata.hints || [];
+    if (!hints.length) return;  // 힌트 없으면 표시 안 함
+    const box = document.getElementById('problem-placeholder');
+    const banner = document.createElement('div');
+    banner.id = 'initial-hint-banner';
+    banner.style.cssText = 'background:linear-gradient(180deg,#e7f3d8,#cfe4b4);border:2px solid #6b8b3a;border-radius:10px;padding:10px 14px;margin:8px 0 0 0;text-align:left;font-size:14px;color:#3a5a1a;line-height:1.5;';
+    banner.innerHTML = `<strong style="color:#4a7a2a;">💡 Hint:</strong> ${this._escapeHtml(hints[0])}`;
+    // 응답 영역 위에 삽입 (없으면 마지막에)
+    const responseArea = box.querySelector('.choices-grid, .short-answer-wrap, .match-grid');
+    if (responseArea) box.insertBefore(banner, responseArea);
+    else box.appendChild(banner);
   },
 
   _showHintBanner(hintText, attemptNo) {
@@ -1679,19 +2640,35 @@ const game = {
     const box = document.getElementById('problem-placeholder');
     const old = document.getElementById('hint-banner');
     if (old) old.remove();
+    // 기존 정답공개 카드가 있으면 제거 (중복 방지 — 제출 버튼 재클릭 등으로 인한 누적 방지)
+    const oldReveal = document.getElementById('answer-reveal');
+    if (oldReveal) oldReveal.remove();
 
     const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[p.id]) || {};
+    const type = pdata.type || p.responseType;
     let answerText = '';
-    if (p.responseType === 'choice' && typeof p.correctChoice === 'number') {
-      const choice = (p.choices || [])[p.correctChoice] || '';
-      answerText = `정답: ${this._escapeHtml(choice)} (${p.correctChoice + 1}번)`;
-    } else if (p.responseType === 'shortAnswer' && p.acceptedAnswers && p.acceptedAnswers.length) {
-      answerText = `정답: ${this._escapeHtml(p.acceptedAnswers[0])}`;
-    } else if (pdata.type === 'match' && pdata.correctMatches) {
+    if (type === 'ox' && pdata.correctAnswer) {
+      answerText = `정답: ${pdata.correctAnswer}`;
+    } else if (type === 'choice' && typeof pdata.correctChoice === 'number') {
+      const choice = (pdata.choices || [])[pdata.correctChoice] || '';
+      answerText = `정답: ${this._escapeHtml(choice)} (${pdata.correctChoice + 1}번)`;
+    } else if (type === 'choice-multi' && pdata.correctChoices) {
+      const arr = pdata.correctChoices.map(i => `${i + 1}번. ${this._escapeHtml((pdata.choices || [])[i] || '')}`);
+      answerText = `정답: ${arr.join(' / ')}`;
+    } else if (type === 'shortAnswer' && pdata.acceptedAnswers && pdata.acceptedAnswers.length) {
+      answerText = `정답: ${this._escapeHtml(pdata.acceptedAnswers[0])}`;
+    } else if (type === 'match' && pdata.correctMatches) {
       const KOR = ['ㄱ','ㄴ','ㄷ','ㄹ','ㅁ','ㅂ'];
       const items = pdata.items || [];
       const matched = items.map((it, i) => `${it}→${KOR[pdata.correctMatches[i]] || '?'}`);
       answerText = `정답: ${matched.join(', ')}`;
+    } else if (type === 'shortAnswer-pair' && pdata.fields) {
+      const parts = pdata.fields.map(f => {
+        const lbl = (f.label || '').replace(/\$/g, '');
+        const val = (f.accepted && f.accepted[0]) || '?';
+        return `${lbl} = ${val}${f.unit || ''}`;
+      });
+      answerText = `정답: ${parts.join(', ')}`;
     } else {
       answerText = '정답 정보 없음';
     }
@@ -1710,8 +2687,13 @@ const game = {
         다음으로 →
       </button>
     `;
+    // 응답 영역·제출 버튼·필기 버튼 모두 숨김 (학생 추가 시도 차단)
     const responseArea = box.querySelector('.choices-grid, .short-answer-wrap, .match-grid');
     if (responseArea) responseArea.style.display = 'none';
+    box.querySelectorAll('.short-submit-btn, #notebook-btn').forEach(b => b.style.display = 'none');
+    // 초기 힌트 배너도 정답 공개 시점에는 의미 없으므로 제거
+    const initialHint = document.getElementById('initial-hint-banner');
+    if (initialHint) initialHint.remove();
     box.appendChild(reveal);
   },
 
@@ -1747,7 +2729,9 @@ const game = {
     document.getElementById('stat-math').textContent = this.stats.math;
     document.getElementById('stat-wisdom').textContent = this.stats.wisdom;
     document.getElementById('stat-insight').textContent = this.stats.insight;
-    document.getElementById('stat-clues').textContent = `${this.stats.clues} / 5`;
+    // 첫시도 정답 = problemResults에서 firstCorrect=true인 항목 수
+    const firstTryCount = Object.values(this.problemResults || {}).filter(r => r.firstCorrect === true).length;
+    document.getElementById('stat-clues').textContent = `${firstTryCount} / 12`;
   },
 
   showToast(text, kind) {
@@ -1894,6 +2878,8 @@ const notebook = {
     }
     this._userStartedDrawing = false;  // 동시성 가드 초기화
     document.getElementById('nb-problem-label').textContent = `문제 #${this.currentProblemId}`;
+    // 좌측 문제 패널 채우기 (모든 문제 공통)
+    this._renderProblemPanel(this.currentProblemId);
     document.getElementById('notebook-modal').classList.remove('gone');
     // 모달 열 때마다 히스토리 초기화 (다른 문제로 넘어오면 이전 undo 의미 없음)
     this.resetHistory();
@@ -1915,6 +2901,33 @@ const notebook = {
     // Step 2: 모달 닫기 전에 캔버스를 PNG로 LocalStorage에 저장
     this.saveToStorage(this.currentProblemId);
     document.getElementById('notebook-modal').classList.add('gone');
+  },
+
+  // 좌측 문제 패널 렌더 — 모든 문제 공통 (문제문 + 도형)
+  _renderProblemPanel(problemId) {
+    const metaEl = document.getElementById('nb-problem-meta');
+    const textEl = document.getElementById('nb-problem-text');
+    const figEl = document.getElementById('nb-problem-figure');
+    if (!metaEl || !textEl || !figEl) return;
+
+    const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[problemId]) || {};
+    const step = game._currentProblem || {};
+    metaEl.textContent = `${problemId} · ${step.kind || ''} · ${step.topic || ''}`;
+    // 문제문 (KaTeX 인라인 렌더)
+    const text = pdata.text || step.text || '(문제 본문 없음)';
+    try {
+      textEl.innerHTML = game._renderInlineMath(text);
+    } catch (e) {
+      textEl.textContent = text;
+    }
+    // 도형
+    const figFile = pdata.figure || step.image;
+    if (figFile) {
+      figEl.innerHTML = `<img src="problems/${figFile}" alt="문제 ${problemId} 도형"
+        onerror="this.outerHTML='<div style=\\'padding:12px;color:#8b3a2a;font-size:13px;\\'>📷 도형 이미지 없음</div>'">`;
+    } else {
+      figEl.innerHTML = '';
+    }
   },
 
   // Step 2: LocalStorage 저장/복원
@@ -2040,6 +3053,8 @@ const notebook = {
   },
 
   startDraw(e) {
+    // 한 획 그리기 직전의 상태를 히스토리에 저장 (undo로 이 상태로 돌아가기 위함)
+    this._pushCurrentToHistory();
     this.isDrawing = true;
     this._userStartedDrawing = true;  // 복원 onload가 사용자 입력 덮어쓰지 못하게
     const pos = this.getPos(e);
@@ -2085,16 +3100,15 @@ const notebook = {
   endDraw() {
     if (!this.isDrawing) return;
     this.isDrawing = false;
-    // 한 획(stroke) 끝났을 때 히스토리에 스냅샷 push
-    this.pushHistory();
+    this.updateHistoryButtons();
   },
 
   // ===== Undo / Redo =====
-  pushHistory() {
+  // 획 추가 직전 호출 — 현재(획 그리기 전) 상태를 undoStack에 저장
+  _pushCurrentToHistory() {
     try {
       const snap = this.canvas.toDataURL('image/png');
       this.undoStack.push(snap);
-      // 스택 깊이 제한 — 오래된 것부터 제거
       if (this.undoStack.length > this.maxHistory) {
         this.undoStack.shift();
       }
@@ -2104,6 +3118,10 @@ const notebook = {
     } catch (e) {
       console.warn('히스토리 저장 실패:', e);
     }
+  },
+  // 외부에서 호출하는 push (clearCanvas 등) — 동일 동작
+  pushHistory() {
+    this._pushCurrentToHistory();
   },
 
   undo() {
@@ -2129,17 +3147,18 @@ const notebook = {
   },
 
   _restoreFromDataUrl(dataUrl) {
-    // 복원 토큰 — 사용자가 그리기 시작하면 onload 무시 (동시성 가드)
+    // undo/redo는 사용자 명시적 액션이므로 _userStartedDrawing 가드를 통과시킴
+    // (단, 새 로드 시 이전 비동기 onload는 무시되도록 토큰 관리)
     this._loadToken = (this._loadToken || 0) + 1;
     const myToken = this._loadToken;
-    this._userStartedDrawing = false;
     const img = new Image();
     img.onload = () => {
       if (myToken !== this._loadToken) return;
-      if (this._userStartedDrawing) return;
+      // userStartedDrawing 체크 X — undo/redo는 그리기 중에도 동작해야 함
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
       this.ctx.drawImage(img, 0, 0, this.canvas.width, this.canvas.height);
     };
+    img.onerror = (e) => console.warn('undo/redo 복원 실패:', e);
     img.src = dataUrl;
   },
 
@@ -2165,24 +3184,47 @@ const pdfReport = {
   studentName: '',
 
   openNameDialog() {
+    document.getElementById('student-id-input').value = this.studentId || '';
     document.getElementById('name-input').value = this.studentName || '';
     document.getElementById('name-dialog').classList.remove('gone');
-    setTimeout(() => document.getElementById('name-input').focus(), 50);
+    // 학번 input 키 입력은 숫자만 허용
+    const idInput = document.getElementById('student-id-input');
+    idInput.oninput = () => { idInput.value = idInput.value.replace(/\D/g, '').slice(0, 4); };
+    // Enter로 다음 input 또는 제출
+    idInput.onkeydown = (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); document.getElementById('name-input').focus(); }
+    };
+    document.getElementById('name-input').onkeydown = (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); this.confirmAndGenerate(); }
+    };
+    setTimeout(() => idInput.focus(), 50);
   },
 
   closeNameDialog() {
     document.getElementById('name-dialog').classList.add('gone');
   },
 
-  confirmAndGenerate() {
+  async confirmAndGenerate() {
+    const sid = document.getElementById('student-id-input').value.trim();
     const name = document.getElementById('name-input').value.trim();
-    if (!name) {
-      alert('이름을 입력해주세요.');
+    if (!/^\d{4}$/.test(sid)) {
+      alert('학번을 4자리 숫자로 입력해주세요.');
+      document.getElementById('student-id-input').focus();
       return;
     }
-    this.studentName = name;
+    if (!name) {
+      alert('이름을 입력해주세요.');
+      document.getElementById('name-input').focus();
+      return;
+    }
+    this.studentId = sid;
+    // PDF·파일명·푸터에 사용될 학생 표시: "2315 홍길동" 형태로 합쳐서 저장
+    this.studentName = `${sid} ${name}`;
     this.closeNameDialog();
-    this.generatePdf();
+    await this.generatePdf();
+    // PDF 저장 완료 → 다시 시작 버튼 활성화 (엔딩 화면에 있을 때만 의미 있음)
+    game._pdfSaved = true;
+    game._updateRestartBtn();
   },
 
   // 오늘 날짜를 yyyy-mm-dd 형식
@@ -2202,34 +3244,34 @@ const pdfReport = {
   async generatePdf() {
     document.getElementById('pdf-loading').classList.remove('gone');
     document.getElementById('pdf-progress').textContent = '표지 생성 중...';
-    // 로딩 화면이 화면에 실제로 그려질 한 프레임 양보
     await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
     try {
-      // jsPDF 글로벌 — UMD 빌드는 window.jspdf.jsPDF
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-      // ⚠️ 한국어 폰트 임베드는 Step 4/5에서 본격적으로.
-      // Step 3 단계에선 jsPDF 기본 폰트(영문/숫자만)로 표지 레이아웃을 우선 검증.
-      // 한국어 텍스트는 이미지로 렌더링하는 방식으로 처리 (HTML Canvas → toDataURL).
-      await this.addCoverPage(doc);
-
-      // Step 4: 문제별 풀이 페이지 — 시나리오에 정의된 모든 문제 슬롯을 순회
+      // 전체 문제 슬롯 + 첫시도 오답·미해결 필터
       const problemSlots = this.collectProblemSlots();
-      const solutions = notebook.getAllSolutions ? notebook.getAllSolutions() : {};
-      for (let i = 0; i < problemSlots.length; i++) {
-        const p = problemSlots[i];
-        document.getElementById('pdf-progress').textContent = `문제 ${i + 1} / ${problemSlots.length} (${p.id})`;
-        await this.addProblemPage(doc, p, game.problemResults[p.id], solutions[p.id]);
+      const total = problemSlots.length;
+      const wrongProblems = problemSlots.filter(p => {
+        const r = game.problemResults[p.id];
+        // 첫시도 정답이 아닌 모든 문제 (재시도로 푼 것 + 미해결 + 손도 안 댐)
+        return !r || r.firstCorrect !== true;
+      });
+      const firstTryCorrect = total - wrongProblems.length;
+      const accuracy = total > 0 ? Math.round((firstTryCorrect / total) * 100) : 0;
+
+      // 표지 (학생명·날짜·통계·안내)
+      await this.addCoverPage(doc, { total, firstTryCorrect, accuracy, wrongCount: wrongProblems.length });
+
+      // 첫시도 오답 문제만 페이지 생성 (필기 캡쳐 X, 빈 풀이 공간)
+      for (let i = 0; i < wrongProblems.length; i++) {
+        const p = wrongProblems[i];
+        document.getElementById('pdf-progress').textContent = `다시 풀 문제 ${i + 1} / ${wrongProblems.length} (${p.id})`;
+        await this.addProblemPage(doc, p, game.problemResults[p.id]);
       }
 
-      // Step 5: 요약 페이지
-      document.getElementById('pdf-progress').textContent = '요약 페이지 생성 중...';
-      await this.addSummaryPage(doc, problemSlots);
-
       document.getElementById('pdf-progress').textContent = '저장 중...';
-      // Step 5: 파일명 sanitization (Windows·macOS 모두 안전)
       const safeName = this.sanitizeFilename(this.studentName);
       const fname = `폴리곤의학당_사각형의시험_${safeName}_${this.todayStrCompact()}.pdf`;
       doc.save(fname);
@@ -2257,7 +3299,7 @@ const pdfReport = {
 
     const tempCanvas = document.createElement('canvas');
     const ctx = tempCanvas.getContext('2d');
-    const scale = 2;  // 고해상도
+    const scale = 1;  // PDF 용량 절감
 
     // 측정용
     ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
@@ -2432,7 +3474,6 @@ const pdfReport = {
     drawRow(3, '사이드 (첫 시도 정답)', `${sideCorrect} / ${side.length}`);
     drawRow(4, '풀이 작성', `${writtenSolutions} / ${problemSlots.length} 문제`);
     drawRow(5, '총 누적 점수', `${totalScore} 점  (수학력 ${s.math} + 지혜 ${s.wisdom} + 통찰력 ${s.insight})`, 13);
-    drawRow(6, '단서 카드', `${s.clues} / 5 장`);
 
     y += 84 + lineH * 2;  // 박스 + 추가 행 여유
 
@@ -2531,13 +3572,13 @@ const pdfReport = {
     const ratio = total > 0 ? correct / total : 0;
     const writeRatio = totalProblems > 0 ? written / totalProblems : 0;
     if (ratio >= 0.85 && writeRatio >= 0.8) {
-      return '닮음의 원리를 깊이 이해하고 풀이도 꼼꼼하게 적었습니다. 다음 단계도 자신 있게 도전해보세요.';
+      return '사각형의 성질을 깊이 이해하고 풀이도 꼼꼼하게 적었습니다. 다음 단계도 자신 있게 도전해보세요.';
     } else if (ratio >= 0.7) {
       return '대부분의 문제를 잘 해결했습니다. 오답 문제의 풀이를 다시 한 번 정리해보면 더 단단해질 것입니다.';
     } else if (ratio >= 0.4) {
       return '여기까지 도달한 것 자체가 의미 있는 도전입니다. 오답 문제와 풀이 노트를 함께 다시 살펴봐요.';
     } else if (written > 0) {
-      return '풀이를 시도한 흔적이 보입니다. 닮음의 정의와 기호 표기부터 차근차근 다시 정리해봅시다.';
+      return '풀이를 시도한 흔적이 보입니다. 평행사변형·직사각형·마름모·정사각형의 조건과 성질부터 차근차근 다시 정리해봅시다.';
     } else {
       return '게임은 끝까지 진행했지만 풀이 노트가 비어 있습니다. 다음에는 풀이 과정도 함께 적어보세요.';
     }
@@ -2558,7 +3599,9 @@ const pdfReport = {
   },
 
   // Step 4: 문제별 페이지 (한 문제당 1페이지)
-  async addProblemPage(doc, problem, result, solutionDataUrl) {
+  // 첫 시도 오답 문제 페이지 — 학생이 종이에 다시 푸는 용도
+  // 필기 캡쳐·점수·뱃지 모두 제거, 문제 본문·도형·풀이 빈 공간 위주
+  async addProblemPage(doc, problem, result) {
     doc.addPage();
     const pageW = 210, pageH = 297;
 
@@ -2567,115 +3610,134 @@ const pdfReport = {
     doc.rect(0, 0, pageW, 6, 'F');
     doc.rect(0, pageH - 6, pageW, 6, 'F');
 
-    // 헤더 — 문제 ID + 종류
-    let y = 16;
-    const isMain = problem.id.startsWith('M');
-    const headerColor = isMain ? '#5d4a30' : '#3a6a4a';
-    this.addTextToPdf(doc, `[문제 #${problem.id}]`, 15, y, {
-      fontSize: 22, fontWeight: '700', color: headerColor, maxWidth: 400, widthMm: 80
+    // 헤더 — 문제 ID + 주제
+    let y = 20;
+    this.addTextToPdf(doc, `문제 ${problem.id}`, 15, y, {
+      fontSize: 14, fontWeight: '700', color: '#5d4a30', maxWidth: 160, widthMm: 90
+    });
+    // 메타 라인 — 보조 정보, 본문보다 작게
+    this.addTextToPdf(doc, `${problem.kind} · ${problem.topic} · 난이도 ${problem.difficulty}`, 15, y + 14, {
+      fontSize: 8, color: '#8b6f47', maxWidth: 480, widthMm: 180
     });
 
-    // 결과 뱃지 — 새 평가 시스템 반영
-    // (1) 미응시: 시도 자체 없음
-    // (2) 첫 시도 정답: ✓ 정답
-    // (3) 첫 시도는 오답이었으나 결국 맞춤: △ 수정 완료
-    // (4) 3회 모두 틀려 미해결: ✗ 미해결
-    let badgeText, badgeColor;
-    if (!result || !result.attempts || result.attempts.length === 0) {
-      badgeText = '미응시'; badgeColor = '#888';
-    } else if (result.firstCorrect === true) {
-      badgeText = '✓ 정답'; badgeColor = '#4a8b3a';
-    } else if (result.resolved === true) {
-      badgeText = '△ 수정 완료'; badgeColor = '#c8a040';
-    } else {
-      badgeText = '✗ 미해결'; badgeColor = '#b85a4a';
+    // 문제 본문 박스
+    y = 50;
+    const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[problem.id]) || {};
+    const text = (pdata.text || problem.text || '')
+      .replace(/\$([^$]+)\$/g, '$1')
+      .replace(/\\square/g, '□')
+      .replace(/\\angle/g, '∠')
+      .replace(/\\overline\{([^}]+)\}/g, '$1')
+      .replace(/\\triangle/g, '△')
+      .replace(/\\parallel/g, '∥')
+      .replace(/\\text\{([^}]+)\}/g, '$1')
+      .replace(/\\pi/g, 'π')
+      .replace(/\^2/g, '²')
+      .replace(/\^3/g, '³');
+
+    // 본문 줄 수를 실제 측정해서 박스 높이를 계산.
+    // fontSize 28px, maxWidth 1120px → widthMm 180mm 비율을 이용.
+    const textFs = 28;
+    const textMaxWidthPx = 1120;
+    const textLineHeight = 1.45;
+    const textWidthMm = 180;
+    const measureCanvas = document.createElement('canvas');
+    const mctx = measureCanvas.getContext('2d');
+    mctx.font = `400 ${textFs}px 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif`;
+    const textLines = this._wrapText(mctx, text, textMaxWidthPx);
+    const textHpx = textLines.length * textFs * textLineHeight;
+    const textHmm = textHpx * (textWidthMm / textMaxWidthPx);  // 픽셀 비율 그대로 mm 변환
+
+    // 도형 크기 사전 계산 (있을 경우)
+    let figureUrl = null, figureDrawW = 0, figureDrawH = 0;
+    if (pdata.figure) {
+      try {
+        figureUrl = `problems/${pdata.figure}`;
+        const img = await this._loadImage(figureUrl);
+        const maxW = 130, maxH = 80;
+        const ratio = img.width / img.height;
+        figureDrawW = maxW; figureDrawH = maxW / ratio;
+        if (figureDrawH > maxH) { figureDrawH = maxH; figureDrawW = maxH * ratio; }
+      } catch (e) {
+        console.warn('도형 이미지 로드 실패:', e);
+        figureUrl = null;
+      }
     }
 
-    doc.setFillColor(...this._hexToRgb(badgeColor));
-    doc.roundedRect(pageW - 50, y - 2, 35, 12, 2, 2, 'F');
-    this.addTextToPdf(doc, badgeText, pageW - 48, y + 1, {
-      fontSize: 13, fontWeight: '700', color: '#ffffff', textAlign: 'center', maxWidth: 200, widthMm: 31
-    });
+    // 본문 박스 = 텍스트 + (도형 있으면 도형 + 패딩) + 상하 여백
+    const padTop = 8, padBottom = 6, gapBetween = 6;
+    const textBoxH = padTop + textHmm + (figureUrl ? gapBetween + figureDrawH : 0) + padBottom;
 
-    // 메타 정보 박스
-    y = 36;
     doc.setDrawColor(200, 168, 122);
-    doc.setLineWidth(0.4);
+    doc.setLineWidth(0.5);
     doc.setFillColor(255, 248, 231);
-    doc.roundedRect(15, y, pageW - 30, 26, 3, 3, 'FD');
+    doc.roundedRect(15, y, pageW - 30, textBoxH, 3, 3, 'FD');
 
-    const meta = `종류: ${problem.kind}   |   주제: ${problem.topic}`;
-    this.addTextToPdf(doc, meta, 18, y + 3, {
-      fontSize: 12, color: '#5d4a30', maxWidth: 700, widthMm: pageW - 36
-    });
-    const meta2 = `난이도: ${problem.difficulty}   |   형식: ${problem.format}`;
-    this.addTextToPdf(doc, meta2, 18, y + 13, {
-      fontSize: 12, color: '#5d4a30', maxWidth: 700, widthMm: pageW - 36
+    // 본문 텍스트
+    this.addTextToPdf(doc, text, 22, y + padTop, {
+      fontSize: textFs, color: '#3a2818', maxWidth: textMaxWidthPx, widthMm: textWidthMm, lineHeight: textLineHeight
     });
 
-    // 획득 점수 + 시도 횟수
-    if (result) {
-      y = 70;
-      const labels = { math: '수학력', wisdom: '지혜', insight: '통찰력', clues: '단서 카드' };
-      const gainedEntries = Object.entries(result.gainedStats || {})
-        .filter(([k, v]) => v !== 0 && v !== undefined);
-      const gained = gainedEntries
-        .map(([k, v]) => `${labels[k] || k} ${v > 0 ? '+' : ''}${v}`)
-        .join('  /  ');
-      const attempts = (result.attempts || []).length;
-      const left = gained ? `획득: ${gained}` : '획득: 변동 없음';
-      const right = attempts ? `시도: ${attempts}회` : '시도: 없음';
-      this.addTextToPdf(doc, left, 15, y, {
-        fontSize: 13, fontWeight: '700', color: '#6b4423', maxWidth: 500, widthMm: 120
-      });
-      this.addTextToPdf(doc, right, pageW - 60, y, {
-        fontSize: 13, fontWeight: '700', color: '#6b4423', textAlign: 'right', maxWidth: 400, widthMm: 45
-      });
+    // 도형 (본문 박스 안, 본문 아래 중앙 정렬)
+    if (figureUrl) {
+      const figureY = y + padTop + textHmm + gapBetween;
+      const offsetX = (pageW - figureDrawW) / 2;
+      doc.addImage(figureUrl, 'PNG', offsetX, figureY, figureDrawW, figureDrawH);
     }
 
-    // 풀이 영역 라벨
-    y = 86;
-    this.addTextToPdf(doc, '학생 풀이', 15, y, {
-      fontSize: 16, fontWeight: '700', color: '#5d4a30', maxWidth: 300, widthMm: 50
-    });
+    y += textBoxH + 8;
 
-    // 풀이 박스
-    y = 100;
-    const solBoxH = 180;
+    // 힌트 박스 (본문과 같은 시각 크기)
+    const hints = (pdata.hints || []).filter(Boolean);
+    if (hints.length) {
+      const hintText = (hints[0] || '')
+        .replace(/\$([^$]+)\$/g, '$1')
+        .replace(/\\angle/g, '∠')
+        .replace(/\\overline\{([^}]+)\}/g, '$1');
+      const fullHintText = `💡 Hint: ${hintText}`;
+      const hintLines = Math.max(1, Math.ceil(fullHintText.length / 17));
+      const hintBoxH = Math.max(18, hintLines * 14 + 10);
+      doc.setDrawColor(107, 139, 58);
+      doc.setLineWidth(0.4);
+      doc.setFillColor(231, 243, 216);
+      doc.roundedRect(15, y, pageW - 30, hintBoxH, 3, 3, 'FD');
+      this.addTextToPdf(doc, fullHintText, 22, y + 7, {
+        fontSize: 24, color: '#3a5a1a', maxWidth: 960, widthMm: 180, lineHeight: 1.45
+      });
+      y += hintBoxH + 6;
+    }
+
+    // 풀이 영역 헤더 — 헤더 톤(0.40 비율)에 맞춤
+    this.addTextToPdf(doc, '풀이', 15, y, {
+      fontSize: 14, fontWeight: '700', color: '#5d4a30', maxWidth: 120, widthMm: 22
+    });
+    this.addTextToPdf(doc, '※ 풀이 과정과 정답을 아래 빈 공간에 직접 적어주세요.', 42, y + 3, {
+      fontSize: 14, color: '#8b6f47', maxWidth: 560, widthMm: 145
+    });
+    y += 16;
+
+    // 풀이 빈 박스 (모눈 배경)
+    const solBoxBottom = pageH - 22;
+    const solBoxH = solBoxBottom - y;
     doc.setDrawColor(139, 111, 71);
     doc.setLineWidth(0.6);
     doc.setFillColor(255, 252, 245);
     doc.roundedRect(15, y, pageW - 30, solBoxH, 3, 3, 'FD');
 
-    if (solutionDataUrl) {
-      try {
-        // 풀이 PNG를 박스 안에 비율 유지하며 삽입
-        const padding = 4;
-        const innerW = pageW - 30 - padding * 2;
-        const innerH = solBoxH - padding * 2;
-        // 이미지 비율 계산을 위해 임시 Image로 로드
-        const img = await this._loadImage(solutionDataUrl);
-        const ratio = img.width / img.height;
-        let drawW = innerW, drawH = innerW / ratio;
-        if (drawH > innerH) { drawH = innerH; drawW = innerH * ratio; }
-        const offsetX = 15 + padding + (innerW - drawW) / 2;
-        const offsetY = y + padding + (innerH - drawH) / 2;
-        doc.addImage(solutionDataUrl, 'PNG', offsetX, offsetY, drawW, drawH);
-      } catch (e) {
-        console.warn('풀이 이미지 삽입 실패:', e);
-        this.addTextToPdf(doc, '(풀이 이미지를 불러올 수 없습니다)', pageW / 2 - 50, y + solBoxH / 2 - 5, {
-          fontSize: 14, color: '#888', textAlign: 'center', maxWidth: 500, widthMm: 100
-        });
-      }
-    } else {
-      this.addTextToPdf(doc, '필기 작성 없음', pageW / 2 - 40, y + solBoxH / 2 - 5, {
-        fontSize: 16, color: '#a0a0a0', textAlign: 'center', maxWidth: 500, widthMm: 80
-      });
+    // 모눈 (옅은 점선)
+    doc.setDrawColor(220, 200, 168);
+    doc.setLineWidth(0.15);
+    const gridStep = 8;
+    for (let gx = 15 + gridStep; gx < pageW - 15; gx += gridStep) {
+      doc.line(gx, y + 2, gx, y + solBoxH - 2);
+    }
+    for (let gy = y + gridStep; gy < y + solBoxH; gy += gridStep) {
+      doc.line(17, gy, pageW - 17, gy);
     }
 
-    // 페이지 푸터 — 학생 이름·날짜
-    this.addTextToPdf(doc, `${this.studentName} · ${this.todayStr()}`, pageW - 80, pageH - 12, {
-      fontSize: 10, color: '#8b6f47', textAlign: 'right', maxWidth: 400, widthMm: 70
+    // 푸터
+    this.addTextToPdf(doc, `${this.studentName} · ${this.todayStr()}`, pageW - 75, pageH - 14, {
+      fontSize: 16, color: '#8b6f47', textAlign: 'right', maxWidth: 400, widthMm: 60
     });
   },
 
@@ -2698,88 +3760,102 @@ const pdfReport = {
     return m.map(v => parseInt(v, 16));
   },
 
-  async addCoverPage(doc) {
+  async addCoverPage(doc, stats) {
+    const { total = 12, firstTryCorrect = 0, accuracy = 0, wrongCount = 0 } = stats || {};
     const pageW = 210, pageH = 297;  // A4 mm
 
-    // 배경 — 따뜻한 베이지
+    // 배경
     doc.setFillColor(245, 232, 211);
     doc.rect(0, 0, pageW, pageH, 'F');
-
-    // 상단 장식 띠
     doc.setFillColor(139, 111, 71);
     doc.rect(0, 0, pageW, 8, 'F');
-    doc.setFillColor(139, 111, 71);
     doc.rect(0, pageH - 8, pageW, 8, 'F');
 
-    // 메인 타이틀 (한국어 — 이미지로 렌더)
-    let y = 50;
-    y = this.addTextToPdf(doc, '폴리곤의 학당', pageW / 2 - 80, y, {
-      fontSize: 48, fontWeight: '700', color: '#5d4a30', textAlign: 'center', maxWidth: 600, widthMm: 160
+    // 타이틀
+    let y = 28;
+    this.addTextToPdf(doc, '폴리곤의 학당 — 사각형의 시험', pageW / 2 - 80, y, {
+      fontSize: 26, fontWeight: '700', color: '#5d4a30', textAlign: 'center', maxWidth: 600, widthMm: 160
+    });
+    y += 14;
+    this.addTextToPdf(doc, '재시행 리포트', pageW / 2 - 50, y, {
+      fontSize: 16, fontWeight: '500', color: '#8b6f47', textAlign: 'center', maxWidth: 400, widthMm: 100
     });
 
-    y += 8;
-    this.addTextToPdf(doc, '사각형의 시험', pageW / 2 - 70, y, {
-      fontSize: 22, fontWeight: '500', color: '#8b6f47', textAlign: 'center', maxWidth: 500, widthMm: 140
-    });
-
-    y += 20;
-    this.addTextToPdf(doc, '중학교 2학년 4단원 · 사각형의 성질', pageW / 2 - 60, y, {
-      fontSize: 16, color: '#6b4423', textAlign: 'center', maxWidth: 400, widthMm: 120
-    });
-
-    // 학생 정보 박스
-    y = 110;
+    // 학생 정보
+    y = 62;
     doc.setDrawColor(139, 111, 71);
     doc.setLineWidth(0.6);
     doc.setFillColor(255, 248, 231);
-    doc.roundedRect(30, y, pageW - 60, 50, 4, 4, 'FD');
-
-    this.addTextToPdf(doc, `학생: ${this.studentName}`, 40, y + 8, {
-      fontSize: 20, fontWeight: '700', color: '#3a2818', maxWidth: 500, widthMm: 130
+    doc.roundedRect(20, y, pageW - 40, 24, 4, 4, 'FD');
+    this.addTextToPdf(doc, `학생: ${this.studentName}`, 28, y + 5, {
+      fontSize: 16, fontWeight: '700', color: '#3a2818', maxWidth: 500, widthMm: 90
     });
-    this.addTextToPdf(doc, `날짜: ${this.todayStr()}`, 40, y + 25, {
-      fontSize: 16, color: '#5d4a30', maxWidth: 500, widthMm: 100
-    });
-
-    // 결과 박스 — 스탯 4종
-    y = 175;
-    this.addTextToPdf(doc, '최종 점수', 30, y, {
-      fontSize: 20, fontWeight: '700', color: '#5d4a30', maxWidth: 300, widthMm: 60
+    this.addTextToPdf(doc, `날짜: ${this.todayStr()}`, pageW - 100, y + 5, {
+      fontSize: 14, color: '#5d4a30', maxWidth: 400, widthMm: 80
     });
 
-    y += 12;
-    const stats = game.stats;
-    const statItems = [
-      { label: '수학력 (Math)', value: stats.math, max: 32 },
-      { label: '지혜 (Wisdom)', value: stats.wisdom, max: 10 },
-      { label: '통찰력 (Insight)', value: stats.insight, max: 10 },
-      { label: '단서 카드 (Clues)', value: stats.clues, max: 5 },
-    ];
-    statItems.forEach((s, i) => {
-      const yi = y + i * 18;
-      doc.setDrawColor(200, 168, 122);
-      doc.setLineWidth(0.3);
-      doc.line(30, yi + 12, pageW - 30, yi + 12);
-      this.addTextToPdf(doc, s.label, 35, yi, {
-        fontSize: 14, color: '#5d4a30', maxWidth: 400, widthMm: 80
+    // 핵심 통계 박스
+    y = 100;
+    doc.setFillColor(255, 245, 214);
+    doc.setDrawColor(200, 168, 122);
+    doc.setLineWidth(0.8);
+    doc.roundedRect(20, y, pageW - 40, 64, 5, 5, 'FD');
+
+    this.addTextToPdf(doc, '첫 시도 결과', 28, y + 4, {
+      fontSize: 14, fontWeight: '700', color: '#8b6f47', maxWidth: 300, widthMm: 60
+    });
+
+    // 큰 정답률 표시
+    this.addTextToPdf(doc, `${firstTryCorrect} / ${total} 문제`, pageW / 2 - 60, y + 16, {
+      fontSize: 32, fontWeight: '700', color: '#3a6a1a', textAlign: 'center', maxWidth: 600, widthMm: 120
+    });
+    this.addTextToPdf(doc, `정답률 ${accuracy}%`, pageW / 2 - 50, y + 42, {
+      fontSize: 22, fontWeight: '700', color: '#5d4a30', textAlign: 'center', maxWidth: 400, widthMm: 100
+    });
+
+    // 안내 박스
+    y = 184;
+    if (wrongCount === 0) {
+      // 모두 첫시도 정답
+      doc.setFillColor(214, 240, 200);
+      doc.setDrawColor(90, 139, 58);
+      doc.setLineWidth(0.8);
+      doc.roundedRect(20, y, pageW - 40, 60, 5, 5, 'FD');
+      this.addTextToPdf(doc, '🎉 완벽합니다!', pageW / 2 - 40, y + 8, {
+        fontSize: 22, fontWeight: '700', color: '#2a5a1a', textAlign: 'center', maxWidth: 400, widthMm: 100
       });
-      this.addTextToPdf(doc, `${s.value} / ${s.max}`, pageW - 75, yi, {
-        fontSize: 16, fontWeight: '700', color: '#6b4423', textAlign: 'right', maxWidth: 200, widthMm: 40
+      this.addTextToPdf(doc, '모든 문제를 첫 시도에 맞혔습니다. 재시행이 필요한 문제가 없습니다.', pageW / 2 - 90, y + 28, {
+        fontSize: 14, color: '#3a2818', textAlign: 'center', maxWidth: 700, widthMm: 170, lineHeight: 1.6
       });
-    });
+    } else {
+      // 재시행 안내
+      doc.setFillColor(253, 224, 220);
+      doc.setDrawColor(184, 90, 74);
+      doc.setLineWidth(0.8);
+      doc.roundedRect(20, y, pageW - 40, 72, 5, 5, 'FD');
+      this.addTextToPdf(doc, '📝 다시 풀어서 제출해주세요', 28, y + 6, {
+        fontSize: 16, fontWeight: '700', color: '#6b2a1a', maxWidth: 500, widthMm: 130
+      });
+      this.addTextToPdf(doc,
+        `아래에 첫 시도에 맞히지 못한 ${wrongCount}개의 문제가 있습니다.`,
+        28, y + 22, {
+        fontSize: 13, color: '#3a2818', maxWidth: 700, widthMm: 170
+      });
+      this.addTextToPdf(doc,
+        '각 문제를 다시 풀고 풀이 과정과 정답을 빈 공간에 직접 적은 뒤 선생님께 제출해주세요.',
+        28, y + 36, {
+        fontSize: 13, color: '#3a2818', maxWidth: 700, widthMm: 170, lineHeight: 1.5
+      });
+      this.addTextToPdf(doc,
+        '※ 첫 시도에 맞힌 문제는 이 리포트에 포함되지 않습니다.',
+        28, y + 56, {
+        fontSize: 11, color: '#8b3a2a', maxWidth: 700, widthMm: 170
+      });
+    }
 
-    // 엔딩 정보
-    y = 255;
-    const s = game.stats;
-    let chosenEnding = ENDINGS.C;
-    const coverCtx = { stats: s, firstTryCorrect: countFirstTryCorrect(game.problemResults) };
-    if (ENDINGS.A.condition(coverCtx)) chosenEnding = ENDINGS.A;
-    else if (ENDINGS.B.condition(coverCtx)) chosenEnding = ENDINGS.B;
-
-    doc.setFillColor(245, 217, 154);
-    doc.roundedRect(30, y, pageW - 60, 22, 3, 3, 'F');
-    this.addTextToPdf(doc, `${chosenEnding.tag} — ${chosenEnding.title}`, pageW / 2 - 70, y + 6, {
-      fontSize: 16, fontWeight: '700', color: '#3a2818', textAlign: 'center', maxWidth: 600, widthMm: 140
+    // 하단 크레딧
+    this.addTextToPdf(doc, '2026 서울사대부중 2학년 수학B 허철호 선생님 © All rights reserved', pageW / 2 - 80, pageH - 18, {
+      fontSize: 10, color: '#8b6f47', textAlign: 'center', maxWidth: 700, widthMm: 170
     });
   },
 };

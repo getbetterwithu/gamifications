@@ -9,9 +9,10 @@ const BG_IMG_STYLE = 'width:100%;height:100%;object-fit:cover;display:block;';
 const bgImg = (file) => `<img src="backgrounds/${file}" style="${BG_IMG_STYLE}" alt="">`;
 
 const BACKGROUNDS = {
-  entrance:    bgImg('entrance.png'),     // Scene 1: 학당 정문, 이른 아침
-  yard:        bgImg('yard.png'),         // Scene 2~7, 9~11: 설계도 안뜰
-  garden:      bgImg('garden.png'),       // Scene 8: 나무 그늘 (5단원 재활용)
+  entrance:     bgImg('entrance.png'),     // Scene 1: 학당 정문, 이른 아침
+  yard:         bgImg('yard.png'),         // Scene 3~7, 9~11: 설계도 안뜰 (분쟁 종료 후)
+  yard_dispute: bgImg('yard_dispute.png'), // Scene 2: 건축가 vs 학당 관계자 언쟁
+  garden:       bgImg('garden.png'),       // Scene 8: 나무 그늘 (5단원 재활용)
   yard_sunset: bgImg('yard_sunset.png'),  // Scene 12: 안뜰 노을
   award_hall:  bgImg('award_hall.png'),   // 엔딩 A: 시상 공간
   corridor:    bgImg('corridor.png'),     // 엔딩 B: 학당 복도 (5단원 재활용)
