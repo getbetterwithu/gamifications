@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>피타고라스 학당 — 중2 수학 게임</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', -apple-system, sans-serif;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f5d7a8 0%, #e8a878 100%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 24px;
+    color: #2a1810;
+  }
+  header { text-align: center; margin-bottom: 40px; }
+  h1 { font-size: 2.4rem; margin-bottom: 8px; letter-spacing: -0.5px; }
+  .subtitle { font-size: 1rem; color: #5d3a18; opacity: 0.85; }
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+    max-width: 800px;
+    width: 100%;
+  }
+  .card {
+    background: rgba(255,255,255,0.88);
+    border-radius: 16px;
+    padding: 28px 24px;
+    text-decoration: none;
+    color: inherit;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: block;
+  }
+  .card:hover { transform: translateY(-4px); box-shadow: 0 10px 28px rgba(0,0,0,0.18); }
+  .unit-no { font-size: 0.85rem; color: #b8742a; font-weight: 700; letter-spacing: 1px; }
+  .card h2 { font-size: 1.5rem; margin: 6px 0 12px; }
+  .card p { font-size: 0.95rem; line-height: 1.5; color: #4a3520; }
+  .status { display: inline-block; margin-top: 14px; padding: 4px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 600; }
+  .status-done { background: #c8e6a8; color: #3a5818; }
+  .status-wip { background: #f8d8a8; color: #8b5a18; }
+  footer { margin-top: 40px; font-size: 0.78rem; color: #5d3a18; opacity: 0.7; text-align: center; line-height: 1.6; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>피타고라스 학당</h1>
+    <p class="subtitle">중학교 2학년 수학 — 도형 단원 복습 비주얼노벨</p>
+  </header>
+
+  <div class="cards">
+    <a class="card" href="unit4_tri_quad/games/stage1_quadrilaterals/index.html">
+      <div class="unit-no">4단원 · STAGE 1</div>
+      <h2>사각형의 성질</h2>
+      <p>평행사변형이 되는 조건 + 여러 가지 사각형의 성질. 폴리곤의 입학 첫날 사건을 12 Scene으로.</p>
+      <span class="status status-wip">개발 중 (도형 SVG 전환)</span>
+    </a>
+
+    <a class="card" href="unit5_similarity/games/stage1_similarity/index.html">
+      <div class="unit-no">5단원 · STAGE 1</div>
+      <h2>도형의 닮음</h2>
+      <p>닮음의 정의·성질을 시밀러(별명 받은 폴리곤)와 함께 12 Scene·9장 배경 일러스트로 학습.</p>
+      <span class="status status-done">플레이 가능</span>
+    </a>
+  </div>
+
+  <footer>
+    © 2026 · 학습용 비주얼노벨<br>
+    출처: 천재교과서 중학수학 2 — IV. 삼각형과 사각형의 성질, V. 도형의 닮음
+  </footer>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" font-family="Times New Roman, serif">
+  <!-- 평행사변형 ABCD: A(70,50) D(238,50) B(140,171.2) C(308,171.2) -->
+  <!-- AD=BC=6cm, AB=CD=5cm, ∠A=120°, ∠B=60°(=x), ∠C=120°(=y) -->
+
+  <!-- 평행사변형 외곽 -->
+  <polygon points="70,50 238,50 308,171.2 140,171.2"
+           fill="none" stroke="#222" stroke-width="2.5" stroke-linejoin="round"/>
+
+  <!-- 측정 점선 호: AD 변 (꼭짓점 A → D, 외측 위로 휘어짐) -->
+  <path d="M 70 50 Q 154 22 238 50"
+        fill="none" stroke="#888" stroke-width="1" stroke-dasharray="3 3"/>
+  <!-- 측정 점선 호: AB 변 (꼭짓점 A → B, 좌측 외측) -->
+  <path d="M 70 50 Q 83 123 140 171.2"
+        fill="none" stroke="#888" stroke-width="1" stroke-dasharray="3 3"/>
+  <!-- 측정 점선 호: BC 변 (꼭짓점 B → C, 아래 외측) -->
+  <path d="M 140 171.2 Q 224 199 308 171.2"
+        fill="none" stroke="#888" stroke-width="1" stroke-dasharray="3 3"/>
+
+  <!-- 각도 호: ∠A 안쪽 120° -->
+  <path d="M 92 50 A 22 22 0 0 1 81 69.05"
+        fill="none" stroke="#222" stroke-width="1.5"/>
+  <!-- 각도 호: ∠B 안쪽 60° (x) -->
+  <path d="M 158 171.2 A 18 18 0 0 0 131 155.61"
+        fill="none" stroke="#222" stroke-width="1.5"/>
+  <!-- 각도 호: ∠C 안쪽 120° (y) — sweep 수정 -->
+  <path d="M 290 171.2 A 18 18 0 0 1 299 155.61"
+        fill="none" stroke="#222" stroke-width="1.5"/>
+
+  <!-- 점 라벨 -->
+  <text x="58" y="44" font-size="16" font-weight="bold" fill="#222">A</text>
+  <text x="244" y="44" font-size="16" font-weight="bold" fill="#222">D</text>
+  <text x="124" y="188" font-size="16" font-weight="bold" fill="#222">B</text>
+  <text x="316" y="188" font-size="16" font-weight="bold" fill="#222">C</text>
+
+  <!-- 변 길이 라벨 (3변: AD, AB, BC) -->
+  <text x="140" y="28" font-size="14" fill="#222">6 cm</text>
+  <text x="44" y="124" font-size="14" fill="#222">5 cm</text>
+  <text x="208" y="205" font-size="14" fill="#222">6 cm</text>
+
+  <!-- 각도 라벨 -->
+  <text x="98" y="78" font-size="14" fill="#222">120°</text>
+  <!-- x: 호 외측 (도형 외부, B 좌하) -->
+  <text x="118" y="202" font-size="14" font-style="italic" fill="#222">x</text>
+  <!-- y: 호 내측 (도형 안쪽, ∠C 큰 호 안) -->
+  <text x="278" y="164" font-size="14" font-style="italic" fill="#222">y</text>
+</svg>
