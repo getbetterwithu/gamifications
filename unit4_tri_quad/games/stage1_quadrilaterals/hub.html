@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>폴리곤의 학당 — 사각형의 시험 · 안내</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: #f8fafc;
+      color: #1e293b;
+      min-height: 100vh;
+      padding: 48px 20px 60px;
+    }
+
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    /* Back link */
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.9rem;
+      color: #64748b;
+      text-decoration: none;
+      margin-bottom: 18px;
+      font-weight: 500;
+      transition: color 0.15s;
+    }
+    .back-link:hover { color: #2563eb; }
+
+    /* Header */
+    .page-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .page-header h1 {
+      font-size: 1.9rem;
+      font-weight: 900;
+      letter-spacing: -1px;
+      margin-bottom: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .page-header h1 .emoji { font-size: 1.6rem; line-height: 1; }
+    .page-header h1 .brand {
+      background: linear-gradient(135deg, #1e293b 0%, #2563eb 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .page-header .subtitle {
+      font-size: 0.95rem;
+      color: #64748b;
+      font-weight: 500;
+    }
+
+    /* Main card */
+    .game-card {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 4px 24px rgba(15, 23, 42, 0.06);
+      border: 1px solid #e2e8f0;
+      padding: 28px 30px;
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #475569;
+      margin-bottom: 10px;
+      letter-spacing: -0.2px;
+    }
+
+    .story {
+      font-size: 0.95rem;
+      color: #334155;
+      line-height: 1.7;
+      margin-bottom: 18px;
+    }
+
+    .goals {
+      list-style: none;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      font-size: 0.9rem;
+      color: #334155;
+      line-height: 1.5;
+    }
+    .goals li { padding-left: 20px; position: relative; }
+    .goals li::before {
+      content: '';
+      position: absolute;
+      left: 4px; top: 0.55em;
+      width: 7px; height: 7px;
+      background: #2563eb;
+      border-radius: 50%;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 22px;
+    }
+    .meta-item {
+      background: #f1f5f9;
+      border-radius: 10px;
+      padding: 10px 12px;
+      text-align: center;
+    }
+    .meta-item .ml { font-size: 0.72rem; color: #64748b; font-weight: 600; margin-bottom: 3px; }
+    .meta-item .mv { font-size: 0.95rem; color: #1e293b; font-weight: 800; }
+
+    /* Start button */
+    .start-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 18px 22px;
+      margin-top: 24px;
+      background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+      color: white;
+      border-radius: 14px;
+      text-decoration: none;
+      font-size: 1.1rem;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+    }
+    .start-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+    }
+    .start-btn::after {
+      content: '→';
+      margin-left: 10px;
+      transition: transform 0.15s;
+    }
+    .start-btn:hover::after {
+      transform: translateX(4px);
+    }
+
+    /* Teacher notes */
+    .teacher-notes {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(15, 23, 42, 0.06);
+      border: 1px solid #e2e8f0;
+      overflow: hidden;
+    }
+    .teacher-notes summary {
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 16px 22px;
+      background: #fef9e7;
+      border-bottom: 1px solid #f2e2a8;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #78350f;
+      user-select: none;
+      transition: background 0.15s;
+    }
+    .teacher-notes summary::-webkit-details-marker { display: none; }
+    .teacher-notes summary:hover { background: #fdf3d0; }
+    .teacher-notes .tn-icon { font-size: 1.1rem; }
+    .teacher-notes[open] summary { background: #fdf3d0; }
+
+    .tn-body {
+      padding: 20px 22px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .tn-section h3 {
+      font-size: 0.9rem;
+      font-weight: 800;
+      color: #475569;
+      margin-bottom: 8px;
+      letter-spacing: -0.2px;
+    }
+    .tn-list {
+      list-style: none;
+      padding-left: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      font-size: 0.88rem;
+      color: #334155;
+      line-height: 1.55;
+    }
+    .tn-list li { padding-left: 16px; position: relative; }
+    .tn-list li::before {
+      content: '•';
+      position: absolute;
+      left: 2px; top: 0;
+      color: #94a3b8;
+    }
+    .tn-list code {
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 1px 7px;
+      font-family: 'SFMono-Regular', Menlo, Consolas, monospace;
+      font-size: 0.85rem;
+      color: #1e293b;
+      font-weight: 600;
+    }
+    .tn-list kbd {
+      background: #fff;
+      border: 1px solid #cbd5e1;
+      border-bottom-width: 2px;
+      border-radius: 5px;
+      padding: 1px 6px;
+      font-family: 'SFMono-Regular', Menlo, Consolas, monospace;
+      font-size: 0.8rem;
+      color: #334155;
+      font-weight: 700;
+      margin: 0 1px;
+    }
+    .tn-note {
+      font-size: 0.82rem;
+      color: #64748b;
+      margin-top: 6px;
+      line-height: 1.55;
+    }
+
+    .answer-box {
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 0.88rem;
+      color: #7c2d12;
+      line-height: 1.55;
+    }
+    .answer-box b {
+      color: #9a3412;
+    }
+    .answer-box code {
+      background: #fed7aa;
+      border-radius: 5px;
+      padding: 1px 6px;
+      font-family: inherit;
+      font-weight: 700;
+    }
+
+    footer {
+      margin-top: 48px;
+      font-size: 0.85rem;
+      color: #94a3b8;
+      text-align: center;
+    }
+
+    @media (max-width: 520px) {
+      body { padding: 36px 14px 50px; }
+      .page-header h1 { font-size: 1.6rem; }
+      .game-card { padding: 22px 20px; }
+      .meta-grid { grid-template-columns: 1fr; }
+      .tn-body { padding: 16px 18px 18px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <a class="back-link" href="https://getbetterwithu.github.io/concept-edtech-planner/game-hub.html">← AI-Labs 카탈로그로</a>
+
+    <div class="page-header">
+      <h1><span class="emoji">📐</span><span class="brand">폴리곤의 학당 — 사각형의 시험</span></h1>
+      <p class="subtitle">중2 4단원 · 비주얼노벨 + 문제풀이 게임</p>
+    </div>
+
+    <!-- 게임 소개 -->
+    <div class="game-card">
+      <div class="section-title">📖 줄거리</div>
+      <p class="story">
+        고대 그리스, 피타고라스 학당의 신입생 <b>폴리곤</b>. 첫날부터 학당과 건축가들이 분쟁 중인 설계도를 마주한다. 평행사변형·직사각형·마름모·정사각형 — 도형들의 조건과 성질을 하나씩 풀어내며 분쟁의 진실에 다가간다.
+      </p>
+
+      <div class="section-title">🎯 학습 목표</div>
+      <ul class="goals">
+        <li>평행사변형이 되는 조건과 성질을 판별할 수 있다</li>
+        <li>직사각형·마름모·정사각형의 정의와 대각선의 성질을 이해한다</li>
+        <li>여러 가지 사각형의 포함 관계와 조건 추가에 따른 변화를 설명할 수 있다</li>
+        <li>실생활 맥락(놀이기구·풀밭 등)에 사각형 성질을 적용한다</li>
+      </ul>
+
+      <div class="meta-grid">
+        <div class="meta-item">
+          <div class="ml">예상 시간</div>
+          <div class="mv">30~40분</div>
+        </div>
+        <div class="meta-item">
+          <div class="ml">문제 수</div>
+          <div class="mv">12 + 1</div>
+        </div>
+        <div class="meta-item">
+          <div class="ml">결과물</div>
+          <div class="mv">PDF 풀이지</div>
+        </div>
+      </div>
+
+      <a class="start-btn" href="index.html">게임 시작하기</a>
+    </div>
+
+    <!-- 선생님용 안내 -->
+    <details class="teacher-notes" open>
+      <summary>
+        <span class="tn-icon">🔑</span>
+        <span>선생님용 안내 (운영 가이드 · 치트키)</span>
+      </summary>
+      <div class="tn-body">
+
+        <div class="tn-section">
+          <h3>🎮 게임 흐름</h3>
+          <ul class="tn-list">
+            <li>총 12개 정규 문제 (메인 10 + 사이드 2) + 특별 문제 1개</li>
+            <li>각 문제는 첫 시도 정답에만 점수 부여. 오답 시 힌트가 단계별로 노출되고, 3회 실패하면 정답이 공개됩니다.</li>
+            <li>특별 문제(Scene 8.5 — "잠깐 멈추기")는 점수·통계 집계에서 제외. 단, <b>정답을 맞춰야만 다음으로 넘어갈 수 있음</b> (자세히는 아래 참고).</li>
+            <li>게임 종료 시 학생이 "📄 풀이 제출하기 (PDF)" 버튼을 눌러 본인용 풀이지를 다운로드. 오답 문제들의 빈 풀이 공간이 자동으로 들어가 있어 인쇄 후 손으로 다시 풀게 할 수 있습니다.</li>
+            <li>엔딩은 첫 시도 정답 개수에 따라 3가지 분기 (학생에게는 엔딩 이름·등급 미공개).</li>
+          </ul>
+        </div>
+
+        <div class="tn-section">
+          <h3>📝 특별 문제 (Scene 8.5) 정답</h3>
+          <div class="answer-box">
+            게임 중간(Scene 8 다음)에 탈레스가 "지난 3주 동안 너희를 가르쳐주신 두 분 수학교생선생님의 성함"을 묻습니다.<br><br>
+            <b>정답</b>: 남자선생님 <code>황인수</code> / 여자선생님 <code>김시원</code><br><br>
+            점수에는 들어가지 않지만 <b>이 문제를 통과해야만 다음 진도로 넘어갑니다.</b> 학생이 모르면 안내해주세요.
+          </div>
+        </div>
+
+        <div class="tn-section">
+          <h3>🛠 ADMIN 모드 (선생님 전용)</h3>
+          <ul class="tn-list">
+            <li>진입 1: <code>`</code> (백틱) 키를 <b>1.5초 이내에 3번</b> 누르기</li>
+            <li>진입 2 (백업): <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>A</kbd></li>
+            <li>진입 후 화면 상단에 <code>🛠 ADMIN</code> 뱃지와 <code>◀ 이전 문제</code> / <code>다음 문제 ▶</code> 버튼이 나타납니다.</li>
+            <li>문제를 건너뛰거나 특정 장면으로 점프할 수 있어 수업 시연·디버깅에 사용. 같은 단축키로 다시 토글하면 해제.</li>
+          </ul>
+          <p class="tn-note">키보드 한글 입력 상태에서도 작동합니다. 입력창에 포커스가 있으면 무시됩니다.</p>
+        </div>
+
+        <div class="tn-section">
+          <h3>💡 운영 팁</h3>
+          <ul class="tn-list">
+            <li><b>크롬북에서 바로 실행 가능</b> — 별도 설치 없이 브라우저만 있으면 됩니다.</li>
+            <li>학생이 중간에 종료해도 진행 상태(점수·풀이·문제 결과)가 LocalStorage에 저장되어 "이어서 하기"가 가능합니다.</li>
+            <li>"다시 시작" 버튼은 학생이 PDF로 풀이를 한 번 제출한 뒤에만 활성화됩니다. (실수로 점수가 날아가는 것 방지)</li>
+            <li>PDF는 학생 이름을 입력받아 파일명에 포함시킵니다. 인쇄 또는 LMS 제출이 모두 가능.</li>
+          </ul>
+        </div>
+
+        <div class="tn-section">
+          <h3>📢 다른 선생님과 공유할 때</h3>
+          <p class="tn-note">
+            학생에게는 이 페이지 또는 카탈로그 URL만 공유하면 됩니다. 위의 특별 문제 정답(<code>황인수</code> / <code>김시원</code>)은 학생에게 미리 알려주지 말고, 막혔을 때만 안내해주세요.
+          </p>
+        </div>
+
+      </div>
+    </details>
+
+    <footer>&copy; 2026 서울사대부중 2학년 수학B 허철호 선생님 · All rights reserved</footer>
+
+  </div>
+
+</body>
+</html>
