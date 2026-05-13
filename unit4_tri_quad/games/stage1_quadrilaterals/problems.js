@@ -1,6 +1,6 @@
 // ===== 12개 문제 데이터 (4단원 사각형) =====
 // 출처: 교과서 405·406 소단원 "바로 확인하기"
-// 도형 이미지: problems/{slotId}_figure.png  (PDF에서 추출, 게임에 자동 표시)
+// 도형 이미지: problems/{slotId}.png  (PDF에서 추출, 게임에 자동 표시)
 // 텍스트는 KaTeX로 렌더링 (수식·기호 수식체 적용)
 // 힌트는 선생님이 hints 배열에 채워넣을 예정 (현재 비어있음 → 기본 힌트 사용)
 //
@@ -8,7 +8,7 @@
 // {
 //   type: 'ox' | 'choice' | 'choice-multi' | 'shortAnswer',
 //   text: '문제 본문 (LaTeX 가능, $...$ 또는 $$...$$)',
-//   figure: 'M01_figure.png' | null,
+//   figure: 'M01.png' | null,
 //   askFormat: '답 입력 안내 (단답형용, LaTeX 가능)',
 //   choices: ['보기 1', '보기 2', ...],          // choice·choice-multi
 //   correctChoice: 1,                            // choice
@@ -32,7 +32,7 @@ const PROBLEMS = {
   M02: {
     type: 'choice-multi',
     text: '다음 그림에서 $\\square ABCD$가 평행사변형인 것을 모두 고르시오. (단, 점 $O$는 두 대각선의 교점이다.)',
-    figure: 'M02_figure.png',
+    figure: 'M02.png',
     choices: ['(1)', '(2)', '(3)', '(4)'],
     // (1) 두 쌍의 대변 길이 같음 (9cm, 7cm) — 평행사변형 ✓
     // (2) 한 쌍의 대각만 같음 (50°, 130°, 50°) — 평행사변형 X (대각 50°≠130°)
@@ -45,7 +45,7 @@ const PROBLEMS = {
   M03: {
     type: 'shortAnswer',
     text: '오른쪽 $\\square ABCD$에서 $\\angle x, \\angle y$의 크기를 각각 구하시오.',
-    figure: 'M03_figure.png',
+    figure: 'M03.png',
     // 평행사변형: ∠A=120°, ∠B=x, ∠C=y. 대각: ∠A=∠C=120°, ∠B=∠D=60°
     // 그런데 그림에서 x는 ∠B 위치, y는 ∠C 위치
     // 평행사변형 인접각 합 180° → ∠B=180-120=60, ∠C=120
@@ -65,7 +65,7 @@ const PROBLEMS = {
   S01: {
     type: 'ox',
     text: '빙글빙글 돌아가는 놀이기구가 항상 수평을 유지하는 것은 평행사변형의 성질을 이용한 것이다.',
-    figure: 'S01_figure.png',
+    figure: 'S01.png',
     correctAnswer: 'O',
     hints: [],
   },
@@ -73,7 +73,7 @@ const PROBLEMS = {
   M05: {
     type: 'shortAnswer',
     text: '오른쪽 $\\square ABCD$가 평행사변형이 되도록 하는 $x, y$의 값을 각각 구하시오. (단, 점 $O$는 두 대각선의 교점이다.)',
-    figure: 'M05_figure.png',
+    figure: 'M05.png',
     // 평행사변형: 두 대각선이 서로 다른 것을 이등분 → AO=OC, BO=OD
     // 그림 정보: AD=8cm, ∠OAD=x°, ∠OCB=35°, BC=2y cm
     // AD∥BC이므로 ∠OAD=∠OCB (엇각) → x=35
@@ -101,7 +101,7 @@ const PROBLEMS = {
   M07: {
     type: 'shortAnswer',
     text: '오른쪽 정사각형 $ABCD$에서 두 대각선의 교점이 $O$이고 $\\overline{BD}=14$ cm일 때, $x, y$의 값을 각각 구하시오.',
-    figure: 'M07_figure.png',
+    figure: 'M07.png',
     // 정사각형: 두 대각선 길이 같고 수직이등분
     // BD=14 → OD=7, AC=14, OC=7 → x=7 (OC 또는 OD)
     // 두 대각선 수직이등분 → 교점 각 90° → y=90
@@ -113,7 +113,7 @@ const PROBLEMS = {
   S02: {
     type: 'shortAnswer',
     text: '원 모양의 풀밭 둘레의 네 지점을 꼭짓점으로 하는 정사각형 모양의 목장을 만들려고 한다. 풀밭의 넓이가 $100\\pi \\text{ m}^2$일 때, 목장의 넓이를 구하시오.',
-    figure: 'S02_figure.png',
+    figure: 'S02.png',
     // 원 넓이 100π → 반지름 r=10
     // 원에 내접하는 정사각형 → 대각선 = 2r = 20
     // 정사각형 넓이 = 대각선² / 2 = 400/2 = 200
@@ -125,7 +125,7 @@ const PROBLEMS = {
   M08: {
     type: 'shortAnswer',
     text: '오른쪽 직사각형 $ABCD$에서 두 대각선의 교점이 $O$이고 $\\overline{BD}=8$ cm, $\\angle OAB=50°$일 때, $x, y$의 값을 각각 구하시오.',
-    figure: 'M08_figure.png',
+    figure: 'M08.png',
     // 직사각형: 두 대각선 길이 같고 서로 다른 것 이등분
     // BD=8 → AC=8, OA=OB=4 → x=4 (OD나 OC 길이)
     // △OAB 이등변(OA=OB) → ∠OAB=∠OBA=50° → ∠AOB=80°
@@ -139,7 +139,7 @@ const PROBLEMS = {
   M09: {
     type: 'shortAnswer',
     text: '오른쪽 마름모 $ABCD$에서 두 대각선의 교점이 $O$이고 $\\overline{AO}=3$ cm, $\\overline{BD}=12$ cm일 때, $\\triangle AOB$의 넓이를 구하시오.',
-    figure: 'M09_figure.png',
+    figure: 'M09.png',
     // 마름모: 두 대각선이 수직이등분
     // AO=3, BD=12 → BO=6
     // △AOB: 직각삼각형 (AO⊥BO), 밑변·높이 = 3·6
