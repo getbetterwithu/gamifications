@@ -1529,7 +1529,8 @@ const game = {
         lastBg = s.bg;
         if (s.clearChars) this.clearAllCharacters();
       } else if (s.type === 'enter') {
-        this.charSlots[s.position] = s.role;
+        // position 없는 enter는 같은 role의 표정만 갱신하도록 placeCharacter가 알아서 처리
+        if (s.position) this.charSlots[s.position] = s.role;
         this.placeCharacter(s.role, s.expression, s.position);
       }
     }
@@ -1995,8 +1996,23 @@ const game = {
   },
 
   placeCharacter(role, expression, position) {
+    // position이 없으면 같은 role이 이미 들어있는 슬롯을 찾아 그 슬롯의 표정만 갱신
+    if (!position || !['left', 'center', 'right'].includes(position)) {
+      const found = Object.entries(this.charSlots || {}).find(([_, r]) => r === role);
+      if (found) {
+        position = found[0];
+      } else {
+        console.warn('[placeCharacter] invalid position and no existing slot for role:', role, position);
+        return;
+      }
+    }
     const el = document.getElementById(`char-${position}`);
+    if (!el) {
+      console.warn('[placeCharacter] no element for position:', position);
+      return;
+    }
     const img = el.querySelector('img');
+    if (!img) return;
     img.src = charImg(role, expression);
     img.alt = NAMES[role] || role;
     el.classList.remove('hidden');
