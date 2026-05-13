@@ -1504,8 +1504,21 @@ const game = {
 
   _renderReviewProblem() {
     const target = this._reviewProblemIndices[this._reviewPos];
-    if (target == null) return;
+    if (target == null) {
+      console.error('[review] target index missing. pos=', this._reviewPos, 'list=', this._reviewProblemIndices);
+      const box = document.getElementById('problem-placeholder');
+      box.classList.remove('placeholder-mode', 'gone', 'scene-fading');
+      box.innerHTML = '<div style="padding:24px;color:#8b3a2a;font-weight:700;">리뷰할 문제 데이터를 찾을 수 없습니다. (시나리오 로드 실패)</div>';
+      return;
+    }
     const step = STEPS[target];
+    if (!step) {
+      console.error('[review] STEPS[target] is undefined. target=', target);
+      const box = document.getElementById('problem-placeholder');
+      box.classList.remove('placeholder-mode', 'gone', 'scene-fading');
+      box.innerHTML = `<div style="padding:24px;color:#8b3a2a;font-weight:700;">STEPS[${target}] 가 비어있습니다.</div>`;
+      return;
+    }
     // 배경·캐릭터 일관성 복원 (target 이전의 마지막 scene/enter 적용)
     this.clearAllCharacters();
     let lastBg = null;
