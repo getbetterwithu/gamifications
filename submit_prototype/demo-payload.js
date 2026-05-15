@@ -1,0 +1,116 @@
+// 프로토타입용 데모 페이로드
+// 실제 게임 데이터 기반 (unit4_tri_quad/games/stage1_quadrilaterals/problems.js 참고)
+// 학생이 12문제 중 8개를 첫 시도에 틀렸다고 가정한 시나리오.
+// 페이로드 표준은 PAYLOAD_SPEC.md 참조.
+
+const DEMO_PAYLOAD = {
+  meta: {
+    unitTitle: '폴리곤의 학당 — 사각형의 시험',
+    unitId: 'unit4_stage1',
+    studentName: '폴리곤',
+    studentEmail: null,
+    completedAt: new Date().toISOString(),
+    totalProblems: 12,
+    firstTryCorrect: 4,
+    figureBase: '../unit4_tri_quad/games/stage1_quadrilaterals/problems/',
+  },
+
+  wrongProblems: [
+    {
+      id: 'M01',
+      type: 'ox',
+      title: '문제 M01 — 평행사변형의 성질',
+      text: '평행사변형의 두 쌍의 대변의 길이는 각각 같다.',
+      correctAnswer: 'O',
+      myAnswer: 'X',
+      hint: '평행사변형의 가장 기본 정의를 떠올려라. 마주 보는 변끼리의 관계.',
+    },
+    {
+      id: 'M02',
+      type: 'match',
+      title: '문제 M02 — 평행사변형 판별 조건',
+      text: '다음 그림은 모두 평행사변형이다. 각각이 평행사변형이 되는 이유를 보기에서 선택하시오. (단, 점 $O$는 두 대각선의 교점이다.)',
+      figure: 'M02.png',
+      items: ['(1)', '(2)', '(3)', '(4)'],
+      choices: [
+        'ㄱ. 두 대각선이 서로 이등분한다',
+        'ㄴ. 두 쌍의 대변의 길이가 같다',
+        'ㄷ. 한 쌍의 대변이 평행하고 그 길이가 같다',
+        'ㄹ. 두 쌍의 대각의 크기가 같다',
+      ],
+      correctMatches: [1, 3, 2, 0],
+      myMatches: [1, 0, 2, 3],
+      hint: '각 그림에서 주어진 표시(같은 길이/평행/각도/이등분)가 무엇을 의미하는지 차근차근 보라.',
+    },
+    {
+      id: 'M04',
+      type: 'ox',
+      title: '문제 M04 — 평행사변형 판별',
+      text: '두 대각선의 길이가 같은 사각형은 평행사변형이다.',
+      correctAnswer: 'X',
+      myAnswer: 'O',
+      hint: '두 대각선 길이가 같지만 평행사변형이 아닌 사각형은 없을까? 등변사다리꼴을 떠올려라.',
+    },
+    {
+      id: 'M05',
+      type: 'shortAnswer-pair',
+      title: '문제 M05 — 평행사변형이 되는 조건',
+      text: '오른쪽 $\\square ABCD$가 평행사변형이 되도록 하는 $x, y$의 값을 각각 구하시오. (단, 점 $O$는 두 대각선의 교점이다.)',
+      figure: 'M05.png',
+      fields: [
+        { label: '$x$', unit: '', correct: '35' },
+        { label: '$y$', unit: '', correct: '4' },
+      ],
+      myFields: ['35', '8'],
+      hint: 'AD∥BC이면 엇각이 같다. AD = BC라는 조건에서 y를 구해보라.',
+    },
+    {
+      id: 'M06',
+      type: 'choice-multi',
+      title: '문제 M06 — 평행사변형 판별 조건 (선택)',
+      text: '$\\overline{AB}=\\overline{DC}$인 $\\square ABCD$가 평행사변형이 되기 위해 필요한 조건을 보기 중에서 모두 찾으시오.',
+      choices: [
+        'ㄱ. $\\overline{AB} \\parallel \\overline{DC}$',
+        'ㄴ. $\\overline{AD} \\parallel \\overline{BC}$',
+        'ㄷ. $\\overline{AD}=\\overline{BC}$',
+      ],
+      correctChoices: [0, 2],
+      myChoices: [0, 1],
+      hint: 'AB=DC가 이미 주어져 있다. ㄴ(AD∥BC)만 추가하면 등변사다리꼴도 만족시킬 수 있다 — 반례를 생각해보라.',
+    },
+    {
+      id: 'M08',
+      type: 'shortAnswer-pair',
+      title: '문제 M08 — 직사각형의 대각선',
+      text: '오른쪽 직사각형 $ABCD$에서 두 대각선의 교점이 $O$이고 $\\overline{BD}=8$ cm, $\\angle OAB=50°$일 때, $x, y$의 값을 각각 구하시오.',
+      figure: 'M08.png',
+      fields: [
+        { label: '$x$', unit: 'cm', correct: '4' },
+        { label: '$y$', unit: '°', correct: '40' },
+      ],
+      myFields: ['4', '50'],
+      hint: '직사각형의 대각선은 서로 다른 것을 이등분한다. △OAB는 이등변삼각형이다.',
+    },
+    {
+      id: 'M09',
+      type: 'shortAnswer',
+      title: '문제 M09 — 마름모의 대각선과 넓이',
+      text: '오른쪽 마름모 $ABCD$에서 두 대각선의 교점이 $O$이고 $\\overline{AO}=3$ cm, $\\overline{BD}=12$ cm일 때, $\\triangle AOB$의 넓이를 구하시오.',
+      figure: 'M09.png',
+      askFormat: '$\\triangle AOB$의 넓이: ___ $\\text{cm}^2$',
+      correctAnswer: '9',
+      myAnswer: '18',
+      hint: '마름모의 두 대각선은 수직이등분한다. △AOB는 직각삼각형 (AO⊥BO).',
+    },
+    {
+      id: 'M10',
+      type: 'shortAnswer',
+      title: '문제 M10 — 사각형의 정의 종합',
+      text: '다음 조건을 모두 만족시키는 사각형의 이름을 말하시오.\n\n(가) 평행사변형이다.\n(나) 이웃하는 두 변의 길이가 같다.\n(다) 두 대각선의 길이가 같다.',
+      askFormat: '사각형 이름: ___',
+      correctAnswer: '정사각형',
+      myAnswer: '마름모',
+      hint: '(나)는 마름모, (다)는 직사각형 조건. 둘 다 만족하는 것은?',
+    },
+  ],
+};

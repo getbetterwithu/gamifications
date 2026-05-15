@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>오답 노트 — 필기 프로토타입</title>
+
+<!-- KaTeX: 수식 렌더링 (게임과 동일) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+
+<!-- jsPDF + html2canvas: 다운로드용 PDF 생성 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+
+<!-- 상단 툴바 -->
+<div class="toolbar">
+  <div class="group nav-group">
+    <button id="prev-btn" title="이전 페이지 (←)">◀</button>
+    <span class="page-indicator" id="page-indicator">— / —</span>
+    <button id="next-btn" title="다음 페이지 (→)">▶</button>
+  </div>
+
+  <div class="group tool-group">
+    <button id="tool-pen" class="active" title="펜">✏️ 펜</button>
+    <button id="tool-eraser" title="지우개">🧽 지우개</button>
+  </div>
+
+  <div class="group" id="color-group"></div>
+  <div class="group" id="size-group"></div>
+
+  <div class="group">
+    <button id="undo" title="실행 취소 (Z)">↶</button>
+    <button id="redo" title="다시 실행 (Shift+Z)">↷</button>
+    <button id="clear-page" class="danger" title="현재 페이지 필기 모두 지우기">현재 페이지 지우기</button>
+  </div>
+
+  <div class="spacer"></div>
+
+  <span class="status" id="status-text">준비 중...</span>
+  <button id="download" class="primary">📥 PDF 다운로드</button>
+</div>
+
+<!-- 페이지 무대: 항상 한 페이지만 보임 -->
+<div class="stage" id="stage">
+  <!-- JS가 페이지 요소들 채움 -->
+</div>
+
+<!-- 하단 안내 -->
+<div class="submit-banner">
+  프로토타입 — 좌우 화살표로 페이지 이동, 펜으로 풀이 작성 후 <strong>📥 PDF 다운로드</strong>. 추후 클래스룸 자동 제출로 교체될 예정.
+</div>
+
+<!-- 로딩 -->
+<div class="loading gone" id="loading">
+  <div class="box" id="loading-text">로딩 중...</div>
+</div>
+
+<script src="./demo-payload.js"></script>
+<script src="./payload-validator.js"></script>
+<script src="./ink-canvas.js"></script>
+<script src="./pages.js"></script>
+<script src="./app.js"></script>
+
+</body>
+</html>
