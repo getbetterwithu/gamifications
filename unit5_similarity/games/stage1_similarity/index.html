@@ -217,6 +217,14 @@
     border-radius: 10px; cursor: pointer; z-index: 5;
   }
   #backlog-btn:hover { background: #fff8e7; }
+  #mute-btn {
+    position: absolute; top: 18px; right: 175px;
+    background: rgba(255, 250, 240, 0.92);
+    border: 2px solid #8b6f47; color: #5d4a30;
+    padding: 10px 14px; font-size: 16px;
+    border-radius: 10px; cursor: pointer; z-index: 5;
+  }
+  #mute-btn:hover { background: #fff8e7; }
 
   /* ===== 선택지 (우측 사이드) ===== */
   #choices {
@@ -637,6 +645,7 @@
   body.review-mode #next-btn,
   body.review-mode #prev-btn,
   body.review-mode #backlog-btn,
+  body.review-mode #mute-btn,
   body.review-mode #stat-panel,
   body.review-mode #admin-nav,
   body.review-mode #admin-badge,
@@ -1011,8 +1020,8 @@
   <div class="character center hidden" id="char-center"><img src="" alt=""></div>
   <div class="character right hidden" id="char-right"><img src="" alt=""></div>
 
-  <!-- 스탯 패널 -->
-  <div id="stat-panel">
+  <!-- 스탯 패널 (돌파 모드 = 점수 없음, 숨김) -->
+  <div id="stat-panel" style="display:none;">
     <div class="stat-row"><span class="stat-name">수학력 (Math)</span><span class="stat-value" id="stat-math">0</span></div>
     <div class="stat-row"><span class="stat-name">지혜 (Wisdom)</span><span class="stat-value" id="stat-wisdom">0</span></div>
     <div class="stat-row"><span class="stat-name">통찰력 (Insight)</span><span class="stat-value" id="stat-insight">0</span></div>
@@ -1020,6 +1029,7 @@
   </div>
 
   <button id="backlog-btn" onclick="game.openBacklog()">📜 이전 대사 보기</button>
+  <button id="mute-btn" onclick="toggleMute()" title="소리 켜기/끄기">🔊</button>
   <div id="toast-area"></div>
   <div id="prop-panel" class="hidden"></div>
 
@@ -1199,42 +1209,26 @@
 <script src="problems.js"></script>
 <script src="self-similar.js"></script>
 <script src="scenario.js"></script>
+<script src="sounds.js"></script>
 
 <script>
-// ===== 사운드 슬롯 =====
-const BGM_TRACKS = {
-  title: '', harbor: '', classroom: '', corridor: '', warehouse: '',
-  garden: '', library: '', yard: '', basement: '',
-};
-const SFX = { click: '', correct: '', wrong: '', statUp: '' };
-function playBgm(key) {
-  const url = BGM_TRACKS[key]; if (!url) return;
-  const el = document.getElementById('bgm');
-  if (el.src.endsWith(url)) return;
-  el.src = url; el.volume = 0.5; el.play().catch(() => {});
-}
+// ===== 사운드 =====
+// playBgm / playBgmForScene / playSfx / toggleMute 는 sounds.js에 정의됨.
 
-// ===== 엔딩 정의 (4단원 — 첫 시도 정답 개수 기준) =====
-// condition 인자: { stats, firstTryCorrect }
-//   firstTryCorrect: 첫 시도에 맞춘 문제 개수 (problemResults 집계)
+// ===== 5단원 = 돌파(Breakthrough) 모드 =====
+// 4단원(점수 게임)과 근본 차별화:
+//   - 전 문제 관문화: 정답 전까지 다음 씬 차단, 맞출 때까지 무한 재시도 (정답 공개 X)
+//   - 점수/스탯 없음: 엔딩 = "전 문제 완주의 증명" (단일 엔딩)
+//   - 힌트: 문제당 1개(간접). problems.js의 hint(또는 hints[0])를 오답 시 표시
+//   - 마무리: 점수 리포트 대신 자기 풀이 과정(필기 포함) 다운로드 후 종료
+const BREAKTHROUGH_MODE = true;
+
+// ===== 엔딩 정의 (돌파 모드 — 단일 엔딩) =====
 const ENDINGS = {
-  A: {
-    tag: '엔딩 A',
-    title: '황금의 깨달음',
-    condition: (ctx) => ctx.firstTryCorrect >= 8,
-    text: '"누구도 가르쳐줄 수 없는 황금비를, 너는 스스로 찾아냈다. 자재부터 회당의 비율까지 — 모든 비례를 꿰뚫었지."\n\n피타고라스가 고개를 끄덕인다. 테론은 완성된 신전을 올려다보며 흐뭇하게 웃고, 다이달로스는 "제법이야"라고 중얼거린다. 이리스가 조용히 미소 짓는다.\n\n노을빛 신전 위로 황금 비례판이 반짝인다. 폴리곤은 이제 "시밀러" — 닮음의 전문가다. 그의 새로운 여정이 시작된다.',
-  },
-  B: {
-    tag: '엔딩 B',
-    title: '착실한 건축가',
-    condition: (ctx) => ctx.firstTryCorrect >= 5,
-    text: '"몇 개는 틀렸지만, 끝내 신전을 세웠다. 비례는 한 번에 통달하는 게 아니야 — 쌓아가는 거지."\n\n탈레스가 어깨를 다독인다. 테론은 "다음 신전도 함께 짓자"며 손을 내민다.\n\n폴리곤은 황금 비례판을 손에 쥐었다. 완벽하진 않았어도, 멈추지 않았다. 그것이 시밀러라는 이름의 시작이었다.',
-  },
-  C: {
-    tag: '엔딩 C',
-    title: '다시 쌓는 비례',
-    condition: () => true,  // fallback
-    text: '노을 진 신전 앞, 폴리곤이 설계도를 다시 펼친다. 이리스가 옆에 앉는다.\n\n"괜찮아요. 닮음도, 비례도 — 다시 보면 보여요. 황금비를 찾아낸 눈이잖아요."\n\n폴리곤은 오늘 막힌 것들을 내일 다시 풀 것이다. 비례를 보는 눈은, 멈추지 않는 한 자란다.',
+  FINISH: {
+    tag: '',
+    title: '',
+    text: '"누구도 가르쳐줄 수 없는 황금비를, 너는 스스로 찾아냈다. 자재부터 회당의 비율까지 — 모든 비례를, 끝까지 네 손으로 풀어냈지."\n\n피타고라스가 고개를 끄덕인다. 테론은 완성된 신전을 올려다보며 흐뭇하게 웃고, 다이달로스는 "제법이야"라고 중얼거린다. 이리스가 조용히 미소 짓는다.\n\n노을빛 신전 위로 황금 비례판이 반짝인다. 폴리곤은 이제 "시밀러" — 닮음의 전문가다. 그의 새로운 여정이 시작된다.',
   },
 };
 
@@ -1395,7 +1389,7 @@ const game = {
         if (s.type === 'scene') {
           this.changeBg(s.bg);
           this.applyAtmosphere(s.mood || null, s.weather || null);
-          if (typeof playBgm === 'function') playBgm(s.bg);
+          if (typeof playBgmForScene === 'function') playBgmForScene(s.bg, s.mood || null, s.bgmKey || null);
           if (s.clearChars) this.clearAllCharacters();
         } else if (s.type === 'enter') {
           this.charSlots[s.position] = s.role;
@@ -1472,7 +1466,7 @@ const game = {
         if (s.type === 'scene') {
           this.changeBg(s.bg);
           this.applyAtmosphere(s.mood || null, s.weather || null);
-          if (typeof playBgm === 'function') playBgm(s.bg);
+          if (typeof playBgmForScene === 'function') playBgmForScene(s.bg, s.mood || null, s.bgmKey || null);
           if (s.clearChars) this.clearAllCharacters();
         } else if (s.type === 'enter') {
           this.charSlots[s.position] = s.role;
@@ -1747,10 +1741,10 @@ const game = {
       this.cursor--;
     }
 
-    // 배경 복원
+    // 배경 복원 (resume: mood 정보 없으니 bg만으로 폴백)
     if (savedData.bg) {
       this.changeBg(savedData.bg);
-      playBgm(savedData.bg);
+      playBgmForScene(savedData.bg, null);
     }
     // 마지막 대화 화면 복원 (캐릭터·표정·삽화)
     const ld = savedData.lastDialog;
@@ -1810,7 +1804,7 @@ const game = {
     this._pdfSaved = false;
     this._updateRestartBtn();
     this.renderStats();
-    playBgm('harbor');
+    playBgm('main');
     this.advance();
   },
 
@@ -1828,6 +1822,7 @@ const game = {
     if (!document.getElementById('ending-screen').classList.contains('gone')) return;
     if (!document.getElementById('notebook-modal').classList.contains('gone')) return;
     if (this.isTyping) { this.completeTyping(); return; }
+    if (typeof playSfx === 'function') playSfx('click');
     // 이전 대사 보기 상태에서 next 누르면 현재 대사로 복귀 (advance X)
     if (this._logCursor !== null && this._logCursor !== undefined) {
       this._logCursor = null;
@@ -1902,7 +1897,7 @@ const game = {
   execute(step) {
     switch (step.type) {
       case 'scene':
-        playBgm(step.bg);
+        playBgmForScene(step.bg, step.mood || null, step.bgmKey || null);
         this.applyAtmosphere(step.mood || null, step.weather || null);
         this.sceneTransition(step.bg, !!step.clearChars, step.name, () => this.advance());
         break;
@@ -1943,6 +1938,9 @@ const game = {
     const isNarration = (step.speaker === 'narrator' || step.speaker === 'npc');
     const role = step.role || step.speaker;
     let position = step.position;
+
+    // 황금 비례판 획득 연출음 (S13 보상 나레이션)
+    if (typeof playSfx === 'function' && step.text && step.text.includes('황금 비례판 획득')) playSfx('get');
 
     if (!isNarration) {
       position = this.ensureCharacterOnScreen(role, position);
@@ -2603,10 +2601,10 @@ const game = {
     const p = this._currentProblem;
     if (!p) return;
     const pdataGuard = (typeof PROBLEMS !== 'undefined' && PROBLEMS[p.id]) || {};
-    // 가드: 이미 해결되었거나 3회 끝난 문제는 추가 제출 무시
-    // mustPass 문제는 횟수 가드 무시 — 정답 전까지 무한 재시도
+    // 가드: 이미 해결된 문제는 무시. 돌파 모드 = 무한 재시도(정답 전까지).
     const prev = this.problemResults[p.id];
-    if (prev && (prev.solvedAt || (!pdataGuard.mustPass && prev.attempts && prev.attempts.length >= 3))) {
+    const cappedPair = !BREAKTHROUGH_MODE && !pdataGuard.mustPass && prev && prev.attempts && prev.attempts.length >= 3;
+    if (prev && (prev.solvedAt || cappedPair)) {
       return;
     }
     const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[p.id]) || {};
@@ -2688,20 +2686,19 @@ const game = {
       this._proceedAfterProblem(p, true);
     } else {
       const attemptNo = existing.attempts.length;
-      const MAX = 3;
-      // mustPass 문제는 3회 도달해도 정답 공개 X, 계속 재시도 강제
-      if (attemptNo >= MAX && !pdata.mustPass) {
+      const mustPass = BREAKTHROUGH_MODE || pdata.mustPass;
+      if (!mustPass && attemptNo >= 3) {
         existing.resolved = false;
         this._showAnswerReveal(p);
       } else {
-        const hintIdx = attemptNo - 1;
-        const hints = pdata.hints && pdata.hints.length ? pdata.hints : (p.hints || []);
         // 맞은 필드 수에 따른 안내 분기
         const correctCount = perFieldCorrect.filter(Boolean).length;
         const wrongCount = perFieldCorrect.length - correctCount;
+        // 돌파 모드: 작가가 쓴 간접 힌트 1개를 우선. 없으면 상황 안내.
+        const oneHint = pdata.hint || (pdata.hints && pdata.hints[0]) || (p.hints && p.hints[0]) || '';
         let situationText;
-        if (pdata.mustPass) {
-          situationText = '정답을 맞춰야 다음 화면으로 넘어갈 수 있습니다. 다시 입력해주세요.';
+        if (oneHint) {
+          situationText = oneHint;
         } else if (correctCount === 0) {
           situationText = '두 값 모두 다시 계산해봐.';
         } else if (wrongCount === 1) {
@@ -2709,13 +2706,7 @@ const game = {
         } else {
           situationText = '맞춘 값은 그대로 두고, 나머지를 다시 계산해봐.';
         }
-        const defaultHints = [
-          situationText,
-          '문제의 조건을 다시 살펴보고 어떤 닮음의 성질을 써야 하는지 떠올려봐.',
-          '한 번 더 도전! 그래도 안 되면 정답을 알려줄게.',
-        ];
-        // mustPass면 매번 같은 안내 메시지 사용
-        const hintText = pdata.mustPass ? situationText : (hints[hintIdx] || defaultHints[hintIdx] || defaultHints[0]);
+        const hintText = situationText;
         // 어느 필드가 맞고 어느 필드가 틀렸는지 표시 (LaTeX 명령어 깔끔하게 변환)
         const fieldStatus = perFieldCorrect.map((ok, i) => {
           const label = this._labelToPlain(fields[i].label || `(${i+1})`);
@@ -2772,10 +2763,11 @@ const game = {
     if (!p) return;
 
     const pdataGuard = (typeof PROBLEMS !== 'undefined' && PROBLEMS[p.id]) || {};
-    // 가드: 이미 해결되었거나 3회 시도가 끝난 문제는 추가 제출 무시 (정답공개 후 재클릭 방지)
-    // mustPass 문제는 횟수 가드 무시 — 정답 전까지 무한 재시도
+    // 가드: 이미 해결된 문제는 추가 제출 무시.
+    // 돌파 모드 = 전 문제 무한 재시도(정답 전까지). 그 외엔 mustPass 아니면 3회 제한.
     const prev = this.problemResults[p.id];
-    if (prev && (prev.solvedAt || (!pdataGuard.mustPass && prev.attempts && prev.attempts.length >= 3))) {
+    const capped = !BREAKTHROUGH_MODE && !pdataGuard.mustPass && prev && prev.attempts && prev.attempts.length >= 3;
+    if (prev && (prev.solvedAt || capped)) {
       return;
     }
 
@@ -2796,13 +2788,18 @@ const game = {
     existing.attempts.push({ answer: userAnswer, correct, at: Date.now() });
     this.problemResults[p.id] = existing;
 
+    if (typeof playSfx === 'function') playSfx(correct ? 'correct' : 'wrong');
+
     if (correct) {
       const isFirstAttempt = existing.attempts.length === 1;
       if (existing.firstCorrect === null) existing.firstCorrect = isFirstAttempt;
       existing.resolved = true;
       existing.solvedAt = Date.now();
 
-      if (isFirstAttempt) {
+      if (BREAKTHROUGH_MODE) {
+        // 돌파 모드: 점수 없음. 통과만 확인하고 진행.
+        this.showToast('정답! 통과', 'up');
+      } else if (isFirstAttempt) {
         const stats = (p.onCorrect && p.onCorrect.stats) || {};
         existing.gainedStats = stats;
         this.applyEffect(stats);
@@ -2812,32 +2809,26 @@ const game = {
       this._proceedAfterProblem(p, true);
     } else {
       const attemptNo = existing.attempts.length;
-      const MAX = 3;
       const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[p.id]) || {};
-      // mustPass: 3회 도달해도 정답 공개 X, 계속 재시도 강제
-      if (attemptNo >= MAX && !pdata.mustPass) {
-        // 3회 실패 — 정답 공개 후 강제 진행
+      const mustPass = BREAKTHROUGH_MODE || pdata.mustPass;
+
+      if (!mustPass && attemptNo >= 3) {
+        // (4단원 호환) 3회 실패 — 정답 공개 후 강제 진행
         existing.resolved = false;
         this._showAnswerReveal(p);
       } else {
-        // 재시도 + 힌트 — problems.js의 PROBLEMS[id].hints 를 우선 참조
-        const hintIdx = attemptNo - 1;
-        const hints = pdata.hints && pdata.hints.length ? pdata.hints : (p.hints || []);
-        const defaultHints = [
-          '다시 한 번 천천히 생각해봐. 어떤 조건이 적용되는지 확인해봐.',
-          '문제의 조건을 처음부터 다시 읽고, 핵심 단어에 집중해봐.',
-          '한 번 더 도전! 그래도 안 되면 정답을 알려줄게.',
-        ];
-        const mustPassMsg = '정답을 맞춰야 다음 화면으로 넘어갈 수 있습니다. 다시 입력해주세요.';
-        const hintText = pdata.mustPass ? mustPassMsg : (hints[hintIdx] || defaultHints[hintIdx] || defaultHints[0]);
+        // 돌파 모드: 간접 힌트 1개(작가 작성)를 오답 시 표시. 정답 공개 없음.
+        const oneHint = pdata.hint || (pdata.hints && pdata.hints[0]) || (p.hints && p.hints[0]) || '';
+        const hintText = oneHint || '다시 한 번 천천히 살펴봐. 어떤 닮음·비례 관계가 숨어 있는지.';
         this._showHintBanner(hintText, attemptNo);
-        this.showToast(pdata.mustPass ? '오답 — 다시 입력' : `오답 (${attemptNo}회 기록됨)`, 'down');
+        this.showToast('오답 — 맞출 때까지 다시', 'down');
       }
     }
   },
 
   // 문제 등장 시 같이 표시되는 안내 힌트 (problems.js의 hints[0]) — 오답 전부터 노출
   _renderInitialHint(step) {
+    if (BREAKTHROUGH_MODE) return;  // 돌파 모드: 사전 힌트 없음 (오답 시에만 1개 표시)
     const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[step.id]) || {};
     const hints = pdata.hints || [];
     if (!hints.length) return;  // 힌트 없으면 표시 안 함
@@ -2859,16 +2850,16 @@ const game = {
 
     const p = this._currentProblem;
     const pdata = (p && typeof PROBLEMS !== 'undefined' && PROBLEMS[p.id]) || {};
-    const isMustPass = !!pdata.mustPass;
+    const isMustPass = BREAKTHROUGH_MODE || !!pdata.mustPass;
 
     const hint = document.createElement('div');
     hint.id = 'hint-banner';
     hint.style.cssText = 'background:linear-gradient(180deg,#fff5d6,#f5d99a);border:3px solid #c8a87a;border-radius:12px;padding:14px 18px;margin:10px 0;text-align:left;font-size:15px;color:#5d4a30;line-height:1.6;';
     const headerText = isMustPass
-      ? `⚠️ 다시 입력해주세요 (${attemptNo}회 시도)`
+      ? `💡 힌트 (정답을 맞춰야 다음으로 넘어가요)`
       : `💡 탈레스의 힌트 (${attemptNo}회 시도 후)`;
     const footerText = isMustPass
-      ? '※ 이 문제는 정답을 맞춰야만 다음으로 넘어갈 수 있습니다.'
+      ? '※ 맞출 때까지 다시 도전! 천천히 생각해봐.'
       : '※ 이 문제는 오답으로 기록됐어. 다시 풀어보자!';
     hint.innerHTML = `
       <div style="font-weight:700;color:#8b6f47;margin-bottom:6px;">
@@ -2977,6 +2968,7 @@ const game = {
 
   // ----- 스탯 + 토스트 -----
   applyEffect(effect) {
+    if (BREAKTHROUGH_MODE) return;  // 돌파 모드: 점수 없음
     const labels = { math: '수학력', wisdom: '지혜', insight: '통찰력', clues: '단서 카드' };
     Object.keys(effect).forEach(key => {
       const delta = effect[key];
@@ -2988,6 +2980,7 @@ const game = {
   },
 
   renderStats() {
+    if (BREAKTHROUGH_MODE) return;  // 돌파 모드: 점수 없음
     document.getElementById('stat-math').textContent = this.stats.math;
     document.getElementById('stat-wisdom').textContent = this.stats.wisdom;
     document.getElementById('stat-insight').textContent = this.stats.insight;
@@ -3025,22 +3018,30 @@ const game = {
 
   // ----- 엔딩 -----
   showEnding() {
-    const s = this.stats;
-    const ctx = { stats: s, firstTryCorrect: countFirstTryCorrect(this.problemResults) };
-    let chosen = ENDINGS.C;
-    if (ENDINGS.A.condition(ctx)) chosen = ENDINGS.A;
-    else if (ENDINGS.B.condition(ctx)) chosen = ENDINGS.B;
+    let chosen;
+    if (BREAKTHROUGH_MODE) {
+      // 돌파 모드: 단일 엔딩 (= 전 문제 완주의 증명). 점수 요약 숨김.
+      chosen = ENDINGS.FINISH;
+      const sum = document.querySelector('#ending-screen .stat-summary');
+      if (sum) sum.style.display = 'none';
+    } else {
+      const s = this.stats;
+      const ctx = { stats: s, firstTryCorrect: countFirstTryCorrect(this.problemResults) };
+      chosen = ENDINGS.C;
+      if (ENDINGS.A.condition(ctx)) chosen = ENDINGS.A;
+      else if (ENDINGS.B.condition(ctx)) chosen = ENDINGS.B;
+      document.getElementById('end-math').textContent = s.math;
+      document.getElementById('end-wisdom').textContent = s.wisdom;
+      document.getElementById('end-insight').textContent = s.insight;
+      document.getElementById('end-clues').textContent = `${ctx.firstTryCorrect} / 12`;
+    }
 
     // 엔딩 라벨·이름은 노출하지 않음 (개발자 정보). 결론 텍스트만 표시.
     document.getElementById('ending-tag').textContent = '';
     document.getElementById('ending-title').textContent = '';
     document.getElementById('ending-text').innerText = chosen.text;
-    document.getElementById('end-math').textContent = s.math;
-    document.getElementById('end-wisdom').textContent = s.wisdom;
-    document.getElementById('end-insight').textContent = s.insight;
-    document.getElementById('end-clues').textContent = `${ctx.firstTryCorrect} / 12`;
     document.getElementById('ending-screen').classList.remove('gone');
-    this._endingReached = true;  // Step 3 이후 PDF 버튼이 이걸 체크
+    this._endingReached = true;  // PDF 버튼이 이걸 체크
   },
 };
 
@@ -3515,25 +3516,33 @@ const pdfReport = {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-      // 전체 문제 슬롯 + 첫시도 오답·미해결 필터
       const problemSlots = this.collectProblemSlots();
       const total = problemSlots.length;
-      const wrongProblems = problemSlots.filter(p => {
-        const r = game.problemResults[p.id];
-        // 첫시도 정답이 아닌 모든 문제 (재시도로 푼 것 + 미해결 + 손도 안 댐)
-        return !r || r.firstCorrect !== true;
-      });
-      const firstTryCorrect = total - wrongProblems.length;
-      const accuracy = total > 0 ? Math.round((firstTryCorrect / total) * 100) : 0;
+      const solutions = (notebook.getAllSolutions ? notebook.getAllSolutions() : {});
 
-      // 표지 (학생명·날짜·통계·안내)
-      await this.addCoverPage(doc, { total, firstTryCorrect, accuracy, wrongCount: wrongProblems.length });
-
-      // 첫시도 오답 문제만 페이지 생성 (필기 캡쳐 X, 빈 풀이 공간)
-      for (let i = 0; i < wrongProblems.length; i++) {
-        const p = wrongProblems[i];
-        document.getElementById('pdf-progress').textContent = `다시 풀 문제 ${i + 1} / ${wrongProblems.length} (${p.id})`;
-        await this.addProblemPage(doc, p, game.problemResults[p.id]);
+      if (BREAKTHROUGH_MODE) {
+        // 돌파 모드: 점수 없음. 전 문제를 학생 본인의 필기와 함께 "풀이 기록"으로.
+        const writtenCount = problemSlots.filter(p => solutions[p.id]).length;
+        await this.addCoverPage(doc, { total, writtenCount });
+        for (let i = 0; i < problemSlots.length; i++) {
+          const p = problemSlots[i];
+          document.getElementById('pdf-progress').textContent = `풀이 기록 ${i + 1} / ${total} (${p.id})`;
+          await this.addProblemPage(doc, p, game.problemResults[p.id], solutions[p.id] || null);
+        }
+      } else {
+        // (4단원 호환) 첫시도 오답 문제만, 빈 풀이칸
+        const wrongProblems = problemSlots.filter(p => {
+          const r = game.problemResults[p.id];
+          return !r || r.firstCorrect !== true;
+        });
+        const firstTryCorrect = total - wrongProblems.length;
+        const accuracy = total > 0 ? Math.round((firstTryCorrect / total) * 100) : 0;
+        await this.addCoverPage(doc, { total, firstTryCorrect, accuracy, wrongCount: wrongProblems.length });
+        for (let i = 0; i < wrongProblems.length; i++) {
+          const p = wrongProblems[i];
+          document.getElementById('pdf-progress').textContent = `다시 풀 문제 ${i + 1} / ${wrongProblems.length} (${p.id})`;
+          await this.addProblemPage(doc, p, game.problemResults[p.id], null);
+        }
       }
 
       document.getElementById('pdf-progress').textContent = '저장 중...';
@@ -3852,7 +3861,7 @@ const pdfReport = {
   // Step 4: 문제별 페이지 (한 문제당 1페이지)
   // 첫 시도 오답 문제 페이지 — 학생이 종이에 다시 푸는 용도
   // 필기 캡쳐·점수·뱃지 모두 제거, 문제 본문·도형·풀이 빈 공간 위주
-  async addProblemPage(doc, problem, result) {
+  async addProblemPage(doc, problem, result, solutionDataUrl) {
     doc.addPage();
     const pageW = 210, pageH = 297;
 
@@ -3958,16 +3967,17 @@ const pdfReport = {
       y += hintBoxH + 6;
     }
 
-    // 풀이 영역 헤더 — 헤더 톤(0.40 비율)에 맞춤
+    // 풀이 영역 헤더
+    const hasSolution = !!solutionDataUrl;
     this.addTextToPdf(doc, '풀이', 15, y, {
       fontSize: 14, fontWeight: '700', color: '#5d4a30', maxWidth: 120, widthMm: 22
     });
-    this.addTextToPdf(doc, '※ 풀이 과정과 정답을 아래 빈 공간에 직접 적어주세요.', 42, y + 3, {
+    this.addTextToPdf(doc, hasSolution ? '※ 내가 작성한 풀이입니다.' : '※ 풀이 과정과 정답을 아래 빈 공간에 직접 적어주세요.', 42, y + 3, {
       fontSize: 14, color: '#8b6f47', maxWidth: 560, widthMm: 145
     });
     y += 16;
 
-    // 풀이 빈 박스 (모눈 배경)
+    // 풀이 박스
     const solBoxBottom = pageH - 22;
     const solBoxH = solBoxBottom - y;
     doc.setDrawColor(139, 111, 71);
@@ -3975,15 +3985,31 @@ const pdfReport = {
     doc.setFillColor(255, 252, 245);
     doc.roundedRect(15, y, pageW - 30, solBoxH, 3, 3, 'FD');
 
-    // 모눈 (옅은 점선)
-    doc.setDrawColor(220, 200, 168);
-    doc.setLineWidth(0.15);
-    const gridStep = 8;
-    for (let gx = 15 + gridStep; gx < pageW - 15; gx += gridStep) {
-      doc.line(gx, y + 2, gx, y + solBoxH - 2);
-    }
-    for (let gy = y + gridStep; gy < y + solBoxH; gy += gridStep) {
-      doc.line(17, gy, pageW - 17, gy);
+    if (hasSolution) {
+      // 학생 본인의 필기 이미지 삽입 (박스 안 비율 유지 중앙 정렬)
+      try {
+        const img = await this._loadImage(solutionDataUrl);
+        const boxW = pageW - 34, boxH = solBoxH - 4;
+        const ratio = img.width / img.height;
+        let dw = boxW, dh = boxW / ratio;
+        if (dh > boxH) { dh = boxH; dw = boxH * ratio; }
+        const ox = 15 + (pageW - 30 - dw) / 2;
+        const oy = y + 2 + (solBoxH - dh) / 2;
+        doc.addImage(solutionDataUrl, 'PNG', ox, oy, dw, dh);
+      } catch (e) {
+        console.warn('필기 이미지 삽입 실패:', e);
+      }
+    } else {
+      // 필기 없음 — 모눈 빈칸
+      doc.setDrawColor(220, 200, 168);
+      doc.setLineWidth(0.15);
+      const gridStep = 8;
+      for (let gx = 15 + gridStep; gx < pageW - 15; gx += gridStep) {
+        doc.line(gx, y + 2, gx, y + solBoxH - 2);
+      }
+      for (let gy = y + gridStep; gy < y + solBoxH; gy += gridStep) {
+        doc.line(17, gy, pageW - 17, gy);
+      }
     }
 
     // 푸터
@@ -4012,7 +4038,7 @@ const pdfReport = {
   },
 
   async addCoverPage(doc, stats) {
-    const { total = 12, firstTryCorrect = 0, accuracy = 0, wrongCount = 0 } = stats || {};
+    const { total = 12, firstTryCorrect = 0, accuracy = 0, wrongCount = 0, writtenCount = 0 } = stats || {};
     const pageW = 210, pageH = 297;  // A4 mm
 
     // 배경
@@ -4028,7 +4054,7 @@ const pdfReport = {
       fontSize: 26, fontWeight: '700', color: '#5d4a30', textAlign: 'center', maxWidth: 600, widthMm: 160
     });
     y += 14;
-    this.addTextToPdf(doc, '재시행 리포트', pageW / 2 - 50, y, {
+    this.addTextToPdf(doc, BREAKTHROUGH_MODE ? '나의 풀이 기록' : '재시행 리포트', pageW / 2 - 50, y, {
       fontSize: 16, fontWeight: '500', color: '#8b6f47', textAlign: 'center', maxWidth: 400, widthMm: 100
     });
 
@@ -4044,6 +4070,43 @@ const pdfReport = {
     this.addTextToPdf(doc, `날짜: ${this.todayStr()}`, pageW - 100, y + 5, {
       fontSize: 14, color: '#5d4a30', maxWidth: 400, widthMm: 80
     });
+
+    if (BREAKTHROUGH_MODE) {
+      // 돌파 모드 표지 — 점수 없음. "완주 + 풀이 기록" 성격.
+      y = 100;
+      doc.setFillColor(214, 240, 200);
+      doc.setDrawColor(90, 139, 58);
+      doc.setLineWidth(0.8);
+      doc.roundedRect(20, y, pageW - 40, 64, 5, 5, 'FD');
+      this.addTextToPdf(doc, '🏛️ 신전 완성 — 완주!', pageW / 2 - 55, y + 10, {
+        fontSize: 24, fontWeight: '700', color: '#2a5a1a', textAlign: 'center', maxWidth: 600, widthMm: 130
+      });
+      this.addTextToPdf(doc, `${total}개의 문제를 모두 풀어 엔딩에 도달했습니다.`, pageW / 2 - 90, y + 34, {
+        fontSize: 14, color: '#3a2818', textAlign: 'center', maxWidth: 700, widthMm: 170, lineHeight: 1.6
+      });
+
+      // 안내 박스
+      y = 184;
+      doc.setFillColor(255, 248, 231);
+      doc.setDrawColor(200, 168, 122);
+      doc.setLineWidth(0.8);
+      doc.roundedRect(20, y, pageW - 40, 60, 5, 5, 'FD');
+      this.addTextToPdf(doc, '📝 나의 풀이 기록', 28, y + 6, {
+        fontSize: 16, fontWeight: '700', color: '#5d4a30', maxWidth: 500, widthMm: 130
+      });
+      this.addTextToPdf(doc,
+        `다음 장부터, 각 문제와 내가 직접 작성한 풀이가 담겨 있습니다. (필기 작성 ${writtenCount} / ${total})`,
+        28, y + 24, { fontSize: 13, color: '#3a2818', maxWidth: 700, widthMm: 170, lineHeight: 1.5 });
+      this.addTextToPdf(doc,
+        '※ 필기를 하지 않은 문제는 빈 칸으로 표시됩니다.',
+        28, y + 44, { fontSize: 11, color: '#8b6f47', maxWidth: 700, widthMm: 170 });
+
+      // 하단 크레딧
+      this.addTextToPdf(doc, '2026 서울사대부중 2학년 수학B 허철호 선생님 © All rights reserved', pageW / 2 - 80, pageH - 18, {
+        fontSize: 10, color: '#8b6f47', textAlign: 'center', maxWidth: 700, widthMm: 170
+      });
+      return;
+    }
 
     // 핵심 통계 박스
     y = 100;

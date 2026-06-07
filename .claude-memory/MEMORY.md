@@ -1,0 +1,11 @@
+- [전역 지침 동기화 시스템](project_claude_config_sync.md) — claude-config private 레포 + 심볼릭 링크 + SessionStart/Stop hook으로 두 컴퓨터 자동 동기화. 윈도우는 심볼릭 링크 별도 처리 필요
+- [AI-Labs 게임 생태계 구조](project_ai_labs_ecosystem.md) — 허브(ai-labs)+게임별 독립 레포, 링크만 연결, games.json 1항목=새 게임. submodule·임베딩 폐기
+- [클래스룸 자동 제출 통합 로드맵](project_classroom_integration_plan.md) — 4단원 현 상태 배포 유지, 5단원부터 구글 로그인+자동 제출 통합. 다시풀이 화면(submit_prototype/) 프로토타입 완료
+- [5단원 돌파 게임 재설계 (구현완료)](project_unit5_breakthrough_redesign.md) — 점수게임→돌파게임. 전문제 관문화·무한재시도·단일엔딩·점수제거·필기다운로드. v2 15씬 스토리보드 채택, rival_angry·companion_blush, 사운드. ⚠️채점경로 2개(_handleAttempt+submitShortAnswerPair)
+- [5단원 최종 설계 (스토리·캐릭터 골격)](project_unit5_final_design.md) — 신전건축+황금비례판, 테론·소폴로스, 문제10개, A4→황금비, 작가 허준성·허태욱. ※평가시스템 부분은 돌파 재설계로 대체됨
+- [5단원 시나리오 자문 결과 (superseded)](project_unit5_consult_result.md) — 전문가 39개 개선안. v2 스토리보드가 시나리오를 전면 교체하며 대부분 흡수·무효화. 삭제 후보
+- [5단원 PDF 도형 누락 (보류)](project_pending_pdf_figure_svg.md) — PDF 생성코드가 figureKey(SVG) 분기 없이 PNG만 처리 → SVG 도형이 PDF에 안 들어감. 문제는 나중에 일괄 수정
+
+- [push 시 절차 누락 — games.json·메모리 확인 빼먹음](feedback_push_checklist_skip.md) — commit·push 직전 games.json·메모리 정리 확인 필수. 2026-06-07 2회 누락해 질책받음
+- [못한다 보고 금지 — 검색·자문으로 방법 찾기](feedback_no_giveup_search_consult.md) — 모르면 1)웹검색 2)전문가 자문. 불가 보고 접수 안 함
+- [캐릭터 이미지 파이프라인 (검증완료)](reference_character_image_pipeline.md) — 5표정시트 생성→골분할→투명화(외부flood+얼굴제외 갇힌배경제거)→게임적용→no-cache 크롬검증. 스크립트: characters/split_sheet.py

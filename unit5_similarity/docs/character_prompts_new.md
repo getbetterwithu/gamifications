@@ -109,3 +109,74 @@ full body, facing forward, transparent background.
    merchant: '소폴로스',
    ```
 4. IMG_VERSION 숫자 올림 (캐시 우회)
+
+---
+
+# 추가 표정 (기존 캐릭터 확장)
+
+> v2 시나리오(『시밀러와 황금 비례판』)용. 다이달로스·이리스에 한해 기본 5종 + 1종 추가.
+> 작성일: 2026-06-07
+> **생성 방식**: 5종 시트가 아니라 **단일 이미지**. 기존 스프라이트(또는 표정 시트)를 **레퍼런스 이미지로 첨부**하고 image-to-image로 표정만 교체.
+
+## 원본 캐릭터 묘사 (4단원 생성판, 일관성 기준)
+
+**다이달로스 (rival)**
+```
+a 14-year-old confident BOY student, neat dark/black hair, sharp clever eyes, tanned skin,
+wearing a slightly fancier cream/white chiton with red-terracotta trim at the sleeves and hem,
+an olive-green diagonal sash across the chest, a brown leather belt with a small scroll tucked at the waist,
+brown lace-up sandals wrapping up the calves, arms crossed in a self-assured pose, smug grin (neutral 기준).
+```
+
+**이리스 (companion)**
+```
+a 14-year-old GIRL student apprentice, clearly feminine but not overly stylized, slim build,
+long soft brown hair tied into a single side braid resting on her shoulder, gentle large brown eyes, soft thin eyebrows,
+wearing a light beige peplos dress (ancient Greek female garment) ending below the knees with simple natural folds,
+cinched at the waist with a thin braided cord, small olive-leaf earrings, leather sandals with straps wrapping around the calves,
+holding a small papyrus scroll in one hand and a wooden stylus in the other.
+```
+
+## 공통 일관성 지시 (단일 표정 추가 시 복붙)
+
+```
+IMPORTANT — CONSISTENCY: An image of this exact character (previously generated) is attached as a reference. Keep the face, hairstyle, skin tone, outfit, props, body proportions, height, camera distance, eye level, and art style 100% identical to the attached reference image. Change ONLY the facial expression as described below. This must look like the very same character from the same expression sheet.
+```
+끝 공통: `Single character only (not a row, not a sheet), full body, fully transparent background, entire character visible without cropping.`
+
+---
+
+## EXP-01: 다이달로스 `angry` (분노) — S9 보스전용
+
+```
+[공통 스타일 블록]
+
+[공통 일관성 지시]
+
+Character: [다이달로스 원본 묘사]
+
+NEW facial expression — ANGRY (분노): eyebrows pulled sharply down and inward into a hard frown, eyes narrowed in an intense glare, mouth open mid-shout showing clenched teeth (or tightly clenched jaw), face slightly tense, clearly furious and confrontational — fitting a boss-fight moment. NOT sad, NOT surprised, NOT smug. Pose and everything else identical to the reference.
+
+[끝 공통]
+```
+저장: `characters/split_transparent/rival_angry.png` · 사용: S9 보스전("책상을 내리친다" 비트)
+
+## EXP-02: 이리스 `blush` (쑥스러움) — 썸 비트용
+
+```
+[공통 스타일 블록]
+
+[공통 일관성 지시]
+
+Character: [이리스 원본 묘사]
+
+NEW facial expression — BASHFUL / BLUSHING (쑥스러움): soft pink blush clearly visible on both cheeks, a shy small closed-mouth smile, eyes glancing slightly away to the side in embarrassment, eyebrows softly raised, gently flustered and sweet. Understated "어? 뭐지" shyness — subtle, NOT exaggerated, NOT crying, NOT laughing. Pose and everything else identical to the reference.
+
+[끝 공통]
+```
+저장: `characters/split_transparent/companion_blush.png` · 사용: S4·B9, S11 선택지 반응, S14·B5 (없으면 smile/surprised 대체)
+
+## 생성 후 처리 (단일 표정)
+- 시트 분할 불필요 → 투명화만 적용 (split_sheet.py 대신 투명화 단계만)
+- `characters/split_transparent/` + `games/stage1_similarity/characters/split_transparent/` **양쪽** 저장
+- `characters.js` `IMG_VERSION` 올림

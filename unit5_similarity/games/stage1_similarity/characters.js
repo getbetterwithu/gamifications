@@ -3,7 +3,7 @@
 
 const IMG_BASE = 'characters/split_transparent';
 // 캐시 우회용 버전 (이미지 갱신 시 숫자 올림)
-const IMG_VERSION = 'v11';
+const IMG_VERSION = 'v12';
 function charImg(role, expression) {
   return `${IMG_BASE}/${role}_${expression}.png?${IMG_VERSION}`;
 }

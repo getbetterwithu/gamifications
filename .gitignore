@@ -20,3 +20,7 @@
 
 # 교과서 PDF 원본 (저작권 — 공개 저장소에 올리지 않음)
 **/textbook/
+
+# Python 캐시
+__pycache__/
+*.pyc
