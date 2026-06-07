@@ -1312,7 +1312,7 @@ const game = {
   // 저장된 진행상황이 있으면 타이틀을 건너뛰고 마지막 지점부터 자동 복원
   autoResumeIfInProgress() {
     try {
-      const saved = localStorage.getItem('game_progress');
+      const saved = localStorage.getItem('game_progress_unit5');
       if (!saved) return;                 // 새 게임 → 타이틀 그대로
       const data = JSON.parse(saved);
       // 실제로 진행한 적이 있을 때만 (cursor>0) 자동 복귀
@@ -1506,7 +1506,7 @@ const game = {
   // 이전에 풀던 게임이 있는지 확인
   checkResumeAvailable() {
     try {
-      const saved = localStorage.getItem('game_progress');
+      const saved = localStorage.getItem('game_progress_unit5');
       if (!saved) return;
       const data = JSON.parse(saved);
       // 풀이가 1개 이상 있으면 "이어서 하기" 옵션 제공
@@ -1718,7 +1718,7 @@ const game = {
   },
 
   clearAllProgress() {
-    localStorage.removeItem('game_progress');
+    localStorage.removeItem('game_progress_unit5');
     if (notebook.clearAllSolutions) notebook.clearAllSolutions();
   },
 
@@ -1784,7 +1784,7 @@ const game = {
         problemResults: this.problemResults,
         savedAt: Date.now(),
       };
-      localStorage.setItem('game_progress', JSON.stringify(data));
+      localStorage.setItem('game_progress_unit5', JSON.stringify(data));
     } catch (e) {
       console.warn('진행 상태 저장 실패:', e);
     }
