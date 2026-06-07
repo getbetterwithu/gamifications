@@ -17,3 +17,7 @@
 
 # Claude Code 개인 설정 (머신별 권한 부여, 커밋 X)
 .claude/settings.local.json
+
+# 교과서 PDF (저작권 — 공개 저장소에 올리지 않음)
+**/textbook/
+**/textbook_crops/

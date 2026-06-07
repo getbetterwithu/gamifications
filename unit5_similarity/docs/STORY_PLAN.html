@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5단원 「닮음」 게임 기획서 — confirm용</title>
+<style>
+  :root{
+    --terra:#b5642f; --terra-dark:#8a3f1a; --olive:#6b7a3a; --olive-dark:#4d5a28;
+    --paper:#fdf8ef; --ink:#3a2f22; --line:#e3d6bf; --gold:#c9a227;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:#efe6d4; color:var(--ink);
+    font-family:'Noto Sans KR','Apple SD Gothic Neo',sans-serif; line-height:1.7;
+  }
+  .wrap{max-width:920px; margin:0 auto; padding:32px 20px 80px;}
+  header.hero{
+    background:linear-gradient(135deg,var(--terra),var(--terra-dark));
+    color:#fff8ec; border-radius:18px; padding:34px 32px; margin-bottom:8px;
+    box-shadow:0 8px 24px rgba(138,63,26,.25);
+  }
+  header.hero h1{margin:0 0 8px; font-size:30px; font-weight:900;}
+  header.hero .sub{font-size:15px; opacity:.92;}
+  header.hero .authors{
+    margin-top:16px; display:inline-block; background:rgba(255,255,255,.18);
+    padding:6px 16px; border-radius:30px; font-size:14px; font-weight:700;
+  }
+  .confirm-banner{
+    background:var(--gold); color:#3a2f22; font-weight:800; text-align:center;
+    border-radius:12px; padding:14px; margin:14px 0 28px; font-size:16px;
+    border:2px dashed #8a6d12;
+  }
+  section{
+    background:var(--paper); border:1px solid var(--line); border-radius:16px;
+    padding:24px 26px; margin-bottom:20px; box-shadow:0 2px 8px rgba(0,0,0,.04);
+  }
+  h2{
+    font-size:21px; margin:0 0 16px; padding-bottom:10px; color:var(--terra-dark);
+    border-bottom:3px solid var(--terra); display:flex; align-items:center; gap:10px;
+  }
+  h2 .num{
+    background:var(--terra); color:#fff; width:30px; height:30px; border-radius:50%;
+    display:inline-flex; align-items:center; justify-content:center; font-size:15px; flex:0 0 auto;
+  }
+  h3{font-size:16px; color:var(--olive-dark); margin:18px 0 8px;}
+  table{width:100%; border-collapse:collapse; margin:10px 0; font-size:14.5px;}
+  th,td{border:1px solid var(--line); padding:9px 11px; text-align:left; vertical-align:top;}
+  th{background:var(--olive); color:#fff8ec; font-weight:700;}
+  tr:nth-child(even) td{background:#f6efe0;}
+  .flow{
+    background:#fff; border:1px dashed var(--terra); border-radius:10px;
+    padding:16px 18px; font-size:14.5px; white-space:pre-wrap; line-height:1.9;
+    font-family:'SF Mono','Menlo',monospace;
+  }
+  .tag{display:inline-block; padding:2px 9px; border-radius:20px; font-size:12.5px; font-weight:700; color:#fff;}
+  .t-ha{background:#5a9c4a;} .t-jung{background:#d99a1e;} .t-sang{background:#c0492b;} .t-final{background:#7a3b8f;}
+  .pill{background:#efe6d4; border:1px solid var(--line); border-radius:8px; padding:3px 10px; font-size:13px; display:inline-block; margin:2px;}
+  ul{margin:8px 0; padding-left:22px;} li{margin:4px 0;}
+  .note{background:#fbf3da; border-left:4px solid var(--gold); padding:10px 14px; border-radius:6px; margin:10px 0; font-size:14px;}
+  .todo{background:#fde8e2; border-left:4px solid var(--terra); padding:12px 16px; border-radius:6px; margin:10px 0;}
+  .todo b{color:var(--terra-dark);}
+  .gold-box{
+    background:linear-gradient(135deg,#fff6dd,#f3e3a8); border:2px solid var(--gold);
+    border-radius:12px; padding:18px 20px; margin:12px 0;
+  }
+  .char-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; margin-top:10px;}
+  .char-card{background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px; text-align:center;}
+  .char-card .nm{font-weight:800; font-size:16px; color:var(--terra-dark);}
+  .char-card .ko{font-size:12.5px; color:#7a6a52; margin-top:3px;}
+  .new-badge{background:var(--gold); color:#3a2f22; font-size:11px; font-weight:800; padding:1px 7px; border-radius:10px; margin-left:4px;}
+  footer{text-align:center; color:#7a6a52; font-size:13px; margin-top:30px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <h1>📐 5단원 「도형의 닮음」 게임 기획서</h1>
+    <div class="sub">피타고라스 학당 · 시밀러 편 — 황금 비례판을 찾아서</div>
+    <div class="authors">✍️ 작가: 허준성 · 허태욱</div>
+  </header>
+
+  <div class="confirm-banner">
+    👉 아래 내용을 두 분 작가님께서 검토하시고 <b>confirm</b> 부탁드립니다. 수정·추가 환영!
+  </div>
+
+  <!-- 1 -->
+  <section>
+    <h2><span class="num">1</span> 작품 개요 &amp; 4단원 연결</h2>
+    <p><b>세계관</b>: 고대 그리스, 피타고라스 학당. 4단원(사각형)의 <b>그 후</b> 시점.</p>
+    <p><b>한 줄 줄거리</b>: 학당 동편에 새 신전을 짓게 된 건축가 <b>테론</b>을 도와, 폴리곤이 신전 건축에 필요한 자재 정보와 도구를 닮음·비례 문제로 하나씩 모으고, 마지막에 <b>황금 비례판</b>을 얻어 가장 성스러운 회당을 황금비로 완성하는 이야기.</p>
+    <h3>4단원에서 이어받는 씨앗</h3>
+    <table>
+      <tr><th>4단원 엔딩의 복선</th><th>5단원에서 회수</th></tr>
+      <tr><td>피타고라스: "닮음을 다룰 때 어울리는 이름을 하나 더 얹어주마"</td><td>→ 피타고라스가 <b>"시밀러"</b> 별명 하사</td></tr>
+      <tr><td>탈레스: "창고에 황금 비례판은 괜찮으려나…"</td><td>→ 탈레스가 <b>황금 비례판</b>을 건네는 최종 관문</td></tr>
+      <tr><td>4단원 = 신전 <b>설계도</b> 분쟁</td><td>→ 5단원 = 그 신전을 <b>실제로 건축</b></td></tr>
+    </table>
+  </section>
+
+  <!-- 2 -->
+  <section>
+    <h2><span class="num">2</span> 등장인물 (기존 5 + 신규 2)</h2>
+    <div class="char-grid">
+      <div class="char-card"><div class="nm">폴리곤</div><div class="ko">주인공 → "시밀러"</div></div>
+      <div class="char-card"><div class="nm">피타고라스</div><div class="ko">교장 · 엄격</div></div>
+      <div class="char-card"><div class="nm">탈레스</div><div class="ko">멘토 · 비례판 키맨</div></div>
+      <div class="char-card"><div class="nm">다이달로스</div><div class="ko">라이벌 · 동료化</div></div>
+      <div class="char-card"><div class="nm">이리스</div><div class="ko">친구 · 통찰</div></div>
+      <div class="char-card"><div class="nm">테론<span class="new-badge">NEW</span></div><div class="ko">건축가</div></div>
+      <div class="char-card"><div class="nm">소폴로스<span class="new-badge">NEW</span></div><div class="ko">떠돌이 상인</div></div>
+    </div>
+    <div class="note">신규 캐릭터 이미지(5표정) 제작·게임 등록 완료 ✅ — 테론(허태욱 작가 작명) / 소폴로스 = "지혜를 파는 자"(허준성 작가 작명)</div>
+  </section>
+
+  <!-- 3 -->
+  <section>
+    <h2><span class="num">3</span> 핵심 메커닉 — 자재 조달 루프</h2>
+    <div class="flow">테론(건축가)이 신전 건축에 필요한 것을 의뢰
+        ↓
+폴리곤이 여러 인물에게 찾아가 <b>문제를 풀고</b> 필요한 것을 획득
+        ↓
+획득한 정보·도구·자재를 테론에게 전달 → 신전이 한 단계씩 올라감</div>
+    <div class="note">소폴로스(상인)는 재료를 직접 파는 게 아니라 <b>재료의 수치 정보</b>를 안다 — 벽돌 치수 / 유리 무게 / 점토·물 혼합비. 문제를 풀면 그 정보를 내준다.</div>
+  </section>
+
+  <!-- 4 -->
+  <section>
+    <h2><span class="num">4</span> 출제자별 역할 &amp; 난이도 서열</h2>
+    <table>
+      <tr><th>출제자</th><th>폴리곤에게 주는 것</th><th>난이도</th></tr>
+      <tr><td><b>소폴로스</b> (상인)</td><td>재료 수치 정보 (사암벽돌 치수 → 유리 무게 → 점토·물 혼합비, 순차)</td><td><span class="tag t-ha">하~중</span></td></tr>
+      <tr><td><b>다이달로스</b></td><td>설계 도구 (눈금 없는 자 + 컴퍼스) — 며칠 전 빌려감, 까칠하게 문제 냄</td><td><span class="tag t-jung">중~상</span></td></tr>
+      <tr><td><b>피타고라스</b></td><td>북쪽 대장간 열쇠 (점토 굽는 곳) — 엄격한 문제</td><td><span class="tag t-jung">중~상</span></td></tr>
+      <tr><td><b>이리스</b></td><td>현장 실측 정보 (그림자·닮음으로 높이/거리 측정)</td><td><span class="tag t-sang">상 (2번째)</span></td></tr>
+      <tr><td><b>탈레스</b></td><td>★ <b>황금 비례판</b> — 멘토이자 최종 공급원</td><td><span class="tag t-final">최고난도</span></td></tr>
+    </table>
+    <div class="note"><b>난이도 점층</b>: 소폴로스(쉬움) → 다이달로스·피타고라스(중) → 이리스(2번째로 어려움) → <b>탈레스(가장 어려움)</b>. 셋(다이달로스·피타고라스·이리스)을 다 끝낸 <b>후</b>에 탈레스 최종 관문이 열린다.</div>
+  </section>
+
+  <!-- 5 -->
+  <section>
+    <h2><span class="num">5</span> ★ 황금 비례판 서사 (핵심)</h2>
+    <div class="gold-box">
+      <h3 style="margin-top:0">황금 비례판이란?</h3>
+      <p>가로 : 세로 = <b>황금비(약 1 : 1.6)</b>로 만들어진 <b>실물 황금 직사각형 판</b>. 신전 건축의 측정 도구이자, 4단원 창고에 잠들어 있던 유물.</p>
+    </div>
+    <h3>① 왜 필요한가 (동기)</h3>
+    <p>신전에는 <b>가장 성스러운 공간(회당)</b>이 있다. 이 회당은 <b>완벽한 황금비</b>로 지어야 한다. 그러려면 <b>회당의 가로 : 세로 비</b>를 정확히 알아야 하는데, 그 비를 보여주는 것이 바로 황금 비례판이다.</p>
+    <h3>② 왜 특별한가 (다른 자재와의 차이)</h3>
+    <ul>
+      <li>다른 자재(벽돌·유리·점토): 상인이 <b>정보를 이미 알고 있어</b> 문제 풀면 구할 수 있음</li>
+      <li><b>황금비만은 아무도 모른다</b> — 황금 비례판을 구해야만 알 수 있음</li>
+      <li>비례판은 <b>"1 : 1.6…이 어떻게 만들어지는지 그 원리를 이해해야"</b> 얻을 수 있음 (정보를 사는 게 아니라 스스로 깨우치는 것)</li>
+    </ul>
+    <h3>③ 클라이맥스 (탈레스 최종 관문)</h3>
+    <div class="flow">탈레스: "황금비는 누가 알려줄 수 있는 게 아니다. 스스로 깨우쳐야 한다."
+   ↓ [조작] 직사각형에서 정사각형을 떼어내며, 남은 부분이 원래와 닮은꼴이 되는 순간을 찾기
+   ↓ [발견] 전체 : 긴 변 = 긴 변 : 짧은 변  (자기닮음)
+   ↓ [비례식]  (a+b)/a = a/b   를 직접 세움
+   ↓ [명명] "이 1 : x 를 황금비라 부른다" (≈ 1:1.6)
+   ↓ 통과 → 황금 비례판 획득</div>
+    <h3>④ 결말</h3>
+    <p>폴리곤이 황금 비례판으로 <b>회당의 가로:세로(황금비)를 확정</b> → 성스러운 회당이 완성되며 신전 전체가 완공 → 그 자리에서 <b>피타고라스가 "시밀러"(닮음의 전문가) 별명을 하사</b>. (4단원 약속 이행 = 수미상관)</p>
+  </section>
+
+  <!-- 6 -->
+  <section>
+    <h2><span class="num">6</span> A4 ↔ 황금비 학습 설계</h2>
+    <table>
+      <tr><th></th><th>A4 용지 (반닮음, √2비)</th><th>황금비 (φ)</th></tr>
+      <tr><td><b>배치</b></td><td>초반 (워밍업)</td><td>마지막 (탈레스 최종 관문)</td></tr>
+      <tr><td><b>비율</b></td><td>1 : 1.414</td><td>1 : 1.6…</td></tr>
+      <tr><td><b>자기닮음</b></td><td>반으로 자르면 원래와 닮음</td><td>정사각형 떼어내면 원래와 닮음</td></tr>
+      <tr><td><b>도달점</b></td><td colspan="2" style="text-align:center;"><b>비례식 세우기까지만!</b> 계산(이차방정식·√)은 안 함 → "이 비를 ○○라 부른다"로 명명하고 마무리</td></tr>
+    </table>
+    <div class="note">같은 <b>자기닮음 원리</b>를 초반(쉬운 A4) → 마지막(어려운 황금비)으로 2단 학습. 슬라이더로 <b>눈으로 보며 + 비례식 직접 세우기</b> 인터랙션.</div>
+  </section>
+
+  <!-- 7 -->
+  <section>
+    <h2><span class="num">7</span> 제작 원칙 (4단원 피드백 반영)</h2>
+    <h3>💬 대사 / 클릭 줄이기 (학생 실제 피드백)</h3>
+    <ul>
+      <li>한 step 대사 = <b>2~3문장으로 묶기</b> (단, 3문장이 상한 — 너무 길지 않게)</li>
+      <li>의미 없는 추임새 단독 대사("어?", "그렇구나") 최소화</li>
+      <li>한 Scene의 대사 step 개수 = 4단원 대비 <b>체감 30~40% 감축</b></li>
+      <li>양은 줄이되 <b>밀도·재미(캐릭터 만담)는 유지</b></li>
+    </ul>
+    <h3>🔊 사운드 (5단원 신규 도입)</h3>
+    <ul>
+      <li>BGM(배경음악) + 효과음(SFX) 추가 예정 (4단원엔 없던 기능) — 별도 작업으로 진행</li>
+    </ul>
+  </section>
+
+  <!-- 8 -->
+  <section>
+    <h2><span class="num">8</span> 아직 결정 안 된 것 (confirm 시 함께 정해주세요)</h2>
+    <div class="todo">
+      <b>① 문제 개수</b> — 스토리 구조상 8슬롯 정도 필요. 원래 목표는 15개. 대사·클릭 줄이기 원칙 고려 시 <b>10~12개 권장</b>. 몇 개로?
+    </div>
+    <div class="todo">
+      <b>② 엔딩 분기</b> — 4단원처럼 첫시도 정답 수로 A/B/C 분기? 아니면 단일 엔딩?
+    </div>
+    <div class="todo">
+      <b>③ 문제 배정</b> — 추출한 15문제 중 이 스토리에 쓸 것 / 뺄 것 분류 + 황금비·A4(반닮음) 문제는 별도 제작 필요. (개수 정해지면 표로 정리 예정)
+    </div>
+    <div class="todo">
+      <b>④ 캐릭터 이미지 추가 검토</b> — 테론·소폴로스 외모 수정할 부분 있으면.
+    </div>
+  </section>
+
+  <footer>
+    5단원 게임 기획서 · 2026-06-06 작성 · 허준성 · 허태욱 작가님 confirm 대기 중<br>
+    이 문서: unit5_similarity/docs/STORY_PLAN.html
+  </footer>
+
+</div>
+</body>
+</html>

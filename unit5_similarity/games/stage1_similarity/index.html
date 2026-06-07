@@ -2,7 +2,8 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>시밀러의 학당 — 스테이지 1</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>시밀러와 황금 비례판 — 도형의 닮음</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { height: 100%; font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif; }
@@ -10,9 +11,50 @@
   #game { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
 
   /* ===== 배경 ===== */
-  #bg { position: absolute; inset: 0; transition: opacity 0.6s ease, filter 0.5s ease; }
+  #bg { position: absolute; inset: 0; transition: opacity 0.35s ease, filter 0.5s ease; opacity: 1; }
   #bg svg { width: 100%; height: 100%; display: block; }
   #bg.blurred { filter: blur(8px) brightness(0.7); }
+  #bg.fading { opacity: 0; }
+  /* 씬별 분위기 색보정 (자문 top#3) — 게임 로직 무관, changeBg가 클래스만 토글 */
+  #bg.mood-storm  { filter: brightness(0.55) saturate(0.8) contrast(1.05); }
+  #bg.mood-sunset { filter: brightness(1.02) saturate(1.15) sepia(0.18) hue-rotate(-8deg); }
+
+  /* ===== 날씨 오버레이 (순수 CSS, 이미지 0장) ===== */
+  #weather { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 2; }
+  #weather > * { position: absolute; inset: 0; opacity: 0; transition: opacity 0.8s ease; }
+  /* 비: 두 겹의 반복 그라데이션을 서로 다른 속도로 낙하시켜 빗줄기 표현 (은은하게) */
+  #weather .rain {
+    background:
+      repeating-linear-gradient(104deg, transparent 0 34px, rgba(200,218,235,0.20) 34px 35px),
+      repeating-linear-gradient(101deg, transparent 0 52px, rgba(185,205,225,0.13) 52px 53px);
+    background-size: 100% 220px, 100% 160px;
+    animation: rainfall-a 0.6s linear infinite, rainfall-b 0.45s linear infinite;
+  }
+  @keyframes rainfall-a { from { background-position: 0 0, 0 0; } to { background-position: 60px 220px, 0 0; } }
+  @keyframes rainfall-b { from { background-position: 0 0, 0 0; } to { background-position: 0 0, -40px 160px; } }
+  /* 번개: 화면 전체 흰 플래시를 긴 주기로 두 번 깜빡 */
+  #weather .lightning { background: radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.9), rgba(255,255,255,0.2) 60%, transparent 80%); }
+  @keyframes flash { 0%,92%,100% { opacity: 0; } 93% { opacity: 0.85; } 94% { opacity: 0.1; } 95% { opacity: 0.7; } 96% { opacity: 0; } }
+  /* 구름: 부드러운 흰 타원 띠가 가로로 천천히 흐름 */
+  #weather .clouds {
+    background:
+      radial-gradient(60% 55% at 18% 22%, rgba(255,255,255,0.22), transparent 70%),
+      radial-gradient(50% 48% at 58% 14%, rgba(255,255,255,0.16), transparent 70%),
+      radial-gradient(45% 40% at 85% 26%, rgba(255,255,255,0.18), transparent 70%);
+    background-repeat: no-repeat;
+    animation: clouds-move 60s linear infinite;
+  }
+  @keyframes clouds-move { from { background-position: -10% 0, 30% 0, 70% 0; } to { background-position: 110% 0, 130% 0, 170% 0; } }
+  /* on/off — #game 의 클래스로 제어 */
+  #game.wx-storm  .rain      { opacity: 0.6; }
+  #game.wx-storm  .lightning { opacity: 1; animation: flash 9s linear infinite; }
+  #game.wx-clouds .clouds,
+  #game.wx-storm  .clouds    { opacity: 1; }
+  /* scene 전환 중 dialog/choices/problem 일시 숨김 */
+  #dialog-box.scene-fading,
+  #choices.scene-fading,
+  #problem-placeholder.scene-fading { opacity: 0; pointer-events: none; }
+  #dialog-box, #choices, #problem-placeholder { transition: opacity 0.3s ease, bottom 0.4s ease, left 0.4s ease, right 0.4s ease, width 0.4s ease, top 0.4s ease, transform 0.4s ease; }
 
   /* 애니메이션 */
   @keyframes drift { from { transform: translateX(0); } to { transform: translateX(40px); } }
@@ -87,26 +129,54 @@
     position: absolute;
     background: rgba(255, 250, 240, 0.98);
     border: 4px solid #8b6f47; border-radius: 18px;
-    padding: 24px 36px 80px 36px;
+    padding: 28px 40px 88px 40px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.45);
     z-index: 20;
     transition: bottom 0.4s ease, left 0.4s ease, right 0.4s ease, width 0.4s ease, top 0.4s ease, transform 0.4s ease;
   }
-  #dialog-box.pos-bottom { bottom: 24px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 1280px; min-height: 220px; }
-  #dialog-box.pos-right { bottom: 24px; right: 24px; left: auto; transform: none; width: 58%; min-height: 240px; }
-  #dialog-box.pos-left { bottom: 24px; left: 24px; right: auto; transform: none; width: 58%; min-height: 240px; }
+  #dialog-box.pos-bottom { bottom: 24px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 1280px; min-height: 240px; }
+  #dialog-box.pos-right { bottom: 24px; right: 24px; left: auto; transform: none; width: 58%; min-height: 260px; }
+  #dialog-box.pos-left { bottom: 24px; left: 24px; right: auto; transform: none; width: 58%; min-height: 260px; }
+
+  /* ===== 나레이션 — 대사창과 구별되는 중앙 카드형 ===== */
+  /* 위치: 화면 세로 중앙 / 어두운 반투명 / 이탤릭 가운데정렬 / 화자명 숨김 */
+  #dialog-box.narration {
+    top: 50%; bottom: auto; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 64%; max-width: 880px; min-height: 0;
+    background: rgba(28, 18, 8, 0.82);
+    border: 2px solid rgba(200, 168, 122, 0.55);
+    border-radius: 14px;
+    padding: 30px 44px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  }
+  #dialog-box.narration #speaker-name { display: none; }  /* '나레이션' 라벨 숨김 */
+  #dialog-box.narration #dialog-text {
+    color: #f3e6cf;
+    font-style: italic;
+    text-align: center;
+    line-height: 1.7;
+  }
+  /* 나레이션일 때 다음/이전 버튼 숨김 — 화면 클릭으로만 진행 */
+  #dialog-box.narration #next-btn,
+  #dialog-box.narration #prev-btn { display: none; }
+  /* 나레이션 클릭 오버레이 — 기본 숨김, 나레이션 시 화면 전체 클릭 영역 (dialog-box z=20보다 아래) */
+  #narration-click { display: none; }
+  #game.narrating #narration-click {
+    display: block; position: absolute; inset: 0; z-index: 18; cursor: pointer;
+  }
 
   #speaker-name {
     display: inline-block; background: #8b6f47; color: #fff8e7;
-    padding: 9px 24px; border-radius: 12px; font-weight: 700;
-    font-size: 26px; margin-bottom: 16px;
+    padding: 10px 26px; border-radius: 12px; font-weight: 700;
+    font-size: 30px; margin-bottom: 18px;
   }
   #dialog-text {
-    font-size: 30px; line-height: 1.6; color: #3a2818;
-    min-height: 100px; letter-spacing: -0.3px; font-weight: 500;
+    font-size: 36px; line-height: 1.55; color: #3a2818;
+    min-height: 110px; letter-spacing: -0.3px; font-weight: 500;
   }
   #dialog-text .caret {
-    display: inline-block; width: 3px; height: 32px; background: #8b6f47;
+    display: inline-block; width: 3px; height: 38px; background: #8b6f47;
     margin-left: 3px; vertical-align: middle;
     animation: caretBlink 0.7s steps(1) infinite;
   }
@@ -116,10 +186,23 @@
     position: absolute; bottom: 22px; right: 28px;
     background: #8b6f47; color: #fff8e7;
     border: 3px solid #5d4a30; padding: 14px 36px;
-    font-size: 22px; font-weight: 700; border-radius: 14px;
+    font-size: 24px; font-weight: 700; border-radius: 14px;
     cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     transition: all 0.15s;
   }
+  /* 이전 대사 버튼 — next 왼쪽 */
+  #prev-btn {
+    position: absolute; bottom: 22px; right: 180px;
+    background: #c8a87a; color: #3a2818;
+    border: 3px solid #8b6f47; padding: 14px 24px;
+    font-size: 20px; font-weight: 700; border-radius: 14px;
+    cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    transition: all 0.15s;
+  }
+  #prev-btn:hover { background: #d4b890; transform: translateY(-2px); }
+  #prev-btn:active { transform: translateY(0); }
+  #prev-btn:disabled { background: #d4c4a8; color: #a89070; border-color: #c0a880; cursor: not-allowed; }
+  #prev-btn:disabled:hover { background: #d4c4a8; transform: none; }
   #next-btn:hover { background: #6b4423; transform: translateY(-2px); }
   #next-btn:active { transform: translateY(0); }
   #next-btn::after { content: "  ▶"; display: inline-block; animation: nudge 1s ease-in-out infinite; }
@@ -194,6 +277,19 @@
   #problem-placeholder.placeholder-mode {
     border-style: dashed;
   }
+  /* 문제 텍스트 (KaTeX 렌더) */
+  .problem-text {
+    font-size: 17px;
+    line-height: 1.6;
+    color: #3a2818;
+    margin: 12px 0;
+    text-align: left;
+    background: #fff8e7;
+    padding: 14px 18px;
+    border-left: 4px solid #8b6f47;
+    border-radius: 8px;
+  }
+  .problem-text .katex { font-size: 1.05em; }
   /* 문제 이미지 */
   .problem-image-wrap {
     margin: 8px 0 14px 0;
@@ -236,6 +332,52 @@
     background: #f5d99a;
     border-color: #5d4a30;
     transform: translateY(-1px);
+  }
+  /* 매칭형 (좌측 항목 — 우측 보기) */
+  .match-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 20px;
+    margin-top: 14px;
+    text-align: left;
+    align-items: start;
+  }
+  .match-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #3a2818;
+  }
+  .match-item {
+    min-width: 32px;
+  }
+  .match-select {
+    font-size: 15px;
+    font-weight: 700;
+    padding: 6px 10px;
+    border: 2px solid #8b6f47;
+    border-radius: 8px;
+    background: #fff8e7;
+    color: #3a2818;
+    cursor: pointer;
+    min-width: 70px;
+  }
+  .match-choices {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .match-choice {
+    background: rgba(255,255,255,0.7);
+    border: 1px solid #d4b890;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #3a2818;
+    line-height: 1.5;
   }
   /* 단답형 입력 영역 */
   .short-answer-wrap {
@@ -298,6 +440,26 @@
     border-color: #a89e80;
     cursor: not-allowed;
   }
+  /* shortAnswer-pair: 입력칸 2개 분리 */
+  .pair-wrap { display: flex; flex-direction: column; gap: 10px; }
+  .pair-row {
+    display: flex; align-items: center; gap: 10px;
+    background: #fff8e7; border: 2px solid #8b6f47; border-radius: 10px;
+    padding: 10px 14px;
+  }
+  .pair-label {
+    min-width: 60px; font-size: 20px; color: #3a2818; font-weight: 700;
+    font-family: 'KaTeX_Main', 'Pretendard', sans-serif;
+  }
+  .pair-input {
+    flex: 1; padding: 8px 12px; font-size: 20px;
+    border: 2px solid #c8a87a; border-radius: 8px;
+    background: #fff; color: #3a2818;
+    font-family: 'KaTeX_Main', 'Pretendard', sans-serif;
+    text-align: center;
+  }
+  .pair-input:focus { outline: none; border-color: #5d4a30; box-shadow: 0 0 0 3px rgba(139,111,71,0.2); }
+  .pair-unit { font-size: 18px; color: #5d4a30; font-weight: 600; min-width: 30px; }
   #problem-placeholder h3 { color: #8b4513; margin-bottom: 14px; font-size: 24px; }
   #problem-placeholder p { color: #5d4a30; margin: 6px 0; font-size: 16px; }
   #problem-placeholder .meta {
@@ -386,41 +548,109 @@
   #ending-screen {
     position: absolute; inset: 0; z-index: 150;
     display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
+    align-items: center; justify-content: flex-start;
     background: radial-gradient(ellipse at center, #3a2818 0%, #0a0604 100%);
-    color: #fff8e7; padding: 40px;
+    color: #fff8e7; padding: 24px 32px 40px;
+    overflow-y: auto;
   }
   #ending-screen h1 {
-    font-size: 56px; font-family: 'Times New Roman', serif;
-    color: #f5d99a; margin-bottom: 24px;
+    font-size: 48px; font-family: 'Times New Roman', serif;
+    color: #f5d99a; margin-bottom: 14px;
     text-shadow: 0 4px 16px rgba(0,0,0,0.7);
   }
   #ending-screen .ending-tag {
-    font-size: 22px; color: #c8a87a; margin-bottom: 40px;
+    font-size: 20px; color: #c8a87a; margin-bottom: 20px;
   }
   #ending-screen .ending-text {
-    font-size: 22px; line-height: 1.7; color: #fff8e7;
-    max-width: 800px; text-align: center; margin-bottom: 40px;
-    background: rgba(0,0,0,0.3); padding: 30px 40px;
+    font-size: 20px; line-height: 1.65; color: #fff8e7;
+    max-width: 800px; text-align: center; margin-bottom: 24px;
+    background: rgba(0,0,0,0.3); padding: 22px 32px;
     border-radius: 16px; border: 2px solid #8b6f47;
   }
   #ending-screen .stat-summary {
-    display: flex; gap: 24px; margin-bottom: 40px;
+    display: flex; gap: 18px; margin-bottom: 24px; flex-wrap: wrap; justify-content: center;
   }
   #ending-screen .stat-summary .item {
-    background: rgba(139, 111, 71, 0.4); padding: 16px 24px;
-    border-radius: 12px; text-align: center; min-width: 140px;
+    background: rgba(139, 111, 71, 0.4); padding: 12px 20px;
+    border-radius: 12px; text-align: center; min-width: 120px;
   }
-  #ending-screen .stat-summary .item .label { font-size: 14px; color: #c8a87a; margin-bottom: 6px; }
-  #ending-screen .stat-summary .item .value { font-size: 32px; font-weight: 700; color: #f5d99a; }
+  #ending-screen .stat-summary .item .label { font-size: 13px; color: #c8a87a; margin-bottom: 4px; }
+  #ending-screen .stat-summary .item .value { font-size: 28px; font-weight: 700; color: #f5d99a; }
   #ending-screen .restart-btn {
     background: linear-gradient(180deg, #d4a574 0%, #8b6f47 100%);
     color: #fff8e7; border: 4px solid #5d4a30;
-    padding: 16px 50px; font-size: 22px; font-weight: 700;
+    padding: 14px 44px; font-size: 20px; font-weight: 700;
     border-radius: 14px; cursor: pointer;
     box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    margin: 8px 0;
   }
   #ending-screen .restart-btn:hover { transform: translateY(-3px); }
+  #ending-screen .restart-btn:disabled {
+    background: linear-gradient(180deg, #999, #666) !important;
+    border-color: #555 !important;
+    color: #ddd; cursor: not-allowed; opacity: 0.6;
+  }
+  #ending-screen .restart-btn:disabled:hover { transform: none; }
+
+  /* ===== 다시 보기 (리뷰) 모드 오버레이 ===== */
+  #review-overlay {
+    position: absolute; inset: 0; z-index: 200; pointer-events: none;
+  }
+  #review-overlay.gone { display: none; }
+  #review-overlay .rv-top {
+    position: absolute; top: 0; left: 0; right: 0; height: 56px;
+    background: rgba(40, 25, 10, 0.85);
+    display: flex; align-items: center; padding: 0 20px; gap: 16px;
+    pointer-events: auto; z-index: 201;
+  }
+  #review-overlay .rv-tag {
+    background: #c8a87a; color: #3a2818; padding: 6px 16px;
+    border-radius: 8px; font-weight: 700; font-size: 15px;
+  }
+  #review-overlay .rv-pos {
+    color: #f5d99a; font-weight: 700; font-size: 17px; flex: 1; text-align: center;
+  }
+  #review-overlay .rv-close {
+    background: #b85a4a; color: #fff; border: 2px solid #6b2a1a;
+    padding: 8px 16px; font-size: 14px; font-weight: 700;
+    border-radius: 8px; cursor: pointer;
+  }
+  #review-overlay .rv-close:hover { background: #8b3a2a; }
+  #review-overlay .rv-side {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    pointer-events: auto;
+  }
+  #review-overlay .rv-side-left { left: 16px; }
+  #review-overlay .rv-side-right { right: 16px; }
+  #review-overlay .rv-side button {
+    background: rgba(139, 111, 71, 0.92); color: #fff8e7;
+    border: 3px solid #5d4a30; width: 60px; height: 80px;
+    font-size: 28px; font-weight: 700; border-radius: 14px;
+    cursor: pointer; box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+  }
+  #review-overlay .rv-side button:hover { background: #6b4423; }
+  #review-overlay .rv-side button:disabled {
+    background: #888; border-color: #555; opacity: 0.5; cursor: not-allowed;
+  }
+
+  /* 리뷰 모드일 때 일반 게임 컨트롤·잔존 dialog 모두 숨김 */
+  body.review-mode #next-btn,
+  body.review-mode #prev-btn,
+  body.review-mode #backlog-btn,
+  body.review-mode #stat-panel,
+  body.review-mode #admin-nav,
+  body.review-mode #admin-badge,
+  body.review-mode #dialog-box,
+  body.review-mode #choices { display: none !important; }
+  body.review-mode #problem-placeholder #notebook-btn { display: none !important; }
+  /* 리뷰 오버레이가 ending-screen(z=150)보다 항상 위 */
+  body.review-mode #review-overlay { z-index: 200; }
+  /* 리뷰 모드일 때 문제 패널의 위치를 화면 중앙 가까이로 조정 (좌우 화살표 가리지 않게) */
+  body.review-mode #problem-placeholder {
+    bottom: 24px; right: 90px; left: 90px; width: auto; max-width: none;
+    top: 80px;  /* rv-top 56px + 여유 */
+    max-height: none; height: auto;
+  }
 
   /* ===== 필기 영역 (Step 1: 풀이용 칠판 모달) ===== */
   /* 문제 슬롯 우상단에 ✏️ 버튼이 등장 → 클릭 시 풀스크린 모달로 */
@@ -447,7 +677,7 @@
     background: rgba(40, 25, 10, 0.92);
     display: flex;
     flex-direction: column;
-    padding: 20px 24px;
+    padding: 10px 16px 12px;  /* 상하 패딩 축소 → 작업영역 세로 확보 (스크롤 최소화) */
   }
   #notebook-modal .toolbar {
     display: flex;
@@ -456,8 +686,8 @@
     background: rgba(255, 250, 240, 0.96);
     border: 3px solid #8b6f47;
     border-radius: 14px;
-    padding: 10px 16px;
-    margin-bottom: 12px;
+    padding: 8px 16px;
+    margin-bottom: 8px;
   }
   #notebook-modal .toolbar .group {
     display: flex;
@@ -556,6 +786,65 @@
   }
   .nb-history:disabled:hover { background: #d4c4a8; }
 
+  /* 필기 작업 영역 — 좌측 문제 패널 + 우측 캔버스 */
+  #notebook-work-area {
+    flex: 1;
+    display: flex;
+    gap: 12px;
+    min-height: 0;
+  }
+  #nb-problem-area {
+    width: 34%;
+    min-width: 280px;
+    max-width: 460px;
+    background: #fff8e7;
+    border: 3px solid #8b6f47;
+    border-radius: 14px;
+    padding: 14px 16px;
+    overflow-y: auto;
+    color: #3a2818;
+  }
+  #nb-problem-meta {
+    font-size: 13px;
+    color: #6b4423;
+    margin-bottom: 8px;
+    font-weight: 700;
+  }
+  #nb-problem-text {
+    font-size: 15px;
+    line-height: 1.55;
+    margin-bottom: 12px;
+    color: #3a2818;
+  }
+  #nb-problem-figure img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border: 1px solid #c8a87a;
+    border-radius: 8px;
+  }
+  /* SVG 도형 (figureKey) */
+  #nb-problem-figure svg, .problem-image-svg svg {
+    width: 100%; height: auto; display: block;
+    background: #fdf8ef; border: 1px solid #c8a87a; border-radius: 8px;
+    max-height: 300px;
+  }
+  /* ===== 자기닮음 인터랙션 (A4·황금비) ===== */
+  .ss-wrap { text-align: left; }
+  .ss-svg { width: 100%; height: auto; background:#fff; border:1px solid #c8a87a; border-radius:8px; max-height:210px; }
+  .ss-ctrl { margin-top: 10px; }
+  .ss-label { font-size: 14px; }
+  .ss-slider { width: 100%; margin: 8px 0; }
+  .ss-status { font-size: 13px; padding: 7px 10px; border-radius: 8px; background:#f6efe0; }
+  .ss-status.ss-ok { background:#eef5e9; color:#3a6a1a; font-weight:700; }
+  .ss-prop { margin-top: 12px; padding: 12px; background:#fbf3da; border-radius:10px; }
+  .ss-prop-title { font-weight:700; color:#8a6d12; margin-bottom:8px; font-size:14px; }
+  .ss-prop-eq { font-size: 15px; line-height: 2; }
+  .ss-term { background:#fff; border:1px solid #ddd; padding:2px 7px; border-radius:6px; }
+  .ss-blank { font-size: 14px; padding: 3px; border-radius:5px; }
+  .ss-check { margin-top: 10px; background:#5a8b3a; color:#fff8e7; border:3px solid #3a6a1a; padding:7px 16px; border-radius:9px; cursor:pointer; font-weight:700; }
+  .ss-check:disabled { background:#bbb; border-color:#999; cursor:default; }
+  .ss-done { margin-top: 12px; padding: 12px; background:#eef5e9; border-radius:10px; font-size:15px; }
   /* 캔버스 영역 — 모눈 배경 */
   #notebook-canvas-wrap {
     flex: 1;
@@ -564,6 +853,7 @@
     border-radius: 14px;
     overflow: hidden;
     position: relative;
+    min-width: 0;
   }
   #notebook-canvas {
     display: block;
@@ -610,12 +900,111 @@
   }
 
   .gone { display: none !important; }
+
+  /* ===== Admin 모드 ===== */
+  #admin-badge {
+    position: absolute; top: 12px; right: 50%; transform: translateX(50%);
+    background: rgba(180, 60, 60, 0.92); color: #fff;
+    padding: 6px 14px; font-size: 13px; font-weight: 700;
+    border-radius: 8px; z-index: 400; letter-spacing: 1px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.4);
+    display: none;
+  }
+  body.admin #admin-badge { display: block; }
+  /* Admin 네비게이션 — ADMIN 뱃지 바로 아래 가운데 고정. 이전/다음 한 쌍 */
+  #admin-nav {
+    position: fixed; top: 50px; left: 50%; transform: translateX(-50%);
+    z-index: 400; display: none; gap: 8px;  /* 엔딩(150)·리뷰(200)·PDF로딩(260) 위로 — 어디서든 admin 조작 가능 */
+  }
+  body.admin #admin-nav { display: flex; }
+  #admin-skip-btn, #admin-prev-btn, #admin-reset-btn {
+    background: #b85a4a; color: #fff;
+    border: 2px solid #6b2a1a; padding: 10px 18px;
+    font-size: 15px; font-weight: 700; border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  }
+  #admin-prev-btn { background: #6b8b3a; border-color: #3a5a1a; }
+  #admin-reset-btn { background: #5a4a6b; border-color: #2a1a3a; }
+  #admin-skip-btn:hover { background: #8b3a2a; }
+  #admin-prev-btn:hover { background: #4a6b1a; }
+  #admin-reset-btn:hover { background: #3a2a4a; }
+  #admin-skip-btn:disabled, #admin-prev-btn:disabled {
+    background: #aaa; border-color: #777; cursor: not-allowed; opacity: 0.6;
+  }
+  /* ADMIN 뱃지도 fixed로 — 항상 화면 위 노출 */
+  #admin-badge {
+    position: fixed !important;
+  }
+
+  /* ===== 모바일 대응 (가로/세로 공통, 폭 기준) ===== */
+  @media (max-width: 900px) {
+    /* 대사창 — 모바일에서 화면 폭 거의 전체 사용 */
+    #dialog-box { padding: 18px 22px 70px 22px; border-width: 3px; }
+    #dialog-box.pos-bottom { width: 96%; min-height: 200px; bottom: 12px; }
+    #dialog-box.pos-right,
+    #dialog-box.pos-left { width: 96%; left: 2%; right: 2%; transform: none; min-height: 200px; bottom: 12px; }
+    /* 나레이션 카드 — 모바일에서도 중앙, 폭 넓게, 화자명 패딩 제거 */
+    #dialog-box.narration { width: 92%; max-width: none; padding: 22px 24px; transform: translate(-50%, -50%); }
+    #speaker-name { font-size: 24px; padding: 7px 18px; margin-bottom: 12px; }
+    #dialog-text { font-size: 26px; line-height: 1.5; min-height: 80px; }
+    #dialog-text .caret { height: 28px; }
+    #next-btn { font-size: 19px; padding: 11px 26px; bottom: 16px; right: 18px; }
+
+    /* 스탯 패널 — 모바일에서 좀 더 컴팩트 */
+    #stat-panel { padding: 8px 12px; font-size: 13px; min-width: 0; }
+    #stat-panel .stat-row { gap: 10px; margin: 2px 0; }
+
+    /* 백로그 버튼 */
+    #backlog-btn { padding: 7px 12px; font-size: 13px; top: 12px; right: 12px; }
+
+    /* 선택지 — 모바일에서 가로 전폭 */
+    #choices { width: 96%; left: 2%; right: 2%; bottom: 12px; max-width: none; }
+    .choice-btn { padding: 14px 20px; font-size: 17px; }
+
+    /* 문제 패널 — 모바일에서 가로 전폭 + 글자 키움 */
+    #problem-placeholder { width: 96%; left: 2%; right: 2%; bottom: 12px; padding: 16px 18px; max-width: none; max-height: 86vh; }
+    #problem-placeholder h3 { font-size: 21px; }
+    .problem-text { font-size: 19px !important; }
+
+    /* 삽화 패널 — 모바일에서 작게 */
+    #prop-panel { width: 38vw; max-width: 220px; height: 22vh; max-height: 220px; top: 8vh; right: 2vw; }
+
+    /* 캐릭터 — 모바일은 더 작게 (모바일 화면이 세로로 길면 캐릭터 비율 조정) */
+    .character { height: 80vh; bottom: -18vh; }
+    .character.closeup { height: 130vh; bottom: -55vh; }
+    .character.multi { height: 110vh; bottom: -38vh; }
+
+    /* Scene title */
+    #scene-title .scene-label { font-size: 14px; }
+    #scene-title .scene-name { font-size: 26px; }
+
+    /* 타이틀 화면 */
+    #title-screen h1 { font-size: 48px !important; }
+    #title-screen .subtitle { font-size: 17px !important; }
+    #title-screen .stage-name { font-size: 22px !important; }
+    #title-screen .start-btn { padding: 14px 36px !important; font-size: 20px !important; }
+
+    /* 필기 모달 — 모바일은 세로 분할 (위:문제 / 아래:캔버스) */
+    #notebook-work-area { flex-direction: column; gap: 8px; }
+    #nb-problem-area { width: 100%; max-width: none; min-width: 0; max-height: 42vh; }
+    #nb-problem-text { font-size: 14px; }
+    /* 모바일 필기 툴바 — 줄바꿈 허용 */
+    #notebook-modal .toolbar { flex-wrap: wrap; gap: 6px; padding: 8px 10px; }
+    #notebook-modal .toolbar .group { padding: 0 6px; border-right: none; }
+    .nb-tool, .nb-clear, .nb-history { padding: 6px 10px; font-size: 13px; }
+    .nb-color { width: 26px; height: 26px; }
+    .nb-close { padding: 8px 14px; font-size: 14px; }
+    .nb-meta { font-size: 12px; width: 100%; }
+    .nb-spacer { display: none; }
+  }
 </style>
 </head>
 <body>
 
 <div id="game">
   <div id="bg"></div>
+  <div id="weather"><div class="clouds"></div><div class="rain"></div><div class="lightning"></div></div>
 
   <!-- 캐릭터 슬롯 -->
   <div class="character left hidden" id="char-left"><img src="" alt=""></div>
@@ -627,7 +1016,7 @@
     <div class="stat-row"><span class="stat-name">수학력 (Math)</span><span class="stat-value" id="stat-math">0</span></div>
     <div class="stat-row"><span class="stat-name">지혜 (Wisdom)</span><span class="stat-value" id="stat-wisdom">0</span></div>
     <div class="stat-row"><span class="stat-name">통찰력 (Insight)</span><span class="stat-value" id="stat-insight">0</span></div>
-    <div class="stat-row"><span class="stat-name">단서 카드 (Clues)</span><span class="stat-value" id="stat-clues">0 / 5</span></div>
+    <div class="stat-row"><span class="stat-name">첫시도 정답</span><span class="stat-value" id="stat-clues">0 / 12</span></div>
   </div>
 
   <button id="backlog-btn" onclick="game.openBacklog()">📜 이전 대사 보기</button>
@@ -640,10 +1029,21 @@
     <div class="scene-name" id="scene-name"></div>
   </div>
 
-  <div id="dialog-box" class="pos-bottom">
-    <div id="speaker-name">시밀러</div>
+  <!-- 나레이션 전용 클릭 오버레이 — 나레이션일 때만 활성, 화면 어디든 클릭하면 넘어감 -->
+  <div id="narration-click" onclick="game.handleNext()"></div>
+
+  <div id="dialog-box" class="pos-bottom" onclick="game.handleNarrationClick(event)">
+    <div id="speaker-name">폴리곤</div>
     <div id="dialog-text"></div>
+    <button id="prev-btn" onclick="game.handlePrev()" title="이전 대사 다시 보기">◀ 이전</button>
     <button id="next-btn" onclick="game.handleNext()">다음</button>
+  </div>
+
+  <div id="admin-badge">🛠 ADMIN</div>
+  <div id="admin-nav">
+    <button id="admin-prev-btn" onclick="game.adminSkipToPrevProblem()" title="이전 문제로 점프">◀ 이전 문제</button>
+    <button id="admin-skip-btn" onclick="game.adminSkipToNextProblem()" title="다음 문제로 점프">다음 문제 ▶</button>
+    <button id="admin-reset-btn" onclick="game.adminResetToTitle()" title="진행상황을 모두 지우고 처음(타이틀)으로">↺ 처음부터</button>
   </div>
 
   <div id="choices" class="gone"></div>
@@ -684,19 +1084,26 @@
       <div class="nb-spacer"></div>
       <button class="nb-close" onclick="notebook.close()">✓ 완료</button>
     </div>
-    <div id="notebook-canvas-wrap">
-      <canvas id="notebook-canvas"></canvas>
+    <div id="notebook-work-area">
+      <div id="nb-problem-area">
+        <div id="nb-problem-meta"></div>
+        <div id="nb-problem-text"></div>
+        <div id="nb-problem-figure"></div>
+      </div>
+      <div id="notebook-canvas-wrap">
+        <canvas id="notebook-canvas"></canvas>
+      </div>
     </div>
   </div>
 
   <!-- 타이틀 화면 -->
   <div id="title-screen">
     <div class="title-bg" id="title-bg"></div>
-    <div class="subtitle">중학교 2학년 5단원 복습 게임</div>
-    <h1>시밀러의 학당</h1>
-    <div class="stage-name">스테이지 1 — 닮음의 신전</div>
+    <div class="subtitle">피타고라스 학당의 첫 시험</div>
+    <h1>시밀러와 황금 비례판</h1>
+    <div class="stage-name">도형의 닮음</div>
     <button class="start-btn" onclick="game.startGame()">시작하기</button>
-    <div class="credits">© 피타고라스 학당의 견습생 · 비주얼노벨 + 육성 시뮬레이션</div>
+    <div class="credits">2026 서울사대부중 2학년 수학B 허철호 선생님 © All rights reserved</div>
   </div>
 
   <!-- 백로그 모달 -->
@@ -717,19 +1124,47 @@
       <div class="item"><div class="label">수학력</div><div class="value" id="end-math">0</div></div>
       <div class="item"><div class="label">지혜</div><div class="value" id="end-wisdom">0</div></div>
       <div class="item"><div class="label">통찰력</div><div class="value" id="end-insight">0</div></div>
-      <div class="item"><div class="label">단서 카드</div><div class="value" id="end-clues">0 / 5</div></div>
+      <div class="item"><div class="label">첫시도 정답</div><div class="value" id="end-clues">0 / 12</div></div>
     </div>
     <button class="restart-btn" id="pdf-submit-btn" onclick="pdfReport.openNameDialog()" style="background: linear-gradient(180deg, #5a8b3a, #3a6a1a); margin-right: 12px;">📄 풀이 제출하기 (PDF)</button>
-    <button class="restart-btn" onclick="game.confirmRestart()">다시 시작</button>
+    <button class="restart-btn" id="review-btn" onclick="game.openReviewMode()" style="background: linear-gradient(180deg, #c8a87a, #8b6f47); margin-right: 12px;">🔍 다시 보기</button>
+    <button class="restart-btn" id="restart-btn" onclick="game.confirmRestart()" disabled title="먼저 PDF로 풀이를 제출하면 활성화됩니다">다시 시작</button>
+  </div>
+
+  <!-- 다시 보기 모드 오버레이 — 좌우 이동 + 종료 -->
+  <div id="review-overlay" class="gone">
+    <div class="rv-top">
+      <span class="rv-tag">🔍 다시 보기 모드</span>
+      <span id="review-pos-label" class="rv-pos">1 / 12</span>
+      <button class="rv-close" onclick="game.closeReviewMode()">✕ 닫기</button>
+    </div>
+    <div class="rv-side rv-side-left">
+      <button id="review-prev" onclick="game.reviewPrev()" title="이전 문제">◀</button>
+    </div>
+    <div class="rv-side rv-side-right">
+      <button id="review-next" onclick="game.reviewNext()" title="다음 문제">▶</button>
+    </div>
   </div>
 
   <!-- Step 3: 학생 이름 입력 모달 -->
   <div id="name-dialog" class="gone" style="position: absolute; inset: 0; z-index: 250; background: rgba(0,0,0,0.78); display: flex; align-items: center; justify-content: center;">
-    <div style="background: #fff8e7; border: 4px solid #8b6f47; border-radius: 18px; padding: 30px 40px; min-width: 420px; box-shadow: 0 12px 40px rgba(0,0,0,0.5);">
-      <h2 style="color: #5d4a30; margin-bottom: 18px; font-size: 24px;">📄 풀이 제출 — 이름 입력</h2>
-      <p style="color: #5d4a30; font-size: 15px; margin-bottom: 12px;">PDF에 포함될 학생 이름을 적어주세요.</p>
-      <input type="text" id="name-input" placeholder="예: 홍길동" style="width: 100%; padding: 12px 16px; font-size: 18px; border: 2px solid #8b6f47; border-radius: 10px; margin-bottom: 16px; background: #fff8e7; color: #3a2818;" maxlength="20" />
-      <p style="color: #6b4423; font-size: 13px; margin-bottom: 18px;">반·번호를 함께 적어도 됩니다 (예: 2학년 3반 15번 홍길동).</p>
+    <div style="background: #fff8e7; border: 4px solid #8b6f47; border-radius: 18px; padding: 30px 40px; min-width: 460px; box-shadow: 0 12px 40px rgba(0,0,0,0.5);">
+      <h2 style="color: #5d4a30; margin-bottom: 18px; font-size: 24px;">📄 풀이 제출</h2>
+      <p style="color: #5d4a30; font-size: 15px; margin-bottom: 14px;">PDF에 포함될 학번과 이름을 적어주세요.</p>
+      <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+        <div style="flex: 0 0 140px;">
+          <label for="student-id-input" style="display: block; font-size: 13px; color: #6b4423; font-weight: 700; margin-bottom: 6px;">학번 (4자리)</label>
+          <input type="text" id="student-id-input" placeholder="예: 2315"
+            inputmode="numeric" pattern="[0-9]*" maxlength="4"
+            style="width: 100%; padding: 12px 14px; font-size: 18px; border: 2px solid #8b6f47; border-radius: 10px; background: #fff8e7; color: #3a2818; text-align: center; letter-spacing: 4px;" />
+        </div>
+        <div style="flex: 1;">
+          <label for="name-input" style="display: block; font-size: 13px; color: #6b4423; font-weight: 700; margin-bottom: 6px;">이름</label>
+          <input type="text" id="name-input" placeholder="예: 홍길동" maxlength="20"
+            style="width: 100%; padding: 12px 16px; font-size: 18px; border: 2px solid #8b6f47; border-radius: 10px; background: #fff8e7; color: #3a2818;" />
+        </div>
+      </div>
+      <p style="color: #6b4423; font-size: 12px; margin-bottom: 18px;">※ 학번은 숫자 4자리 (예: 학년-반-번호 조합)</p>
       <div style="text-align: right;">
         <button onclick="pdfReport.closeNameDialog()" style="background: #c8a87a; color: #fff8e7; border: 2px solid #8b6f47; padding: 10px 22px; font-size: 15px; font-weight: 700; border-radius: 10px; cursor: pointer; margin-right: 8px;">취소</button>
         <button onclick="pdfReport.confirmAndGenerate()" style="background: #5a8b3a; color: #fff8e7; border: 3px solid #3a6a1a; padding: 10px 28px; font-size: 16px; font-weight: 700; border-radius: 10px; cursor: pointer;">📄 PDF 만들기</button>
@@ -759,7 +1194,10 @@
 <!-- ===== 외부 데이터 파일 로드 (순서 중요) ===== -->
 <script src="characters.js"></script>
 <script src="props.js"></script>
+<script src="figures.js"></script>
 <script src="backgrounds.js"></script>
+<script src="problems.js"></script>
+<script src="self-similar.js"></script>
 <script src="scenario.js"></script>
 
 <script>
@@ -776,27 +1214,38 @@ function playBgm(key) {
   el.src = url; el.volume = 0.5; el.play().catch(() => {});
 }
 
-// ===== 엔딩 정의 =====
+// ===== 엔딩 정의 (4단원 — 첫 시도 정답 개수 기준) =====
+// condition 인자: { stats, firstTryCorrect }
+//   firstTryCorrect: 첫 시도에 맞춘 문제 개수 (problemResults 집계)
 const ENDINGS = {
   A: {
     tag: '엔딩 A',
-    title: '피타고라스가 인정한 제자',
-    condition: (s) => s.math >= 24 && s.clues >= 4,
-    text: '"네가 닮음 하나로 여기까지 해냈다. 다음은 더 깊은 진리가 기다리고 있다."\n\n피타고라스는 너를 정식 제자로 받아들였다. 신전 설계 회의에 조수로 참여하게 되며, 다음 스테이지에서는 비례판의 문양을 실제 신전 기둥에 적용하는 작업이 기다린다.',
+    title: '황금의 깨달음',
+    condition: (ctx) => ctx.firstTryCorrect >= 8,
+    text: '"누구도 가르쳐줄 수 없는 황금비를, 너는 스스로 찾아냈다. 자재부터 회당의 비율까지 — 모든 비례를 꿰뚫었지."\n\n피타고라스가 고개를 끄덕인다. 테론은 완성된 신전을 올려다보며 흐뭇하게 웃고, 다이달로스는 "제법이야"라고 중얼거린다. 이리스가 조용히 미소 짓는다.\n\n노을빛 신전 위로 황금 비례판이 반짝인다. 폴리곤은 이제 "시밀러" — 닮음의 전문가다. 그의 새로운 여정이 시작된다.',
   },
   B: {
     tag: '엔딩 B',
-    title: '믿음직한 견습생',
-    condition: (s) => s.math >= 14 && s.clues >= 2,
-    text: '"잘했어. 처음치고는 충분해. 다음 단원에서 더 빛날 거야."\n\n탈레스가 어깨를 두드린다. 학당의 정식 견습생으로 자리잡았고, 다음 스테이지에서는 추가 연습 과제가 기다린다.',
+    title: '착실한 건축가',
+    condition: (ctx) => ctx.firstTryCorrect >= 5,
+    text: '"몇 개는 틀렸지만, 끝내 신전을 세웠다. 비례는 한 번에 통달하는 게 아니야 — 쌓아가는 거지."\n\n탈레스가 어깨를 다독인다. 테론은 "다음 신전도 함께 짓자"며 손을 내민다.\n\n폴리곤은 황금 비례판을 손에 쥐었다. 완벽하진 않았어도, 멈추지 않았다. 그것이 시밀러라는 이름의 시작이었다.',
   },
   C: {
     tag: '엔딩 C',
-    title: '아직 갈 길이 먼 견습생',
+    title: '다시 쌓는 비례',
     condition: () => true,  // fallback
-    text: '"닮음의 문이 아직 열리지 않았구나. 다시 첫 장면부터 돌아보거라."\n\n피타고라스가 한 번 더 기회를 준다. 다음 스테이지는 복습 퀴즈로 시작한다.',
+    text: '노을 진 신전 앞, 폴리곤이 설계도를 다시 펼친다. 이리스가 옆에 앉는다.\n\n"괜찮아요. 닮음도, 비례도 — 다시 보면 보여요. 황금비를 찾아낸 눈이잖아요."\n\n폴리곤은 오늘 막힌 것들을 내일 다시 풀 것이다. 비례를 보는 눈은, 멈추지 않는 한 자란다.',
   },
 };
+
+// problemResults에서 첫 시도 정답 개수 집계 (excludeFromScore 문제 제외)
+function countFirstTryCorrect(problemResults) {
+  return Object.values(problemResults || {}).filter(r => {
+    if (!r || r.firstCorrect !== true) return false;
+    const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[r.id]) || {};
+    return !pdata.excludeFromScore;
+  }).length;
+}
 
 // ===== 게임 엔진 =====
 const game = {
@@ -807,6 +1256,8 @@ const game = {
   slotLastSpoken: { left: 0, center: 0, right: 0 },
   speechCount: 0,
   log: [],
+  _logCursor: null,  // 이전 대사 보기 커서 (null = 현재 대사)
+  _pdfSaved: false,  // PDF 저장 완료 여부 (다시 시작 활성화 조건)
   typingTimer: null,
   isTyping: false,
   fullText: '',
@@ -816,14 +1267,240 @@ const game = {
   init() {
     this.changeBg('title');
     document.getElementById('title-bg').innerHTML = BACKGROUNDS.title;
+    // Admin 모드 진입: 백틱(`) 키 3회 연속 (1.5초 이내) — 어떤 OS·브라우저와도 충돌 없음
+    this._adminTaps = [];
     document.addEventListener('keydown', (e) => {
+      // 백틱 3회 트리거
+      if (e.code === 'Backquote') {
+        const now = Date.now();
+        this._adminTaps = this._adminTaps.filter(t => now - t < 1500);
+        this._adminTaps.push(now);
+        if (this._adminTaps.length >= 3) {
+          this._adminTaps = [];
+          e.preventDefault();
+          this.toggleAdmin();
+          return;
+        }
+      }
+      // 백업 단축키: Ctrl+Shift+A (Mac 크롬 기본 단축키와 충돌 없음)
+      if (e.ctrlKey && e.shiftKey && e.code === 'KeyA') {
+        e.preventDefault();
+        this.toggleAdmin();
+        return;
+      }
       if (e.code === 'Space' || e.code === 'Enter' || e.code === 'ArrowRight') {
         e.preventDefault();
+        // 리뷰 모드면 다음 문제로
+        if (this._reviewMode) { this.reviewNext(); return; }
         this.handleNext();
       }
+      if (e.code === 'ArrowLeft') {
+        e.preventDefault();
+        // 리뷰 모드면 이전 문제로, 일반 모드면 이전 대사로
+        if (this._reviewMode) { this.reviewPrev(); return; }
+        this.handlePrev();
+      }
     });
-    // Step 2: 이전 진행이 있는지 확인하고 타이틀 화면에 "이어서 하기" 버튼 표시
-    this.checkResumeAvailable();
+    this._setupAdminTouchTrigger();
+    console.log('[game] init 완료. Admin 진입: 백틱(`) 3회 또는 Ctrl+Shift+A');
+
+    // 새로고침 시: 진행 중이던 게임을 자동으로 이어서 재생(학생용).
+    // 처음부터 다시 시작은 Admin 패널(백틱 3회)의 '↺ 처음부터' 버튼으로만.
+    this.autoResumeIfInProgress();
+  },
+
+  // 저장된 진행상황이 있으면 타이틀을 건너뛰고 마지막 지점부터 자동 복원
+  autoResumeIfInProgress() {
+    try {
+      const saved = localStorage.getItem('game_progress');
+      if (!saved) return;                 // 새 게임 → 타이틀 그대로
+      const data = JSON.parse(saved);
+      // 실제로 진행한 적이 있을 때만 (cursor>0) 자동 복귀
+      if (!data || !(data.cursor > 0)) return;
+      console.log('[resume] 진행상황 발견 → 자동 복원 (cursor=' + data.cursor + ')');
+      this.resumeGame(data);
+    } catch (e) {
+      console.warn('[resume] 자동 복원 실패, 타이틀 유지:', e);
+    }
+  },
+
+  // ===== Admin 모드 =====
+  toggleAdmin() {
+    const on = !document.body.classList.contains('admin');
+    document.body.classList.toggle('admin', on);
+    console.log('[admin]', on ? 'ON' : 'OFF');
+    // 토스트로 상태 표시
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = on ? '🛠 Admin 모드 ON' : 'Admin 모드 OFF';
+    document.getElementById('toast-area').appendChild(toast);
+    setTimeout(() => toast.remove(), 2200);
+  },
+  // 모바일 진입: 화면 우상단 모서리 영역 5회 연속 탭 (2초 이내)
+  _setupAdminTouchTrigger() {
+    let taps = [];
+    document.addEventListener('touchstart', (e) => {
+      const t = e.touches[0];
+      if (!t) return;
+      const w = window.innerWidth;
+      // 우상단 200x200 영역
+      if (t.clientX > w - 200 && t.clientY < 200) {
+        const now = Date.now();
+        taps = taps.filter(x => now - x < 2000);
+        taps.push(now);
+        if (taps.length >= 5) {
+          taps = [];
+          this.toggleAdmin();
+        }
+      } else {
+        taps = [];
+      }
+    }, { passive: true });
+  },
+  // 현재 cursor 이후 첫 problem step 직전까지 점프
+  // 점프 도중 scene/enter는 효과 적용해서 상태 일관성 유지, dialog/choice/reaction은 스킵
+  adminSkipToNextProblem() {
+    console.log('[admin] === skip clicked === cursor=', this.cursor, '/ STEPS len=', (typeof STEPS !== 'undefined' ? STEPS.length : 'STEPS undefined!'));
+    if (!document.body.classList.contains('admin')) {
+      console.warn('[admin] not in admin mode, abort');
+      return;
+    }
+    if (typeof STEPS === 'undefined') {
+      console.error('[admin] STEPS is undefined!');
+      return;
+    }
+    // 진행 중인 typing/timeout 정리
+    if (this.typingTimer) { clearInterval(this.typingTimer); this.typingTimer = null; }
+    this.isTyping = false;
+    // STEPS에서 cursor 이후 첫 problem 찾기
+    let target = -1;
+    for (let i = this.cursor; i < STEPS.length; i++) {
+      if (STEPS[i] && STEPS[i].type === 'problem') { target = i; break; }
+    }
+    console.log('[admin] target problem idx=', target, target >= 0 ? STEPS[target].id : '(none)');
+    if (target < 0) {
+      const toast = document.createElement('div');
+      toast.className = 'toast down';
+      toast.textContent = '남은 문제 없음';
+      document.getElementById('toast-area').appendChild(toast);
+      setTimeout(() => toast.remove(), 2000);
+      return;
+    }
+    // cursor를 target까지 이동시키면서 scene/enter만 사이드이펙트 적용
+    let skippedCount = 0;
+    for (let i = this.cursor; i < target; i++) {
+      const s = STEPS[i];
+      if (!s) continue;
+      try {
+        if (s.type === 'scene') {
+          this.changeBg(s.bg);
+          this.applyAtmosphere(s.mood || null, s.weather || null);
+          if (typeof playBgm === 'function') playBgm(s.bg);
+          if (s.clearChars) this.clearAllCharacters();
+        } else if (s.type === 'enter') {
+          this.charSlots[s.position] = s.role;
+          this.placeCharacter(s.role, s.expression, s.position);
+        }
+      } catch (err) {
+        console.warn('[admin] skip side-effect err at', i, err);
+      }
+      skippedCount++;
+    }
+    console.log('[admin] skipped', skippedCount, 'steps. now executing problem at idx=', target);
+    // 대사창·선택지·전환효과 정리
+    document.getElementById('dialog-box').classList.add('gone');
+    document.getElementById('choices').classList.add('gone');
+    document.getElementById('next-btn').classList.add('gone');
+    document.getElementById('bg').classList.remove('fading');
+    document.getElementById('dialog-box').classList.remove('scene-fading');
+    document.getElementById('choices').classList.remove('scene-fading');
+    document.getElementById('problem-placeholder').classList.remove('scene-fading');
+    // cursor를 target+1로 두고(advance가 cursor++ 안 하도록 직접 실행) showProblem 직접 호출
+    this.cursor = target + 1;
+    this.saveProgress(this._lastBg);
+    try {
+      this.showProblem(STEPS[target]);
+      console.log('[admin] showProblem called for', STEPS[target].id);
+    } catch (err) {
+      console.error('[admin] showProblem failed:', err);
+    }
+  },
+
+  // Admin — 현재 cursor 이전의 마지막 problem 으로 점프
+  // 정답·오답 처리 화면을 다시 보기 위함. problemResults 기록은 보존(중복 채점 X).
+  adminSkipToPrevProblem() {
+    console.log('[admin] === prev clicked === cursor=', this.cursor);
+    if (!document.body.classList.contains('admin')) {
+      console.warn('[admin] not in admin mode, abort');
+      return;
+    }
+    if (typeof STEPS === 'undefined') return;
+    // 진행 중인 typing·timeout 정리
+    if (this.typingTimer) { clearInterval(this.typingTimer); this.typingTimer = null; }
+    this.isTyping = false;
+
+    // 현재 보고 있는 문제 인덱스 식별 (cursor는 "다음에 실행할 step")
+    // - problem 화면에 머물러 있는 상태에서는 cursor-1이 현재 problem step
+    // - 일반 dialog 진행 중이면 cursor-1은 dialog 등 다른 type
+    let currentProblemIdx = -1;
+    if (this.cursor - 1 >= 0 && STEPS[this.cursor - 1] && STEPS[this.cursor - 1].type === 'problem') {
+      currentProblemIdx = this.cursor - 1;
+    }
+    // 현재 문제 이전(strict less) 마지막 problem 찾기
+    const searchFrom = (currentProblemIdx >= 0 ? currentProblemIdx : this.cursor) - 1;
+    let target = -1;
+    for (let i = Math.min(searchFrom, STEPS.length - 1); i >= 0; i--) {
+      if (STEPS[i] && STEPS[i].type === 'problem') { target = i; break; }
+    }
+    console.log('[admin] prev target=', target, target >= 0 ? STEPS[target].id : '(none)');
+    if (target < 0) {
+      const toast = document.createElement('div');
+      toast.className = 'toast down';
+      toast.textContent = '이전 문제 없음';
+      document.getElementById('toast-area').appendChild(toast);
+      setTimeout(() => toast.remove(), 2000);
+      return;
+    }
+
+    // scene/enter 사이드이펙트만 적용해서 배경·캐릭터 상태 복원
+    // 0부터 target까지 모두 다시 훑기 (앞쪽이 어디까지 정리됐는지 모르므로 안전하게)
+    this.clearAllCharacters();
+    for (let i = 0; i <= target; i++) {
+      const s = STEPS[i];
+      if (!s) continue;
+      try {
+        if (s.type === 'scene') {
+          this.changeBg(s.bg);
+          this.applyAtmosphere(s.mood || null, s.weather || null);
+          if (typeof playBgm === 'function') playBgm(s.bg);
+          if (s.clearChars) this.clearAllCharacters();
+        } else if (s.type === 'enter') {
+          this.charSlots[s.position] = s.role;
+          this.placeCharacter(s.role, s.expression, s.position);
+        }
+      } catch (err) {
+        console.warn('[admin] prev side-effect err at', i, err);
+      }
+    }
+
+    // UI 정리
+    document.getElementById('dialog-box').classList.add('gone');
+    document.getElementById('choices').classList.add('gone');
+    document.getElementById('next-btn').classList.add('gone');
+    document.getElementById('bg').classList.remove('fading');
+    document.getElementById('dialog-box').classList.remove('scene-fading');
+    document.getElementById('choices').classList.remove('scene-fading');
+    document.getElementById('problem-placeholder').classList.remove('scene-fading');
+
+    // cursor를 target+1로 두고 showProblem 직접 호출
+    this.cursor = target + 1;
+    this.saveProgress(this._lastBg);
+    try {
+      this.showProblem(STEPS[target]);
+      console.log('[admin] showProblem called for', STEPS[target].id);
+    } catch (err) {
+      console.error('[admin] showProblem failed:', err);
+    }
   },
 
   // 이전에 풀던 게임이 있는지 확인
@@ -846,6 +1523,8 @@ const game = {
     const ts = document.getElementById('title-screen');
     // 이미 있으면 중복 추가 방지
     if (document.getElementById('resume-btn')) return;
+    // 원래 시작 버튼을 resume 버튼 삽입 전에 확보 (둘 다 .start-btn 클래스라 순서 의존 X)
+    const startBtn = ts.querySelector('.start-btn');
     const resumeBtn = document.createElement('button');
     resumeBtn.id = 'resume-btn';
     resumeBtn.className = 'start-btn';
@@ -853,7 +1532,6 @@ const game = {
     resumeBtn.innerText = '⏵ 이어서 하기';
     resumeBtn.onclick = () => this.resumeGame(savedData);
     // 시작하기 버튼 위에 삽입
-    const startBtn = ts.querySelector('.start-btn');
     ts.insertBefore(resumeBtn, startBtn);
     // 시작하기 버튼 라벨 변경
     startBtn.innerText = '↻ 처음부터 시작';
@@ -861,15 +1539,195 @@ const game = {
   },
 
   confirmRestart() {
-    if (confirm('처음부터 다시 시작하면 지금까지의 풀이와 점수가 모두 사라집니다. 계속하시겠습니까?')) {
-      this.clearAllProgress();
-      this.startGame();
+    // 가드 1: PDF 저장 완료 전이면 다시 시작 차단
+    if (!this._pdfSaved) {
+      alert('먼저 "📄 풀이 제출하기 (PDF)"로 결과를 저장한 뒤에 다시 시작할 수 있습니다.\n저장하지 않으면 풀이·점수가 모두 사라집니다.');
+      return;
+    }
+    // 가드 2: 암호 확인
+    const PASSWORD = '허철호짱';
+    const input = prompt('다시 시작하려면 암호를 입력하세요:\n(점수·풀이가 모두 초기화됩니다)');
+    if (input === null) return;
+    if (input.trim() !== PASSWORD) {
+      alert('암호가 일치하지 않습니다. 다시 시작이 취소되었습니다.');
+      return;
+    }
+    this._pdfSaved = false;
+    this.clearAllProgress();
+    this.startGame();
+  },
+
+  // ===== 다시 보기 (리뷰) 모드 =====
+  // 엔딩 후 학생이 자신의 풀이 과정을 처음부터 끝까지 살펴볼 수 있는 읽기전용 모드
+  // 좌우 화살표로 문제 단위 이동, 모든 입력은 비활성화
+  openReviewMode() {
+    if (typeof STEPS === 'undefined') return;
+    console.log('[review] open clicked');
+    document.body.classList.add('review-mode');
+    // 오버레이 먼저 표시 (혹시 render에서 에러 던져도 좌우 버튼은 보이도록)
+    document.getElementById('review-overlay').classList.remove('gone');
+    document.getElementById('ending-screen').classList.add('gone');
+    // 잔존 UI 모두 정리
+    document.getElementById('dialog-box').classList.add('gone');
+    document.getElementById('choices').classList.add('gone');
+    document.getElementById('next-btn').classList.add('gone');
+    document.getElementById('prev-btn')?.classList.add('gone');
+    this._reviewMode = true;
+    // 첫 문제부터
+    this._reviewProblemIndices = [];
+    for (let i = 0; i < STEPS.length; i++) {
+      if (STEPS[i] && STEPS[i].type === 'problem') this._reviewProblemIndices.push(i);
+    }
+    console.log('[review] problem indices:', this._reviewProblemIndices.length);
+    this._reviewPos = 0;
+    try {
+      this._renderReviewProblem();
+    } catch (err) {
+      console.error('[review] render error:', err);
+      alert('리뷰 모드 렌더 중 오류: ' + err.message);
+    }
+  },
+
+  closeReviewMode() {
+    document.body.classList.remove('review-mode');
+    document.getElementById('review-overlay').classList.add('gone');
+    this._reviewMode = false;
+    // 게임 화면 정리
+    document.getElementById('problem-placeholder').classList.add('gone');
+    document.getElementById('dialog-box').classList.add('gone');
+    document.getElementById('choices').classList.add('gone');
+    // 잔존 transition 상태 정리
+    document.getElementById('bg').classList.remove('fading');
+    this.clearAllCharacters();
+    // 엔딩 화면 복귀
+    document.getElementById('ending-screen').classList.remove('gone');
+  },
+
+  reviewNext() {
+    if (!this._reviewMode) return;
+    if (this._reviewPos < this._reviewProblemIndices.length - 1) {
+      this._reviewPos++;
+      this._renderReviewProblem();
+    }
+  },
+  reviewPrev() {
+    if (!this._reviewMode) return;
+    if (this._reviewPos > 0) {
+      this._reviewPos--;
+      this._renderReviewProblem();
+    }
+  },
+
+  _renderReviewProblem() {
+    const target = this._reviewProblemIndices[this._reviewPos];
+    if (target == null) {
+      console.error('[review] target index missing. pos=', this._reviewPos, 'list=', this._reviewProblemIndices);
+      const box = document.getElementById('problem-placeholder');
+      box.classList.remove('placeholder-mode', 'gone', 'scene-fading');
+      box.innerHTML = '<div style="padding:24px;color:#8b3a2a;font-weight:700;">리뷰할 문제 데이터를 찾을 수 없습니다. (시나리오 로드 실패)</div>';
+      return;
+    }
+    const step = STEPS[target];
+    if (!step) {
+      console.error('[review] STEPS[target] is undefined. target=', target);
+      const box = document.getElementById('problem-placeholder');
+      box.classList.remove('placeholder-mode', 'gone', 'scene-fading');
+      box.innerHTML = `<div style="padding:24px;color:#8b3a2a;font-weight:700;">STEPS[${target}] 가 비어있습니다.</div>`;
+      return;
+    }
+    // 배경·캐릭터 일관성 복원 (target 이전의 마지막 scene/enter 적용)
+    this.clearAllCharacters();
+    let lastBg = null;
+    for (let i = 0; i <= target; i++) {
+      const s = STEPS[i];
+      if (!s) continue;
+      if (s.type === 'scene') {
+        lastBg = s.bg;
+        if (s.clearChars) this.clearAllCharacters();
+      } else if (s.type === 'enter') {
+        // position 없는 enter는 같은 role의 표정만 갱신하도록 placeCharacter가 알아서 처리
+        if (s.position) this.charSlots[s.position] = s.role;
+        this.placeCharacter(s.role, s.expression, s.position);
+      }
+    }
+    if (lastBg) this.changeBg(lastBg);
+    // 문제 UI 표시 (showProblem 재활용하되 입력은 잠금)
+    this._currentProblem = step;
+    document.getElementById('dialog-box').classList.add('gone');
+    document.getElementById('choices').classList.add('gone');
+    const box = document.getElementById('problem-placeholder');
+    box.classList.remove('placeholder-mode', 'gone', 'scene-fading');
+    box.innerHTML = this._buildProblemUi(step);
+    this._renderKatexInBox(box);
+    // 모든 입력 요소 disabled, 제출·필기 버튼 숨김 — 학생이 풀 수 없게
+    box.querySelectorAll('input, select, button, .choice-option').forEach(el => {
+      if (el.tagName === 'BUTTON') el.style.display = 'none';
+      else el.disabled = true;
+    });
+    // 학생이 실제로 입력했던 답·정답·점수 정보 표시
+    this._appendReviewBadge(step);
+    // 페이지 표시 (1/12 같은)
+    document.getElementById('review-pos-label').textContent =
+      `${this._reviewPos + 1} / ${this._reviewProblemIndices.length} · ${step.id}`;
+    // 좌우 버튼 활성화 상태
+    document.getElementById('review-prev').disabled = this._reviewPos === 0;
+    document.getElementById('review-next').disabled = this._reviewPos === this._reviewProblemIndices.length - 1;
+  },
+
+  _appendReviewBadge(step) {
+    const result = this.problemResults[step.id];
+    const box = document.getElementById('problem-placeholder');
+    const badge = document.createElement('div');
+    badge.style.cssText = 'background:linear-gradient(180deg,#fff5d6,#f5d99a);border:3px solid #c8a87a;border-radius:12px;padding:14px 18px;margin:12px 0;text-align:left;color:#5d4a30;';
+    let resultText, resultColor;
+    if (!result || !result.attempts || result.attempts.length === 0) {
+      resultText = '미응시'; resultColor = '#888';
+    } else if (result.firstCorrect === true) {
+      resultText = '✓ 첫 시도 정답'; resultColor = '#3a6a1a';
+    } else if (result.resolved === true) {
+      resultText = '△ 재시도 후 정답'; resultColor = '#a87a1a';
+    } else {
+      resultText = '✗ 미해결'; resultColor = '#8b3a2a';
+    }
+    let attemptsHtml = '';
+    if (result && result.attempts && result.attempts.length) {
+      const list = result.attempts.map((a, i) => {
+        const mark = a.correct ? '✅' : '❌';
+        return `${i+1}회: ${this._escapeHtml(String(a.answer))} ${mark}`;
+      }).join(' · ');
+      attemptsHtml = `<div style="font-size:13px;color:#6b4423;margin-top:6px;">시도 기록: ${list}</div>`;
+    }
+    badge.innerHTML = `
+      <div style="font-size:15px;font-weight:700;color:${resultColor};">결과: ${resultText}</div>
+      ${attemptsHtml}
+    `;
+    box.appendChild(badge);
+  },
+
+  // 다시 시작 버튼 활성화/비활성화 상태 갱신
+  _updateRestartBtn() {
+    const btn = document.getElementById('restart-btn');
+    if (!btn) return;
+    if (this._pdfSaved) {
+      btn.disabled = false;
+      btn.title = '점수·풀이가 모두 초기화됩니다';
+    } else {
+      btn.disabled = true;
+      btn.title = '먼저 PDF로 풀이를 제출하면 활성화됩니다';
     }
   },
 
   clearAllProgress() {
     localStorage.removeItem('game_progress');
     if (notebook.clearAllSolutions) notebook.clearAllSolutions();
+  },
+
+  // Admin: 진행상황·필기를 모두 지우고 처음(타이틀)부터 다시 시작
+  adminResetToTitle() {
+    if (!confirm('진행상황과 필기를 모두 지우고 처음부터 다시 시작할까요?')) return;
+    this.clearAllProgress();
+    sessionStorage.removeItem('session_alive');
+    location.reload();
   },
 
   resumeGame(savedData) {
@@ -933,15 +1791,33 @@ const game = {
   },
 
   startGame() {
+    // 모든 오버레이/모달 닫기 (다시 시작 시 엔딩 화면 등이 남아있지 않게)
     document.getElementById('title-screen').classList.add('gone');
+    document.getElementById('ending-screen').classList.add('gone');
+    document.getElementById('problem-placeholder').classList.add('gone');
+    document.getElementById('choices').classList.add('gone');
+    document.getElementById('backlog-modal').classList.add('gone');
+    document.getElementById('notebook-modal').classList.add('gone');
+    document.getElementById('name-dialog').classList.add('gone');
     // 새 게임이므로 이전 진행 초기화
     this.clearAllProgress();
     this.stats = { math: 0, wisdom: 0, insight: 0, clues: 0 };
     this.cursor = 0;
     this.log = [];
+    this.problemResults = {};
+    this._endingReached = false;
+    this._logCursor = null;
+    this._pdfSaved = false;
+    this._updateRestartBtn();
     this.renderStats();
     playBgm('harbor');
     this.advance();
+  },
+
+  // 대사창 클릭 시 다음으로 진행 (나레이션·일반 대사 공통). 내부 버튼(이전/다음) 클릭은 제외
+  handleNarrationClick(event) {
+    if (event && event.target.closest('button')) return;
+    this.handleNext();
   },
 
   handleNext() {
@@ -952,7 +1828,62 @@ const game = {
     if (!document.getElementById('ending-screen').classList.contains('gone')) return;
     if (!document.getElementById('notebook-modal').classList.contains('gone')) return;
     if (this.isTyping) { this.completeTyping(); return; }
+    // 이전 대사 보기 상태에서 next 누르면 현재 대사로 복귀 (advance X)
+    if (this._logCursor !== null && this._logCursor !== undefined) {
+      this._logCursor = null;
+      this._restoreCurrentDialog();
+      return;
+    }
     this.advance();
+  },
+
+  // ← 이전 대사 보기 (대사 텍스트만 변경, 게임 진행 상태는 그대로)
+  handlePrev() {
+    // 모달·문제·선택지 상태에서는 동작 안 함
+    if (!document.getElementById('title-screen').classList.contains('gone')) return;
+    if (!document.getElementById('backlog-modal').classList.contains('gone')) return;
+    if (!document.getElementById('choices').classList.contains('gone')) return;
+    if (!document.getElementById('problem-placeholder').classList.contains('gone')) return;
+    if (!document.getElementById('ending-screen').classList.contains('gone')) return;
+    if (!document.getElementById('notebook-modal').classList.contains('gone')) return;
+    if (!this.log || this.log.length === 0) return;
+
+    // 타이핑 중이면 먼저 완료
+    if (this.isTyping) this.completeTyping();
+
+    // _logCursor가 null이면 현재 대사 (log의 마지막) — prev 1번 누르면 log.length - 2 위치
+    if (this._logCursor === null || this._logCursor === undefined) {
+      this._logCursor = this.log.length - 2;  // 직전 대사
+    } else {
+      this._logCursor = Math.max(0, this._logCursor - 1);
+    }
+    if (this._logCursor < 0) {
+      this._logCursor = 0;
+    }
+    const entry = this.log[this._logCursor];
+    if (!entry) return;
+    // 대사창에 직접 표시 (타이핑 없이 즉시)
+    document.getElementById('speaker-name').textContent = entry.speaker || '';
+    document.getElementById('dialog-text').textContent = entry.text || '';
+    this._updatePrevBtn();
+  },
+
+  _restoreCurrentDialog() {
+    // _logCursor를 null로 리셋한 후 가장 최근(현재) 대사 복원
+    if (!this.log || this.log.length === 0) return;
+    const entry = this.log[this.log.length - 1];
+    if (!entry) return;
+    document.getElementById('speaker-name').textContent = entry.speaker || '';
+    document.getElementById('dialog-text').textContent = entry.text || '';
+    this._updatePrevBtn();
+  },
+
+  _updatePrevBtn() {
+    const btn = document.getElementById('prev-btn');
+    if (!btn) return;
+    // 보여줄 이전 대사가 없으면 비활성화
+    const minIdx = this._logCursor === null || this._logCursor === undefined ? this.log.length - 2 : this._logCursor - 1;
+    btn.disabled = minIdx < 0;
   },
 
   advance() {
@@ -971,12 +1902,9 @@ const game = {
   execute(step) {
     switch (step.type) {
       case 'scene':
-        this.changeBg(step.bg);
         playBgm(step.bg);
-        if (step.clearChars) this.clearAllCharacters();
-        this.showSceneTitle(step.name);
-        // Scene 전환 안내가 표시되는 동안 잠시 대기 후 다음
-        setTimeout(() => this.advance(), 1800);
+        this.applyAtmosphere(step.mood || null, step.weather || null);
+        this.sceneTransition(step.bg, !!step.clearChars, step.name, () => this.advance());
         break;
       case 'dialog':
         this.handleDialogStep(step);
@@ -1007,6 +1935,11 @@ const game = {
 
   // ----- 핵심 -----
   handleDialogStep(step) {
+    // 안전장치: 어떤 경로로든 배경/대사창이 fading 상태로 남아있으면 강제 해제
+    document.getElementById('bg').classList.remove('fading');
+    document.getElementById('dialog-box').classList.remove('scene-fading', 'gone');
+    document.getElementById('choices').classList.remove('scene-fading');
+    document.getElementById('problem-placeholder').classList.remove('scene-fading');
     const isNarration = (step.speaker === 'narrator' || step.speaker === 'npc');
     const role = step.role || step.speaker;
     let position = step.position;
@@ -1020,6 +1953,9 @@ const game = {
 
     this.applyMode(isNarration, position);
     this.applyDialogPosition(isNarration, position);
+    // 실제 나레이션 dialog일 때만 카드형+클릭진행 활성 (choice/problem과 분리 — 그들은 여기 안 옴)
+    document.getElementById('dialog-box').classList.toggle('narration', isNarration);
+    document.getElementById('game').classList.toggle('narrating', isNarration);
     this.applyProp(step.prop || null);
     // resume용으로 마지막 대화 상태 기록 (다음 saveProgress에서 활용)
     this._lastDialog = {
@@ -1060,6 +1996,10 @@ const game = {
   },
 
   applyMode(isNarration, speakingPosition) {
+    // 기본적으로 나레이션 클릭모드 해제 — 진짜 나레이션 dialog면 handleDialogStep이 그 직후 다시 켬.
+    // (choice·problem도 applyMode(true)를 부르지만 narration dialog는 아니므로 여기서 꺼두는 게 안전)
+    document.getElementById('game').classList.remove('narrating');
+    document.getElementById('dialog-box').classList.remove('narration');
     const bg = document.getElementById('bg');
     const occupiedSlots = ['left', 'center', 'right'].filter(pos => this.charSlots[pos]);
     const isCloseup = !isNarration && occupiedSlots.length === 1;
@@ -1085,6 +2025,8 @@ const game = {
   applyDialogPosition(isNarration, speakingPosition) {
     const box = document.getElementById('dialog-box');
     box.classList.remove('pos-bottom', 'pos-left', 'pos-right');
+    // 나레이션은 대사창과 시각적으로 구별: 중앙 카드형 (narration 클래스)
+    // ※ narration/narrating 토글은 실제 나레이션 dialog에서만 (choice·problem도 isNarration=true로 호출하므로 여기선 안 함)
     if (isNarration || !speakingPosition || speakingPosition === 'center') {
       box.classList.add('pos-bottom');
     } else if (speakingPosition === 'left') {
@@ -1109,8 +2051,70 @@ const game = {
 
   // ----- 화면 조작 -----
   changeBg(name) {
-    document.getElementById('bg').innerHTML = BACKGROUNDS[name] || '';
+    const bg = document.getElementById('bg');
+    const html = BACKGROUNDS[name];
+    if (!html) {
+      console.warn('[changeBg] 알 수 없는 배경 키:', name, '- 이전 배경 유지');
+      // 배경 유지하되 fading은 강제 해제 (검정 화면 방지)
+      bg.classList.remove('fading');
+      return;
+    }
+    bg.innerHTML = html;
+    // 배경을 새로 설정했으면 fading 상태는 무조건 해제 (안전장치)
+    bg.classList.remove('fading');
     this._lastBg = name;  // Step 2: 이어서 하기용
+  },
+
+  // 씬 분위기(색보정 + 날씨) 적용 — scene 스텝의 mood/weather 속성으로 제어. 게임 로직 무관.
+  // mood: 'storm' | 'sunset' | null   weather: 'storm' | 'clouds' | null
+  applyAtmosphere(mood, weather) {
+    const bg = document.getElementById('bg');
+    bg.classList.remove('mood-storm', 'mood-sunset');
+    if (mood) bg.classList.add('mood-' + mood);
+    const game = document.getElementById('game');
+    game.classList.remove('wx-storm', 'wx-clouds');
+    if (weather) game.classList.add('wx-' + weather);
+  },
+
+  // scene 전환 흐름:
+  // 1) 페이드아웃 (350ms): 배경·대사창·캐릭터 opacity 0
+  // 2) 교체 + 대사창 완전 숨김 (gone) → 이전 대사가 새 scene 위에 나타나지 않음
+  // 3) 배경 페이드인 (350ms)
+  // 4) 배경 페이드인 완료 후 scene title 표시 (1500ms) — 전환과 분리되어 또렷이 보임
+  // 5) title 사라진 뒤 다음 step으로
+  sceneTransition(bgName, clearChars, sceneName, doneCb) {
+    const bg = document.getElementById('bg');
+    const dialogBox = document.getElementById('dialog-box');
+    const choices = document.getElementById('choices');
+    const problem = document.getElementById('problem-placeholder');
+    // 1) 페이드아웃
+    bg.classList.add('fading');
+    dialogBox.classList.add('scene-fading');
+    choices.classList.add('scene-fading');
+    problem.classList.add('scene-fading');
+    ['left', 'center', 'right'].forEach(pos => {
+      document.getElementById(`char-${pos}`).classList.add('hidden');
+    });
+
+    setTimeout(() => {
+      // 2) 페이드아웃 완료 — 실제 교체
+      this.changeBg(bgName);
+      if (clearChars) this.clearAllCharacters();
+      // 대사창은 완전히 숨김 (이전 대사가 새 scene 위에 다시 나타나는 것 방지)
+      // scene-fading 클래스도 정리 (다음 dialog step에서 보일 때를 위해)
+      dialogBox.classList.add('gone');
+      dialogBox.classList.remove('scene-fading');
+      choices.classList.remove('scene-fading');
+      problem.classList.remove('scene-fading');
+      // 3) 배경 페이드인 시작
+      bg.classList.remove('fading');
+      // 4) 배경 페이드인 완료 후 scene title 표시 (배경 전환과 시간차 분리)
+      setTimeout(() => {
+        this.showSceneTitle(sceneName);
+        // 5) title 표시 1500ms + 여유 → 다음 step
+        setTimeout(doneCb, 1600);
+      }, 400);
+    }, 350);
   },
 
   showSceneTitle(fullName) {
@@ -1143,12 +2147,45 @@ const game = {
   },
 
   placeCharacter(role, expression, position) {
+    // position이 없으면 같은 role이 이미 들어있는 슬롯을 찾아 그 슬롯의 표정만 갱신
+    if (!position || !['left', 'center', 'right'].includes(position)) {
+      const found = Object.entries(this.charSlots || {}).find(([_, r]) => r === role);
+      if (found) {
+        position = found[0];
+      } else {
+        console.warn('[placeCharacter] invalid position and no existing slot for role:', role, position);
+        return;
+      }
+    }
     const el = document.getElementById(`char-${position}`);
+    if (!el) {
+      console.warn('[placeCharacter] no element for position:', position);
+      return;
+    }
     const img = el.querySelector('img');
-    img.src = charImg(role, expression);
+    if (!img) return;
+    const newSrc = charImg(role, expression);
     img.alt = NAMES[role] || role;
     el.classList.remove('hidden');
     this.charSlots[position] = role;
+    // 잔상 방지: 새 이미지를 먼저 디코딩한 뒤 교체 (디코딩 지연 중 이전 컷이 겹쳐 보이는 것 방지)
+    this._swapCharImg(img, newSrc);
+  },
+
+  // 새 캐릭터 이미지를 오프스크린에서 디코딩 완료한 뒤에만 화면 img.src를 바꿈
+  _swapCharImg(img, newSrc) {
+    // 이미 같은 이미지면 아무것도 안 함 (불필요한 깜빡임 방지)
+    if (img.src && img.src.endsWith(newSrc)) return;
+    // 첫 표시(빈 src)는 즉시 세팅 — 디코딩 대기할 이전 프레임이 없음
+    if (!img.getAttribute('src')) { img.src = newSrc; return; }
+    const pre = new Image();
+    pre.src = newSrc;
+    const apply = () => { img.src = newSrc; };
+    if (pre.decode) {
+      pre.decode().then(apply).catch(apply);   // 디코딩 실패해도 교체는 진행
+    } else {
+      pre.onload = apply; pre.onerror = apply;
+    }
   },
 
   showDialog(speakerName, text) {
@@ -1156,6 +2193,8 @@ const game = {
     document.getElementById('next-btn').classList.remove('gone');
     document.getElementById('dialog-box').classList.remove('gone');
     this.log.push({ speaker: speakerName, text });
+    this._logCursor = null;  // 새 대사 등장 → 이전 보기 상태 리셋
+    this._updatePrevBtn();
     this.startTyping(text);
   },
 
@@ -1221,7 +2260,8 @@ const game = {
     this._currentProblem = step;
 
     const box = document.getElementById('problem-placeholder');
-    const hasResponse = step.responseType || step.choices || step.acceptedAnswers;
+    const pdataForCheck = (typeof PROBLEMS !== 'undefined' && PROBLEMS[step.id]) || {};
+    const hasResponse = pdataForCheck.type || step.responseType || step.choices || step.acceptedAnswers;
 
     // 응답 데이터가 없으면 기존 placeholder 모드 (개발 안전망)
     if (!hasResponse) {
@@ -1245,8 +2285,14 @@ const game = {
       // 실제 응답 UI
       box.classList.remove('placeholder-mode');
       box.innerHTML = this._buildProblemUi(step);
-      // KaTeX 미리보기 초기화
-      if (step.responseType === 'shortAnswer' || (!step.responseType && step.acceptedAnswers)) {
+      // 문제 등장과 동시에 표시되는 안내 힌트 (problems.js의 hints[0]) — 오답 후 힌트와 다른 톤
+      this._renderInitialHint(step);
+      // KaTeX 본문 렌더 (data-katex 속성 가진 요소들)
+      this._renderKatexInBox(box);
+      // 단답형 미리보기 초기화
+      const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[step.id]) || {};
+      const respType = pdata.type || step.responseType;
+      if (respType === 'shortAnswer' || (!respType && step.acceptedAnswers)) {
         const input = box.querySelector('.short-answer-input');
         if (input) {
           input.addEventListener('input', () => this._renderAnswerPreview(input.value));
@@ -1256,6 +2302,24 @@ const game = {
           this._renderAnswerPreview('');
           setTimeout(() => input.focus(), 50);
         }
+      } else if (respType === 'shortAnswer-pair') {
+        const inputs = box.querySelectorAll('.pair-input');
+        inputs.forEach((inp, i) => {
+          inp.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+              // 마지막이면 제출, 아니면 다음 input으로 포커스
+              if (i === inputs.length - 1) this.submitShortAnswerPair();
+              else inputs[i+1].focus();
+            }
+          });
+        });
+        if (inputs.length) setTimeout(() => inputs[0].focus(), 50);
+      } else if (respType === 'self-similar') {
+        // 슬라이더 자기닮음 인터랙션 마운트
+        const mount = box.querySelector('#self-similar-mount');
+        if (mount && typeof SelfSimilar !== 'undefined') {
+          SelfSimilar.render(mount, pdata, () => this.submitSelfSimilar());
+        }
       }
     }
 
@@ -1263,41 +2327,125 @@ const game = {
     document.getElementById('dialog-box').classList.add('gone');
   },
 
+  // 자기닮음(A4·황금비) 인터랙션 완료 → 정답 처리
+  submitSelfSimilar() {
+    const p = this._currentProblem;
+    if (!p) return;
+    const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[p.id]) || {};
+    this._handleAttempt(true, pdata.ratioName || '비례식 완성');
+  },
+
   _buildProblemUi(step) {
-    const meta = `<strong>${step.id}</strong> · ${step.kind} · ${step.topic} · 난이도 ${step.difficulty}`;
+    // PROBLEMS 객체에서 문제 데이터 가져오기 (id 기반)
+    // 없으면 step 자체에서 (구 데이터 호환)
+    const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[step.id]) || {};
+    const meta = `<strong>${step.id}</strong> · ${step.kind || ''} · ${step.topic || ''} · 난이도 ${step.difficulty || ''}`;
+
+    // 문제 본문 (KaTeX 렌더용 → 즉시 렌더링)
+    const text = pdata.text || step.text || '';
+    const textHtml = text ? `<div class="problem-text">${this._renderInlineMath(text)}</div>` : '';
+
+    // 도형: figureKey(SVG, FIGURES) 우선, 없으면 figure(PNG) 폴백
+    const figureFile = pdata.figure || step.image;
     let imageHtml = '';
-    if (step.image) {
+    if (pdata.figureKey && typeof FIGURES !== 'undefined' && FIGURES[pdata.figureKey]) {
+      imageHtml = `<div class="problem-image-wrap problem-image-svg">${FIGURES[pdata.figureKey]}</div>`;
+    } else if (figureFile) {
       imageHtml = `<div class="problem-image-wrap">
-        <img src="problems/${step.image}" alt="문제 ${step.id}"
-             onerror="this.outerHTML='<div class=problem-image-missing>📷 문제 이미지 (problems/${step.image}) 가 아직 없어요</div>'">
+        <img src="problems/${figureFile}" alt="문제 ${step.id}"
+             onerror="this.outerHTML='<div class=problem-image-missing>📷 도형 이미지 (problems/${figureFile}) 미등록</div>'">
       </div>`;
-    } else {
-      imageHtml = `<div class="problem-image-wrap"><div class="problem-image-missing">📷 문제 이미지 미설정</div></div>`;
     }
 
-    // 응답 타입 결정 — 명시 없으면 추론
-    const respType = step.responseType ||
+    // 응답 형식 결정
+    const respType = pdata.type || step.responseType ||
       (step.choices ? 'choice' : (step.acceptedAnswers ? 'shortAnswer' : null));
 
     let responseHtml = '';
-    if (respType === 'choice' && step.choices) {
-      responseHtml = `<div class="choices-grid">` +
-        step.choices.map((c, i) =>
-          `<button class="choice-option" onclick="game.submitChoice(${i})">${c}</button>`
-        ).join('') +
-        `</div>`;
+    if (respType === 'ox') {
+      // O/X 두 버튼
+      responseHtml = `<div class="choices-grid" style="grid-template-columns:1fr 1fr;">
+        <button class="choice-option" style="font-size:36px;color:#3a6a1a;" onclick="game.submitOx('O')">O</button>
+        <button class="choice-option" style="font-size:36px;color:#8b3a2a;" onclick="game.submitOx('X')">X</button>
+      </div>`;
+    } else if (respType === 'choice' || respType === 'choice-multi') {
+      const choices = pdata.choices || step.choices || [];
+      const isMulti = (respType === 'choice-multi');
+      if (isMulti) {
+        responseHtml = `<div class="choices-grid">` +
+          choices.map((c, i) =>
+            `<label class="choice-option" style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+              <input type="checkbox" class="multi-check" data-idx="${i}" style="width:18px;height:18px;">
+              <span data-katex="inline">${this._escapeHtml(c)}</span>
+            </label>`
+          ).join('') +
+          `</div>
+          <button class="short-submit-btn" onclick="game.submitChoiceMulti()" style="margin-top:14px;">제출</button>`;
+      } else {
+        responseHtml = `<div class="choices-grid">` +
+          choices.map((c, i) =>
+            `<button class="choice-option" onclick="game.submitChoice(${i})"><span data-katex="inline">${this._escapeHtml(c)}</span></button>`
+          ).join('') +
+          `</div>`;
+      }
+    } else if (respType === 'match') {
+      const items = pdata.items || [];
+      const choices = pdata.choices || [];
+      const KOR = ['ㄱ','ㄴ','ㄷ','ㄹ','ㅁ','ㅂ'];
+      const itemRows = items.map((it, i) => `
+        <div class="match-row">
+          <span class="match-item">${this._escapeHtml(it)}</span>
+          <select class="match-select" data-idx="${i}">
+            <option value="">선택</option>
+            ${choices.map((_, j) => `<option value="${j}">${KOR[j]}</option>`).join('')}
+          </select>
+        </div>`).join('');
+      const choicesHtml = choices.map((c, i) =>
+        `<div class="match-choice"><strong>${KOR[i]}.</strong> <span data-katex="inline">${this._escapeHtml(c)}</span></div>`
+      ).join('');
+      responseHtml = `
+        <div class="match-grid">
+          <div class="match-items">${itemRows}</div>
+          <div class="match-choices">${choicesHtml}</div>
+        </div>
+        <button class="short-submit-btn" onclick="game.submitMatch()" style="margin-top:14px;">제출</button>`;
+    } else if (respType === 'self-similar') {
+      // 슬라이더 인터랙션은 별도 컨테이너에 마운트 (아래 _mountSelfSimilar에서 처리)
+      responseHtml = `<div id="self-similar-mount"></div>`;
     } else if (respType === 'shortAnswer') {
+      const askFormat = pdata.askFormat || '답:';
       responseHtml = `
         <div class="short-answer-wrap">
-          <label for="answer-input">답 입력 (문자·숫자·콜론·연산자만):</label>
+          <label for="answer-input"><span data-katex="inline">${this._escapeHtml(askFormat)}</span></label>
           <input type="text" id="answer-input" class="short-answer-input"
-                 placeholder="예: 3:5, a, 30, x+1"
-                 maxlength="50">
+                 placeholder="예: 3:5,  30,  이등변삼각형 등"
+                 maxlength="60">
           <div class="answer-preview" id="answer-preview">
             <span class="preview-label">미리보기 (수식체)</span>
             <span id="preview-content">—</span>
           </div>
           <button class="short-submit-btn" onclick="game.submitShortAnswer()">제출</button>
+        </div>`;
+    } else if (respType === 'shortAnswer-pair') {
+      const fields = pdata.fields || [];
+      const rowsHtml = fields.map((f, i) => {
+        const label = f.label || '';
+        // LaTeX 라벨($로 둘러싸임)이면 '=', 일반 텍스트 라벨이면 ':' 자동 분기
+        const isLatex = /\$/.test(label);
+        const sep = isLatex ? ' =' : ' :';
+        const placeholder = f.placeholder || '값';
+        return `
+        <div class="pair-row">
+          <span class="pair-label" data-katex="inline">${this._escapeHtml(label)}${sep}</span>
+          <input type="text" class="pair-input" data-idx="${i}"
+                 maxlength="20" placeholder="${this._escapeHtml(placeholder)}">
+          ${f.unit ? `<span class="pair-unit">${this._escapeHtml(f.unit)}</span>` : ''}
+        </div>`;
+      }).join('');
+      responseHtml = `
+        <div class="short-answer-wrap pair-wrap">
+          ${rowsHtml}
+          <button class="short-submit-btn" onclick="game.submitShortAnswerPair()" style="margin-top:14px;">제출</button>
         </div>`;
     } else {
       responseHtml = `<p style="color:#b85a4a;">⚠️ 응답 형식 미설정</p>`;
@@ -1305,11 +2453,91 @@ const game = {
 
     return `
       <div style="font-size:13px; color:#6b4423; margin-bottom:8px; text-align:left;">${meta}</div>
+      ${textHtml}
       ${imageHtml}
       ${responseHtml}
       <br>
       <button id="notebook-btn" onclick="notebook.open()" style="background:#5a8b3a; color:#fff8e7; border:3px solid #3a6a1a; padding:10px 18px; font-size:14px; font-weight:700; border-radius:10px; cursor:pointer; margin-top:10px;">✏️ 필기하기</button>
     `;
+  },
+
+  // KaTeX 렌더 후처리 — 모든 data-katex 속성 가진 요소를 렌더
+  _renderKatexInBox(boxEl) {
+    if (!window.katex) return;
+    const items = boxEl.querySelectorAll('[data-katex]');
+    items.forEach(el => {
+      const isBlock = el.getAttribute('data-katex') === 'block';
+      const text = el.textContent;
+      // $...$ 또는 $$...$$ 패턴 처리: 텍스트 내 인라인 수식만 KaTeX로
+      try {
+        el.innerHTML = this._renderInlineMath(text);
+      } catch (e) {
+        // 실패해도 원본 텍스트 유지
+      }
+    });
+  },
+
+  // $...$ 안만 KaTeX로 렌더 (한국어와 수식 혼용)
+  _renderInlineMath(text) {
+    if (!window.katex || !text) return this._escapeHtml(text);
+    const parts = text.split(/(\$\$[^$]+\$\$|\$[^$]+\$)/);
+    return parts.map(part => {
+      if (part.startsWith('$$') && part.endsWith('$$')) {
+        const tex = part.slice(2, -2);
+        try { return katex.renderToString(tex, { throwOnError: false, displayMode: true }); }
+        catch (e) { return this._escapeHtml(part); }
+      } else if (part.startsWith('$') && part.endsWith('$') && part.length > 2) {
+        const tex = part.slice(1, -1);
+        try { return katex.renderToString(tex, { throwOnError: false, displayMode: false }); }
+        catch (e) { return this._escapeHtml(part); }
+      } else {
+        return this._escapeHtml(part).replace(/\n/g, '<br>');
+      }
+    }).join('');
+  },
+
+  submitOx(letter) {
+    const p = this._currentProblem;
+    const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[p.id]) || {};
+    const correct = (letter === (pdata.correctAnswer || p.correctAnswer));
+    this._handleAttempt(correct, letter);
+  },
+
+  submitChoiceMulti() {
+    const p = this._currentProblem;
+    const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[p.id]) || {};
+    const boxes = document.querySelectorAll('.multi-check');
+    const selected = [];
+    boxes.forEach(b => { if (b.checked) selected.push(parseInt(b.dataset.idx, 10)); });
+    if (selected.length === 0) {
+      this.showToast('하나 이상 선택해주세요', 'down');
+      return;
+    }
+    const expected = (pdata.correctChoices || p.correctChoices || []).slice().sort();
+    const got = selected.slice().sort();
+    const correct = expected.length === got.length && expected.every((v, i) => v === got[i]);
+    this._handleAttempt(correct, selected.map(i => i + 1).join(','));
+  },
+
+  submitMatch() {
+    const p = this._currentProblem;
+    const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[p.id]) || {};
+    const selects = document.querySelectorAll('.match-select');
+    const got = [];
+    let allFilled = true;
+    selects.forEach(s => {
+      if (s.value === '') allFilled = false;
+      got.push(parseInt(s.value, 10));
+    });
+    if (!allFilled) {
+      this.showToast('모든 항목을 매칭해주세요', 'down');
+      return;
+    }
+    const expected = pdata.correctMatches || [];
+    const correct = expected.length === got.length && expected.every((v, i) => v === got[i]);
+    const KOR = ['ㄱ','ㄴ','ㄷ','ㄹ','ㅁ','ㅂ'];
+    const display = got.map(i => KOR[i] || '?').join(',');
+    this._handleAttempt(correct, display);
   },
 
   // 단답형 입력값 → 허용 문자만 필터링 → KaTeX로 수식체 렌더
@@ -1338,15 +2566,17 @@ const game = {
 
   _sanitizeAnswerInput(s) {
     if (!s) return '';
-    // 허용: 영문, 숫자, 콜론, 더하기/빼기, 곱하기, 점, 괄호, 공백
-    return s.replace(/[^A-Za-z0-9:+\-*.()\s]/g, '');
+    // 허용: 영문, 숫자, 한글, 콜론, 콤마, 더하기/빼기, 곱하기, 점, 괄호, 공백, °, ㎡ 같은 단위
+    return s.replace(/[^A-Za-z0-9가-힣ㄱ-ㅎㅏ-ㅣ:,+\-*.()°㎡²³√π\s]/g, '');
   },
 
   submitChoice(index) {
     const p = this._currentProblem;
     if (!p) return;
-    const correct = (index === p.correctChoice);
-    this.solveProblem(correct);
+    const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[p.id]) || {};
+    const expected = (pdata.correctChoice !== undefined) ? pdata.correctChoice : p.correctChoice;
+    const correct = (index === expected);
+    this._handleAttempt(correct, `보기 ${index + 1}`);
   },
 
   submitShortAnswer() {
@@ -1358,43 +2588,391 @@ const game = {
       return;
     }
     const p = this._currentProblem;
-    const accepted = (p.acceptedAnswers || []).map(a => this._normalizeAnswer(a));
+    const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[p.id]) || {};
+    const acceptedList = pdata.acceptedAnswers || p.acceptedAnswers || [];
+    const accepted = acceptedList.map(a => this._normalizeAnswer(a));
     const userNorm = this._normalizeAnswer(raw);
     const correct = accepted.includes(userNorm);
-    this.solveProblem(correct);
+    this._handleAttempt(correct, raw);
+  },
+
+  // 2개 입력칸 문제 채점 — 각 항목 독립 채점 + 반반 배점
+  // x·y 각각 "첫 시도에 정답" 시 onCorrect.stats의 50%씩 부여
+  // 둘 다 맞아야 다음 문제로 진행, 하나라도 오답이면 재시도(공통 _handleAttempt 흐름)
+  submitShortAnswerPair() {
+    const p = this._currentProblem;
+    if (!p) return;
+    const pdataGuard = (typeof PROBLEMS !== 'undefined' && PROBLEMS[p.id]) || {};
+    // 가드: 이미 해결되었거나 3회 끝난 문제는 추가 제출 무시
+    // mustPass 문제는 횟수 가드 무시 — 정답 전까지 무한 재시도
+    const prev = this.problemResults[p.id];
+    if (prev && (prev.solvedAt || (!pdataGuard.mustPass && prev.attempts && prev.attempts.length >= 3))) {
+      return;
+    }
+    const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[p.id]) || {};
+    const fields = pdata.fields || [];
+    const box = document.getElementById('problem-placeholder');
+    const inputs = box.querySelectorAll('.pair-input');
+    if (!inputs.length) return;
+
+    // 각 input 값 수집·정규화
+    const userVals = [];
+    for (let i = 0; i < inputs.length; i++) {
+      const raw = this._sanitizeAnswerInput(inputs[i].value).trim();
+      if (!raw) { inputs[i].focus(); return; }
+      userVals.push(raw);
+    }
+
+    // 각 필드 채점
+    let perFieldCorrect;
+    if (pdata.matchUnordered) {
+      // 순서 무관: 두 칸 합쳐서 각 필드의 accepted 집합과 매칭. 같은 값을 두 번 쓰는 건 X.
+      const userNormVals = userVals.map(v => this._normalizeAnswer(v));
+      const allAccepted = fields.map(f => (f.accepted || []).map(a => this._normalizeAnswer(a)));
+      // 입력값들이 서로 다르고, 각각 어느 필드든 accepted에 들어 있으면 OK
+      const distinct = new Set(userNormVals).size === userNormVals.length;
+      // 모든 입력이 합쳐진 accepted 풀에 있고, distinct 하면 모두 정답
+      const pool = new Set(allAccepted.flat());
+      const allInPool = userNormVals.every(v => pool.has(v));
+      const passUnordered = distinct && allInPool;
+      perFieldCorrect = userVals.map(() => passUnordered);
+    } else {
+      perFieldCorrect = fields.map((f, i) => {
+        const accepted = (f.accepted || []).map(a => this._normalizeAnswer(a));
+        const userNorm = this._normalizeAnswer(userVals[i]);
+        return accepted.includes(userNorm);
+      });
+    }
+    const allCorrect = perFieldCorrect.every(Boolean);
+
+    // problemResults 기록 초기화 (없으면 생성)
+    const existing = this.problemResults[p.id] || {
+      id: p.id, kind: p.kind, topic: p.topic, difficulty: p.difficulty, format: p.format,
+      attempts: [], firstCorrect: null, resolved: false, gainedStats: {}, solvedAt: null,
+      pairFieldFirstAttempts: {},  // { 0: true/false, 1: true/false } — 각 필드 첫 시도에 맞았는지
+    };
+
+    const userAnswerStr = userVals.join(', ');
+    existing.attempts.push({ answer: userAnswerStr, correct: allCorrect, at: Date.now(), perField: perFieldCorrect });
+
+    // 각 필드별 첫 시도 채점 — 이전에 시도한 적 없는 필드의 결과를 기록
+    if (!existing.pairFieldFirstAttempts) existing.pairFieldFirstAttempts = {};
+    fields.forEach((_, i) => {
+      if (!(i in existing.pairFieldFirstAttempts)) {
+        existing.pairFieldFirstAttempts[i] = perFieldCorrect[i];
+        // 첫 시도에 정답이면 반반 배점 적용
+        if (perFieldCorrect[i]) {
+          const baseStats = (p.onCorrect && p.onCorrect.stats) || {};
+          const halfStats = {};
+          for (const k in baseStats) {
+            halfStats[k] = Math.round(baseStats[k] * 0.5 * 10) / 10;
+          }
+          // gainedStats에 누적
+          for (const k in halfStats) {
+            existing.gainedStats[k] = (existing.gainedStats[k] || 0) + halfStats[k];
+          }
+          this.applyEffect(halfStats);
+        }
+      }
+    });
+
+    this.problemResults[p.id] = existing;
+
+    if (allCorrect) {
+      existing.resolved = true;
+      existing.solvedAt = Date.now();
+      // firstCorrect는 두 필드 모두 첫 시도에 정답인 경우만 true
+      if (existing.firstCorrect === null) {
+        existing.firstCorrect = Object.values(existing.pairFieldFirstAttempts).every(Boolean);
+      }
+      this._proceedAfterProblem(p, true);
+    } else {
+      const attemptNo = existing.attempts.length;
+      const MAX = 3;
+      // mustPass 문제는 3회 도달해도 정답 공개 X, 계속 재시도 강제
+      if (attemptNo >= MAX && !pdata.mustPass) {
+        existing.resolved = false;
+        this._showAnswerReveal(p);
+      } else {
+        const hintIdx = attemptNo - 1;
+        const hints = pdata.hints && pdata.hints.length ? pdata.hints : (p.hints || []);
+        // 맞은 필드 수에 따른 안내 분기
+        const correctCount = perFieldCorrect.filter(Boolean).length;
+        const wrongCount = perFieldCorrect.length - correctCount;
+        let situationText;
+        if (pdata.mustPass) {
+          situationText = '정답을 맞춰야 다음 화면으로 넘어갈 수 있습니다. 다시 입력해주세요.';
+        } else if (correctCount === 0) {
+          situationText = '두 값 모두 다시 계산해봐.';
+        } else if (wrongCount === 1) {
+          situationText = '한 쪽만 맞았어. 틀린 값을 다시 계산해봐.';
+        } else {
+          situationText = '맞춘 값은 그대로 두고, 나머지를 다시 계산해봐.';
+        }
+        const defaultHints = [
+          situationText,
+          '문제의 조건을 다시 살펴보고 어떤 닮음의 성질을 써야 하는지 떠올려봐.',
+          '한 번 더 도전! 그래도 안 되면 정답을 알려줄게.',
+        ];
+        // mustPass면 매번 같은 안내 메시지 사용
+        const hintText = pdata.mustPass ? situationText : (hints[hintIdx] || defaultHints[hintIdx] || defaultHints[0]);
+        // 어느 필드가 맞고 어느 필드가 틀렸는지 표시 (LaTeX 명령어 깔끔하게 변환)
+        const fieldStatus = perFieldCorrect.map((ok, i) => {
+          const label = this._labelToPlain(fields[i].label || `(${i+1})`);
+          return `${label}: ${ok ? '✅' : '❌'}`;
+        }).join(' / ');
+        this._showHintBanner(`${fieldStatus}\n\n${hintText}`, attemptNo);
+        this.showToast(`오답 (${attemptNo}회) — ${fieldStatus}`, 'down');
+        // input 재포커스 (틀린 첫 번째 input)
+        const firstWrong = perFieldCorrect.findIndex(ok => !ok);
+        if (firstWrong >= 0 && inputs[firstWrong]) {
+          setTimeout(() => inputs[firstWrong].focus(), 100);
+        }
+      }
+    }
+  },
+
+  // LaTeX 라벨을 일반 텍스트로 (UI 토스트·힌트용 — KaTeX 렌더가 안 되는 곳에서 사용)
+  _labelToPlain(s) {
+    if (!s) return '';
+    return String(s)
+      .replace(/\$/g, '')
+      .replace(/\\angle\s*/g, '∠')
+      .replace(/\\triangle\s*/g, '△')
+      .replace(/\\square\s*/g, '□')
+      .replace(/\\overline\{([^}]+)\}/g, '$1')
+      .trim();
   },
 
   _normalizeAnswer(s) {
     if (!s) return '';
-    // 공백 제거, 소문자화, 콜론 주변 공백 제거
-    return String(s).toLowerCase().replace(/\s+/g, '');
+    return String(s)
+      .toLowerCase()
+      .replace(/\s+/g, '')
+      // 동의어 정규화: 학생 표기 다양성 흡수
+      .replace(/°/g, '도')
+      .replace(/²/g, '2')
+      .replace(/³/g, '3')
+      .replace(/\^2/g, '2')
+      .replace(/\^3/g, '3')
+      .replace(/제곱센티미터/g, 'cm2')
+      .replace(/제곱미터/g, 'm2')
+      .replace(/센티미터/g, 'cm')
+      .replace(/센티/g, 'cm');
   },
 
-  solveProblem(correct) {
+  // ===== 새 평가 시스템 (4단원 표준) =====
+  // - 첫 시도 정답이어야만 점수 부여 (재시도 정답은 점수 0)
+  // - 오답이어도 진행 X — 정답 낼 때까지 재시도
+  // - 매 오답마다 힌트 단계별 표시 (탈레스가 전달)
+  // - 3회 다 틀리면 정답 공개 후 미해결로 기록 + 다음 step
+  // - PDF 리포트에 "수정 완료 / 미해결" 분리 기록
+  _handleAttempt(correct, userAnswer) {
     const p = this._currentProblem;
-    document.getElementById('problem-placeholder').classList.add('gone');
-    document.getElementById('dialog-box').classList.remove('gone');
-    const result = correct ? p.onCorrect : p.onWrong;
-    this.applyEffect(result.stats || {});
+    if (!p) return;
 
-    // Step 4: 결과 누적 (PDF 생성용)
-    this.problemResults[p.id] = {
+    const pdataGuard = (typeof PROBLEMS !== 'undefined' && PROBLEMS[p.id]) || {};
+    // 가드: 이미 해결되었거나 3회 시도가 끝난 문제는 추가 제출 무시 (정답공개 후 재클릭 방지)
+    // mustPass 문제는 횟수 가드 무시 — 정답 전까지 무한 재시도
+    const prev = this.problemResults[p.id];
+    if (prev && (prev.solvedAt || (!pdataGuard.mustPass && prev.attempts && prev.attempts.length >= 3))) {
+      return;
+    }
+
+    // 기존 기록 (없으면 새로 생성)
+    const existing = this.problemResults[p.id] || {
       id: p.id,
       kind: p.kind,
       topic: p.topic,
       difficulty: p.difficulty,
       format: p.format,
-      correct: !!correct,
-      gainedStats: result.stats || {},
-      solvedAt: Date.now(),
+      attempts: [],
+      firstCorrect: null,
+      resolved: false,
+      gainedStats: {},
+      solvedAt: null,
     };
 
-    const d = result.dialog;
-    if (d) {
-      this.handleDialogStep(d);
+    existing.attempts.push({ answer: userAnswer, correct, at: Date.now() });
+    this.problemResults[p.id] = existing;
+
+    if (correct) {
+      const isFirstAttempt = existing.attempts.length === 1;
+      if (existing.firstCorrect === null) existing.firstCorrect = isFirstAttempt;
+      existing.resolved = true;
+      existing.solvedAt = Date.now();
+
+      if (isFirstAttempt) {
+        const stats = (p.onCorrect && p.onCorrect.stats) || {};
+        existing.gainedStats = stats;
+        this.applyEffect(stats);
+      } else {
+        this.showToast('정답! (첫 시도 X — 점수 없음)', 'up');
+      }
+      this._proceedAfterProblem(p, true);
+    } else {
+      const attemptNo = existing.attempts.length;
+      const MAX = 3;
+      const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[p.id]) || {};
+      // mustPass: 3회 도달해도 정답 공개 X, 계속 재시도 강제
+      if (attemptNo >= MAX && !pdata.mustPass) {
+        // 3회 실패 — 정답 공개 후 강제 진행
+        existing.resolved = false;
+        this._showAnswerReveal(p);
+      } else {
+        // 재시도 + 힌트 — problems.js의 PROBLEMS[id].hints 를 우선 참조
+        const hintIdx = attemptNo - 1;
+        const hints = pdata.hints && pdata.hints.length ? pdata.hints : (p.hints || []);
+        const defaultHints = [
+          '다시 한 번 천천히 생각해봐. 어떤 조건이 적용되는지 확인해봐.',
+          '문제의 조건을 처음부터 다시 읽고, 핵심 단어에 집중해봐.',
+          '한 번 더 도전! 그래도 안 되면 정답을 알려줄게.',
+        ];
+        const mustPassMsg = '정답을 맞춰야 다음 화면으로 넘어갈 수 있습니다. 다시 입력해주세요.';
+        const hintText = pdata.mustPass ? mustPassMsg : (hints[hintIdx] || defaultHints[hintIdx] || defaultHints[0]);
+        this._showHintBanner(hintText, attemptNo);
+        this.showToast(pdata.mustPass ? '오답 — 다시 입력' : `오답 (${attemptNo}회 기록됨)`, 'down');
+      }
+    }
+  },
+
+  // 문제 등장 시 같이 표시되는 안내 힌트 (problems.js의 hints[0]) — 오답 전부터 노출
+  _renderInitialHint(step) {
+    const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[step.id]) || {};
+    const hints = pdata.hints || [];
+    if (!hints.length) return;  // 힌트 없으면 표시 안 함
+    const box = document.getElementById('problem-placeholder');
+    const banner = document.createElement('div');
+    banner.id = 'initial-hint-banner';
+    banner.style.cssText = 'background:linear-gradient(180deg,#e7f3d8,#cfe4b4);border:2px solid #6b8b3a;border-radius:10px;padding:10px 14px;margin:8px 0 0 0;text-align:left;font-size:14px;color:#3a5a1a;line-height:1.5;';
+    banner.innerHTML = `<strong style="color:#4a7a2a;">💡 Hint:</strong> ${this._escapeHtml(hints[0])}`;
+    // 응답 영역 위에 삽입 (없으면 마지막에)
+    const responseArea = box.querySelector('.choices-grid, .short-answer-wrap, .match-grid');
+    if (responseArea) box.insertBefore(banner, responseArea);
+    else box.appendChild(banner);
+  },
+
+  _showHintBanner(hintText, attemptNo) {
+    const box = document.getElementById('problem-placeholder');
+    const old = document.getElementById('hint-banner');
+    if (old) old.remove();
+
+    const p = this._currentProblem;
+    const pdata = (p && typeof PROBLEMS !== 'undefined' && PROBLEMS[p.id]) || {};
+    const isMustPass = !!pdata.mustPass;
+
+    const hint = document.createElement('div');
+    hint.id = 'hint-banner';
+    hint.style.cssText = 'background:linear-gradient(180deg,#fff5d6,#f5d99a);border:3px solid #c8a87a;border-radius:12px;padding:14px 18px;margin:10px 0;text-align:left;font-size:15px;color:#5d4a30;line-height:1.6;';
+    const headerText = isMustPass
+      ? `⚠️ 다시 입력해주세요 (${attemptNo}회 시도)`
+      : `💡 탈레스의 힌트 (${attemptNo}회 시도 후)`;
+    const footerText = isMustPass
+      ? '※ 이 문제는 정답을 맞춰야만 다음으로 넘어갈 수 있습니다.'
+      : '※ 이 문제는 오답으로 기록됐어. 다시 풀어보자!';
+    hint.innerHTML = `
+      <div style="font-weight:700;color:#8b6f47;margin-bottom:6px;">
+        ${headerText}
+      </div>
+      <div>${this._escapeHtml(hintText)}</div>
+      <div style="margin-top:8px;font-size:12px;color:#8b6f47;">
+        ${footerText}
+      </div>
+    `;
+    const responseArea = box.querySelector('.choices-grid, .short-answer-wrap, .match-grid');
+    if (responseArea) box.insertBefore(hint, responseArea);
+    else box.appendChild(hint);
+
+    // 단답형 입력칸 초기화·포커스
+    const input = document.getElementById('answer-input');
+    if (input) {
+      input.value = '';
+      this._renderAnswerPreview('');
+      setTimeout(() => input.focus(), 80);
+    }
+  },
+
+  _escapeHtml(s) {
+    return String(s || '').replace(/[&<>"']/g, m => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[m]));
+  },
+
+  _showAnswerReveal(p) {
+    const box = document.getElementById('problem-placeholder');
+    const old = document.getElementById('hint-banner');
+    if (old) old.remove();
+    // 기존 정답공개 카드가 있으면 제거 (중복 방지 — 제출 버튼 재클릭 등으로 인한 누적 방지)
+    const oldReveal = document.getElementById('answer-reveal');
+    if (oldReveal) oldReveal.remove();
+
+    const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[p.id]) || {};
+    const type = pdata.type || p.responseType;
+    let answerText = '';
+    if (type === 'ox' && pdata.correctAnswer) {
+      answerText = `정답: ${pdata.correctAnswer}`;
+    } else if (type === 'choice' && typeof pdata.correctChoice === 'number') {
+      const choice = (pdata.choices || [])[pdata.correctChoice] || '';
+      answerText = `정답: ${this._escapeHtml(choice)} (${pdata.correctChoice + 1}번)`;
+    } else if (type === 'choice-multi' && pdata.correctChoices) {
+      const arr = pdata.correctChoices.map(i => `${i + 1}번. ${this._escapeHtml((pdata.choices || [])[i] || '')}`);
+      answerText = `정답: ${arr.join(' / ')}`;
+    } else if (type === 'shortAnswer' && pdata.acceptedAnswers && pdata.acceptedAnswers.length) {
+      answerText = `정답: ${this._escapeHtml(pdata.acceptedAnswers[0])}`;
+    } else if (type === 'match' && pdata.correctMatches) {
+      const KOR = ['ㄱ','ㄴ','ㄷ','ㄹ','ㅁ','ㅂ'];
+      const items = pdata.items || [];
+      const matched = items.map((it, i) => `${it}→${KOR[pdata.correctMatches[i]] || '?'}`);
+      answerText = `정답: ${matched.join(', ')}`;
+    } else if (type === 'shortAnswer-pair' && pdata.fields) {
+      const parts = pdata.fields.map(f => {
+        const lbl = (f.label || '').replace(/\$/g, '');
+        const val = (f.accepted && f.accepted[0]) || '?';
+        return `${lbl} = ${val}${f.unit || ''}`;
+      });
+      answerText = `정답: ${parts.join(', ')}`;
+    } else {
+      answerText = '정답 정보 없음';
+    }
+
+    const reveal = document.createElement('div');
+    reveal.id = 'answer-reveal';
+    reveal.style.cssText = 'background:linear-gradient(180deg,#fde0dc,#f5b8a8);border:3px solid #b85a4a;border-radius:12px;padding:16px 20px;margin:12px 0;text-align:left;color:#6b2a1a;';
+    reveal.innerHTML = `
+      <div style="font-weight:700;font-size:16px;margin-bottom:8px;">⏳ 3회 시도 — 정답 공개</div>
+      <div style="font-size:18px;font-weight:700;margin-bottom:8px;">${answerText}</div>
+      <div style="font-size:13px;color:#8b3a2a;margin-bottom:12px;">
+        이 문제는 <strong>미해결</strong>로 기록됐어. 나중에 다시 풀어보자.
+      </div>
+      <button onclick="game._proceedAfterProblem(game._currentProblem, false)"
+              style="background:#b85a4a;color:#fff8e7;border:2px solid #8b3a2a;padding:10px 22px;font-size:15px;font-weight:700;border-radius:10px;cursor:pointer;">
+        다음으로 →
+      </button>
+    `;
+    // 응답 영역·제출 버튼·필기 버튼 모두 숨김 (학생 추가 시도 차단)
+    const responseArea = box.querySelector('.choices-grid, .short-answer-wrap, .match-grid');
+    if (responseArea) responseArea.style.display = 'none';
+    box.querySelectorAll('.short-submit-btn, #notebook-btn').forEach(b => b.style.display = 'none');
+    // 초기 힌트 배너도 정답 공개 시점에는 의미 없으므로 제거
+    const initialHint = document.getElementById('initial-hint-banner');
+    if (initialHint) initialHint.remove();
+    box.appendChild(reveal);
+  },
+
+  _proceedAfterProblem(p, correct) {
+    document.getElementById('problem-placeholder').classList.add('gone');
+    document.getElementById('dialog-box').classList.remove('gone');
+    const result = correct ? p.onCorrect : p.onWrong;
+    if (result && result.dialog) {
+      this.handleDialogStep(result.dialog);
     } else {
       this.advance();
     }
+  },
+
+  // 구 인터페이스 호환 — placeholder 모드(시뮬레이션 버튼)에서 호출
+  solveProblem(correct) {
+    this._handleAttempt(!!correct, correct ? '시뮬레이션 정답' : '시뮬레이션 오답');
   },
 
   // ----- 스탯 + 토스트 -----
@@ -1413,7 +2991,9 @@ const game = {
     document.getElementById('stat-math').textContent = this.stats.math;
     document.getElementById('stat-wisdom').textContent = this.stats.wisdom;
     document.getElementById('stat-insight').textContent = this.stats.insight;
-    document.getElementById('stat-clues').textContent = `${this.stats.clues} / 5`;
+    // 첫시도 정답 = problemResults에서 firstCorrect=true인 항목 수 (특별 문제 제외)
+    const firstTryCount = countFirstTryCorrect(this.problemResults);
+    document.getElementById('stat-clues').textContent = `${firstTryCount} / 12`;
   },
 
   showToast(text, kind) {
@@ -1446,17 +3026,19 @@ const game = {
   // ----- 엔딩 -----
   showEnding() {
     const s = this.stats;
+    const ctx = { stats: s, firstTryCorrect: countFirstTryCorrect(this.problemResults) };
     let chosen = ENDINGS.C;
-    if (ENDINGS.A.condition(s)) chosen = ENDINGS.A;
-    else if (ENDINGS.B.condition(s)) chosen = ENDINGS.B;
+    if (ENDINGS.A.condition(ctx)) chosen = ENDINGS.A;
+    else if (ENDINGS.B.condition(ctx)) chosen = ENDINGS.B;
 
-    document.getElementById('ending-tag').textContent = chosen.tag;
-    document.getElementById('ending-title').textContent = chosen.title;
+    // 엔딩 라벨·이름은 노출하지 않음 (개발자 정보). 결론 텍스트만 표시.
+    document.getElementById('ending-tag').textContent = '';
+    document.getElementById('ending-title').textContent = '';
     document.getElementById('ending-text').innerText = chosen.text;
     document.getElementById('end-math').textContent = s.math;
     document.getElementById('end-wisdom').textContent = s.wisdom;
     document.getElementById('end-insight').textContent = s.insight;
-    document.getElementById('end-clues').textContent = `${s.clues} / 5`;
+    document.getElementById('end-clues').textContent = `${ctx.firstTryCorrect} / 12`;
     document.getElementById('ending-screen').classList.remove('gone');
     this._endingReached = true;  // Step 3 이후 PDF 버튼이 이걸 체크
   },
@@ -1559,6 +3141,8 @@ const notebook = {
     }
     this._userStartedDrawing = false;  // 동시성 가드 초기화
     document.getElementById('nb-problem-label').textContent = `문제 #${this.currentProblemId}`;
+    // 좌측 문제 패널 채우기 (모든 문제 공통)
+    this._renderProblemPanel(this.currentProblemId);
     document.getElementById('notebook-modal').classList.remove('gone');
     // 모달 열 때마다 히스토리 초기화 (다른 문제로 넘어오면 이전 undo 의미 없음)
     this.resetHistory();
@@ -1580,6 +3164,35 @@ const notebook = {
     // Step 2: 모달 닫기 전에 캔버스를 PNG로 LocalStorage에 저장
     this.saveToStorage(this.currentProblemId);
     document.getElementById('notebook-modal').classList.add('gone');
+  },
+
+  // 좌측 문제 패널 렌더 — 모든 문제 공통 (문제문 + 도형)
+  _renderProblemPanel(problemId) {
+    const metaEl = document.getElementById('nb-problem-meta');
+    const textEl = document.getElementById('nb-problem-text');
+    const figEl = document.getElementById('nb-problem-figure');
+    if (!metaEl || !textEl || !figEl) return;
+
+    const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[problemId]) || {};
+    const step = game._currentProblem || {};
+    metaEl.textContent = `${problemId} · ${step.kind || ''} · ${step.topic || ''}`;
+    // 문제문 (KaTeX 인라인 렌더)
+    const text = pdata.text || step.text || '(문제 본문 없음)';
+    try {
+      textEl.innerHTML = game._renderInlineMath(text);
+    } catch (e) {
+      textEl.textContent = text;
+    }
+    // 도형: figureKey(SVG) 우선, figure(PNG) 폴백
+    const figFile = pdata.figure || step.image;
+    if (pdata.figureKey && typeof FIGURES !== 'undefined' && FIGURES[pdata.figureKey]) {
+      figEl.innerHTML = FIGURES[pdata.figureKey];
+    } else if (figFile) {
+      figEl.innerHTML = `<img src="problems/${figFile}" alt="문제 ${problemId} 도형"
+        onerror="this.outerHTML='<div style=\\'padding:12px;color:#8b3a2a;font-size:13px;\\'>📷 도형 이미지 없음</div>'">`;
+    } else {
+      figEl.innerHTML = '';
+    }
   },
 
   // Step 2: LocalStorage 저장/복원
@@ -1705,6 +3318,8 @@ const notebook = {
   },
 
   startDraw(e) {
+    // 한 획 그리기 직전의 상태를 히스토리에 저장 (undo로 이 상태로 돌아가기 위함)
+    this._pushCurrentToHistory();
     this.isDrawing = true;
     this._userStartedDrawing = true;  // 복원 onload가 사용자 입력 덮어쓰지 못하게
     const pos = this.getPos(e);
@@ -1750,16 +3365,15 @@ const notebook = {
   endDraw() {
     if (!this.isDrawing) return;
     this.isDrawing = false;
-    // 한 획(stroke) 끝났을 때 히스토리에 스냅샷 push
-    this.pushHistory();
+    this.updateHistoryButtons();
   },
 
   // ===== Undo / Redo =====
-  pushHistory() {
+  // 획 추가 직전 호출 — 현재(획 그리기 전) 상태를 undoStack에 저장
+  _pushCurrentToHistory() {
     try {
       const snap = this.canvas.toDataURL('image/png');
       this.undoStack.push(snap);
-      // 스택 깊이 제한 — 오래된 것부터 제거
       if (this.undoStack.length > this.maxHistory) {
         this.undoStack.shift();
       }
@@ -1769,6 +3383,10 @@ const notebook = {
     } catch (e) {
       console.warn('히스토리 저장 실패:', e);
     }
+  },
+  // 외부에서 호출하는 push (clearCanvas 등) — 동일 동작
+  pushHistory() {
+    this._pushCurrentToHistory();
   },
 
   undo() {
@@ -1794,17 +3412,18 @@ const notebook = {
   },
 
   _restoreFromDataUrl(dataUrl) {
-    // 복원 토큰 — 사용자가 그리기 시작하면 onload 무시 (동시성 가드)
+    // undo/redo는 사용자 명시적 액션이므로 _userStartedDrawing 가드를 통과시킴
+    // (단, 새 로드 시 이전 비동기 onload는 무시되도록 토큰 관리)
     this._loadToken = (this._loadToken || 0) + 1;
     const myToken = this._loadToken;
-    this._userStartedDrawing = false;
     const img = new Image();
     img.onload = () => {
       if (myToken !== this._loadToken) return;
-      if (this._userStartedDrawing) return;
+      // userStartedDrawing 체크 X — undo/redo는 그리기 중에도 동작해야 함
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
       this.ctx.drawImage(img, 0, 0, this.canvas.width, this.canvas.height);
     };
+    img.onerror = (e) => console.warn('undo/redo 복원 실패:', e);
     img.src = dataUrl;
   },
 
@@ -1830,24 +3449,47 @@ const pdfReport = {
   studentName: '',
 
   openNameDialog() {
+    document.getElementById('student-id-input').value = this.studentId || '';
     document.getElementById('name-input').value = this.studentName || '';
     document.getElementById('name-dialog').classList.remove('gone');
-    setTimeout(() => document.getElementById('name-input').focus(), 50);
+    // 학번 input 키 입력은 숫자만 허용
+    const idInput = document.getElementById('student-id-input');
+    idInput.oninput = () => { idInput.value = idInput.value.replace(/\D/g, '').slice(0, 4); };
+    // Enter로 다음 input 또는 제출
+    idInput.onkeydown = (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); document.getElementById('name-input').focus(); }
+    };
+    document.getElementById('name-input').onkeydown = (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); this.confirmAndGenerate(); }
+    };
+    setTimeout(() => idInput.focus(), 50);
   },
 
   closeNameDialog() {
     document.getElementById('name-dialog').classList.add('gone');
   },
 
-  confirmAndGenerate() {
+  async confirmAndGenerate() {
+    const sid = document.getElementById('student-id-input').value.trim();
     const name = document.getElementById('name-input').value.trim();
-    if (!name) {
-      alert('이름을 입력해주세요.');
+    if (!/^\d{4}$/.test(sid)) {
+      alert('학번을 4자리 숫자로 입력해주세요.');
+      document.getElementById('student-id-input').focus();
       return;
     }
-    this.studentName = name;
+    if (!name) {
+      alert('이름을 입력해주세요.');
+      document.getElementById('name-input').focus();
+      return;
+    }
+    this.studentId = sid;
+    // PDF·파일명·푸터에 사용될 학생 표시: "2315 홍길동" 형태로 합쳐서 저장
+    this.studentName = `${sid} ${name}`;
     this.closeNameDialog();
-    this.generatePdf();
+    await this.generatePdf();
+    // PDF 저장 완료 → 다시 시작 버튼 활성화 (엔딩 화면에 있을 때만 의미 있음)
+    game._pdfSaved = true;
+    game._updateRestartBtn();
   },
 
   // 오늘 날짜를 yyyy-mm-dd 형식
@@ -1867,36 +3509,36 @@ const pdfReport = {
   async generatePdf() {
     document.getElementById('pdf-loading').classList.remove('gone');
     document.getElementById('pdf-progress').textContent = '표지 생성 중...';
-    // 로딩 화면이 화면에 실제로 그려질 한 프레임 양보
     await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
     try {
-      // jsPDF 글로벌 — UMD 빌드는 window.jspdf.jsPDF
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-      // ⚠️ 한국어 폰트 임베드는 Step 4/5에서 본격적으로.
-      // Step 3 단계에선 jsPDF 기본 폰트(영문/숫자만)로 표지 레이아웃을 우선 검증.
-      // 한국어 텍스트는 이미지로 렌더링하는 방식으로 처리 (HTML Canvas → toDataURL).
-      await this.addCoverPage(doc);
-
-      // Step 4: 문제별 풀이 페이지 — 시나리오에 정의된 모든 문제 슬롯을 순회
+      // 전체 문제 슬롯 + 첫시도 오답·미해결 필터
       const problemSlots = this.collectProblemSlots();
-      const solutions = notebook.getAllSolutions ? notebook.getAllSolutions() : {};
-      for (let i = 0; i < problemSlots.length; i++) {
-        const p = problemSlots[i];
-        document.getElementById('pdf-progress').textContent = `문제 ${i + 1} / ${problemSlots.length} (${p.id})`;
-        await this.addProblemPage(doc, p, game.problemResults[p.id], solutions[p.id]);
+      const total = problemSlots.length;
+      const wrongProblems = problemSlots.filter(p => {
+        const r = game.problemResults[p.id];
+        // 첫시도 정답이 아닌 모든 문제 (재시도로 푼 것 + 미해결 + 손도 안 댐)
+        return !r || r.firstCorrect !== true;
+      });
+      const firstTryCorrect = total - wrongProblems.length;
+      const accuracy = total > 0 ? Math.round((firstTryCorrect / total) * 100) : 0;
+
+      // 표지 (학생명·날짜·통계·안내)
+      await this.addCoverPage(doc, { total, firstTryCorrect, accuracy, wrongCount: wrongProblems.length });
+
+      // 첫시도 오답 문제만 페이지 생성 (필기 캡쳐 X, 빈 풀이 공간)
+      for (let i = 0; i < wrongProblems.length; i++) {
+        const p = wrongProblems[i];
+        document.getElementById('pdf-progress').textContent = `다시 풀 문제 ${i + 1} / ${wrongProblems.length} (${p.id})`;
+        await this.addProblemPage(doc, p, game.problemResults[p.id]);
       }
 
-      // Step 5: 요약 페이지
-      document.getElementById('pdf-progress').textContent = '요약 페이지 생성 중...';
-      await this.addSummaryPage(doc, problemSlots);
-
       document.getElementById('pdf-progress').textContent = '저장 중...';
-      // Step 5: 파일명 sanitization (Windows·macOS 모두 안전)
       const safeName = this.sanitizeFilename(this.studentName);
-      const fname = `시밀러의학당_스테이지1_${safeName}_${this.todayStrCompact()}.pdf`;
+      const fname = `시밀러_도형의닮음_${safeName}_${this.todayStrCompact()}.pdf`;
       doc.save(fname);
     } catch (e) {
       console.error('PDF 생성 실패:', e);
@@ -1922,7 +3564,7 @@ const pdfReport = {
 
     const tempCanvas = document.createElement('canvas');
     const ctx = tempCanvas.getContext('2d');
-    const scale = 2;  // 고해상도
+    const scale = 1;  // PDF 용량 절감
 
     // 측정용
     ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
@@ -2048,24 +3690,31 @@ const pdfReport = {
     });
     y += 18;
 
-    // 통계
+    // 통계 — 새 평가 시스템 (firstCorrect / resolved 기반)
     const main = problemSlots.filter(p => p.id.startsWith('M'));
     const side = problemSlots.filter(p => p.id.startsWith('S'));
     const results = game.problemResults;
 
-    const mainSolved = main.filter(p => results[p.id]).length;
-    const mainCorrect = main.filter(p => results[p.id] && results[p.id].correct).length;
-    const sideSolved = side.filter(p => results[p.id]).length;
-    const sideCorrect = side.filter(p => results[p.id] && results[p.id].correct).length;
+    const hasAttempts = (p) => results[p.id] && (results[p.id].attempts || []).length > 0;
+    const firstTryOK = (p) => results[p.id] && results[p.id].firstCorrect === true;
+    const eventuallyOK = (p) => results[p.id] && results[p.id].resolved === true;
+    const unresolved = (p) => results[p.id] && results[p.id].resolved === false && hasAttempts(p);
+
+    const mainSolved = main.filter(hasAttempts).length;
+    const mainCorrect = main.filter(firstTryOK).length;     // 첫 시도 정답
+    const mainResolved = main.filter(eventuallyOK).length;   // 결국 맞춤 (수정 완료 포함)
+    const mainUnresolved = main.filter(unresolved).length;
+    const sideSolved = side.filter(hasAttempts).length;
+    const sideCorrect = side.filter(firstTryOK).length;
     const sols = notebook.getAllSolutions ? notebook.getAllSolutions() : {};
     const writtenSolutions = problemSlots.filter(p => sols[p.id]).length;
 
-    // 통계 박스 (고정 5줄 — 안전한 높이)
-    y = ensureRoom(y, 80);
+    // 통계 박스 (7행 — 새 평가 시스템 항목 추가)
+    y = ensureRoom(y, 110);
     doc.setDrawColor(139, 111, 71);
     doc.setLineWidth(0.6);
     doc.setFillColor(255, 248, 231);
-    doc.roundedRect(15, y, pageW - 30, 78, 4, 4, 'FD');
+    doc.roundedRect(15, y, pageW - 30, 108, 4, 4, 'FD');
 
     const inner = y + 6;
     const lineH = 14;
@@ -2084,31 +3733,16 @@ const pdfReport = {
     const s = game.stats;
     const totalScore = s.math + s.wisdom + s.insight;
 
-    drawRow(0, '메인 (수학)', `${mainCorrect} / ${main.length} 정답  (응시 ${mainSolved} / ${main.length})`);
-    drawRow(1, '사이드 (상식)', `${sideCorrect} / ${side.length} 정답  (응시 ${sideSolved} / ${side.length})`);
-    drawRow(2, '풀이 작성', `${writtenSolutions} / ${problemSlots.length} 문제`);
-    drawRow(3, '총 누적 점수', `${totalScore} 점  (수학력 ${s.math} + 지혜 ${s.wisdom} + 통찰력 ${s.insight})`, 14);
-    drawRow(4, '단서 카드', `${s.clues} / 5 장`);
+    drawRow(0, '메인 (첫 시도 정답)', `${mainCorrect} / ${main.length}`);
+    drawRow(1, '메인 (수정 완료)', `${mainResolved - mainCorrect} / ${main.length}   (재시도 후 맞춤)`, 13);
+    drawRow(2, '메인 (미해결)', `${mainUnresolved} / ${main.length}   ★ 재과제 대상`, 13);
+    drawRow(3, '사이드 (첫 시도 정답)', `${sideCorrect} / ${side.length}`);
+    drawRow(4, '풀이 작성', `${writtenSolutions} / ${problemSlots.length} 문제`);
+    drawRow(5, '총 누적 점수', `${totalScore} 점  (수학력 ${s.math} + 지혜 ${s.wisdom} + 통찰력 ${s.insight})`, 13);
 
-    y += 84;  // 박스 + 여유
+    y += 84 + lineH * 2;  // 박스 + 추가 행 여유
 
-    // 엔딩 섹션
-    y = ensureRoom(y, 36);
-    this.addTextToPdf(doc, '도달한 엔딩', 15, y, {
-      fontSize: 20, fontWeight: '700', color: '#5d4a30', maxWidth: 400, widthMm: 80
-    });
-    y += 14;
-    let chosenEnding = ENDINGS.C;
-    if (ENDINGS.A.condition(s)) chosenEnding = ENDINGS.A;
-    else if (ENDINGS.B.condition(s)) chosenEnding = ENDINGS.B;
-
-    doc.setFillColor(245, 217, 154);
-    doc.roundedRect(15, y, pageW - 30, 18, 3, 3, 'F');
-    this.addTextToPdf(doc, `${chosenEnding.tag} — ${chosenEnding.title}`, 22, y + 4, {
-      fontSize: 16, fontWeight: '700', color: '#3a2818', maxWidth: 700, widthMm: pageW - 44
-    });
-    y += 28;
-
+    // 엔딩 섹션 — 학생 리포트에는 엔딩 라벨·이름 노출하지 않음 (개발자 정보)
     // 격려 메시지
     const encouragement = this.pickEncouragement(mainCorrect, main.length, writtenSolutions, problemSlots.length);
     y = ensureRoom(y, 60);
@@ -2124,25 +3758,54 @@ const pdfReport = {
     });
     y += 50;
 
-    // 학습 포인트 — 오답이 있던 주제 (중복 제거 + 페이지 분할)
-    const wrongTopicsRaw = main.filter(p => results[p.id] && !results[p.id].correct).map(p => p.topic);
-    const wrongTopics = [...new Set(wrongTopicsRaw)];  // 중복 제거
-    if (wrongTopics.length > 0) {
+    // 재과제 대상 — 첫 시도 오답 (수정 완료 + 미해결 모두)
+    const needsRework = problemSlots.filter(p =>
+      results[p.id] && results[p.id].firstCorrect === false
+    );
+    const unresolvedList = needsRework.filter(p => results[p.id].resolved === false);
+    const resolvedList = needsRework.filter(p => results[p.id].resolved === true);
+
+    if (needsRework.length > 0) {
       y = ensureRoom(y, 20);
-      this.addTextToPdf(doc, '다시 살펴볼 주제', 15, y, {
-        fontSize: 14, fontWeight: '700', color: '#b85a4a', maxWidth: 400, widthMm: 70
+      this.addTextToPdf(doc, '★ 재과제 대상 문제', 15, y, {
+        fontSize: 16, fontWeight: '700', color: '#b85a4a', maxWidth: 500, widthMm: 90
       });
-      y += 10;
-      for (const topic of wrongTopics) {
-        y = ensureRoom(y, 8);  // 다음 항목 들어갈 공간 없으면 새 페이지
-        this.addTextToPdf(doc, `• ${topic}`, 20, y, {
-          fontSize: 12, color: '#5d4a30', maxWidth: 800, widthMm: pageW - 40
+      y += 12;
+
+      if (unresolvedList.length > 0) {
+        y = ensureRoom(y, 14);
+        this.addTextToPdf(doc, '미해결 (3회 시도 모두 오답)', 15, y, {
+          fontSize: 13, fontWeight: '700', color: '#8b3a2a', maxWidth: 500, widthMm: 90
         });
-        y += 7;
+        y += 8;
+        for (const p of unresolvedList) {
+          y = ensureRoom(y, 8);
+          this.addTextToPdf(doc, `• ${p.id} — ${p.topic}`, 22, y, {
+            fontSize: 12, color: '#5d4a30', maxWidth: 800, widthMm: pageW - 44
+          });
+          y += 7;
+        }
+        y += 4;
+      }
+
+      if (resolvedList.length > 0) {
+        y = ensureRoom(y, 14);
+        this.addTextToPdf(doc, '수정 완료 (첫 시도 오답, 재시도로 맞춤)', 15, y, {
+          fontSize: 13, fontWeight: '700', color: '#a8740a', maxWidth: 600, widthMm: 100
+        });
+        y += 8;
+        for (const p of resolvedList) {
+          y = ensureRoom(y, 8);
+          const attempts = (results[p.id].attempts || []).length;
+          this.addTextToPdf(doc, `• ${p.id} — ${p.topic}  (${attempts}회 시도)`, 22, y, {
+            fontSize: 12, color: '#5d4a30', maxWidth: 800, widthMm: pageW - 44
+          });
+          y += 7;
+        }
       }
     } else if (mainSolved > 0) {
       y = ensureRoom(y, 12);
-      this.addTextToPdf(doc, '모든 메인 문제를 맞혔습니다. 훌륭해요!', 15, y, {
+      this.addTextToPdf(doc, '모든 문제를 첫 시도에 맞혔습니다. 훌륭해요!', 15, y, {
         fontSize: 14, fontWeight: '700', color: '#4a8b3a', maxWidth: 700, widthMm: pageW - 30
       });
     }
@@ -2157,13 +3820,13 @@ const pdfReport = {
     const ratio = total > 0 ? correct / total : 0;
     const writeRatio = totalProblems > 0 ? written / totalProblems : 0;
     if (ratio >= 0.85 && writeRatio >= 0.8) {
-      return '닮음의 원리를 깊이 이해하고 풀이도 꼼꼼하게 적었습니다. 다음 단계도 자신 있게 도전해보세요.';
+      return '도형의 닮음과 비례를 깊이 이해하고 풀이도 꼼꼼하게 적었습니다. 다음 단계도 자신 있게 도전해보세요.';
     } else if (ratio >= 0.7) {
       return '대부분의 문제를 잘 해결했습니다. 오답 문제의 풀이를 다시 한 번 정리해보면 더 단단해질 것입니다.';
     } else if (ratio >= 0.4) {
       return '여기까지 도달한 것 자체가 의미 있는 도전입니다. 오답 문제와 풀이 노트를 함께 다시 살펴봐요.';
     } else if (written > 0) {
-      return '풀이를 시도한 흔적이 보입니다. 닮음의 정의와 기호 표기부터 차근차근 다시 정리해봅시다.';
+      return '풀이를 시도한 흔적이 보입니다. 닮음비·넓이비·부피비와 삼각형의 닮음 조건부터 차근차근 다시 정리해봅시다.';
     } else {
       return '게임은 끝까지 진행했지만 풀이 노트가 비어 있습니다. 다음에는 풀이 과정도 함께 적어보세요.';
     }
@@ -2174,6 +3837,9 @@ const pdfReport = {
     const slots = [];
     for (const step of STEPS) {
       if (step.type === 'problem') {
+        // 점수·리포트 집계에서 제외되는 특별 문제는 슬롯에 포함하지 않음
+        const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[step.id]) || {};
+        if (pdata.excludeFromScore) continue;
         slots.push({
           id: step.id, kind: step.kind, topic: step.topic,
           difficulty: step.difficulty, format: step.format,
@@ -2184,7 +3850,9 @@ const pdfReport = {
   },
 
   // Step 4: 문제별 페이지 (한 문제당 1페이지)
-  async addProblemPage(doc, problem, result, solutionDataUrl) {
+  // 첫 시도 오답 문제 페이지 — 학생이 종이에 다시 푸는 용도
+  // 필기 캡쳐·점수·뱃지 모두 제거, 문제 본문·도형·풀이 빈 공간 위주
+  async addProblemPage(doc, problem, result) {
     doc.addPage();
     const pageW = 210, pageH = 297;
 
@@ -2193,100 +3861,134 @@ const pdfReport = {
     doc.rect(0, 0, pageW, 6, 'F');
     doc.rect(0, pageH - 6, pageW, 6, 'F');
 
-    // 헤더 — 문제 ID + 종류
-    let y = 16;
-    const isMain = problem.id.startsWith('M');
-    const headerColor = isMain ? '#5d4a30' : '#3a6a4a';
-    this.addTextToPdf(doc, `[문제 #${problem.id}]`, 15, y, {
-      fontSize: 22, fontWeight: '700', color: headerColor, maxWidth: 400, widthMm: 80
+    // 헤더 — 문제 ID + 주제
+    let y = 20;
+    this.addTextToPdf(doc, `문제 ${problem.id}`, 15, y, {
+      fontSize: 14, fontWeight: '700', color: '#5d4a30', maxWidth: 160, widthMm: 90
+    });
+    // 메타 라인 — 보조 정보, 본문보다 작게
+    this.addTextToPdf(doc, `${problem.kind} · ${problem.topic} · 난이도 ${problem.difficulty}`, 15, y + 14, {
+      fontSize: 8, color: '#8b6f47', maxWidth: 480, widthMm: 180
     });
 
-    // 결과 뱃지 (정답/오답/미응시)
-    let badgeText, badgeColor;
-    if (!result) { badgeText = '미응시'; badgeColor = '#888'; }
-    else if (result.correct) { badgeText = '✓ 정답'; badgeColor = '#4a8b3a'; }
-    else { badgeText = '✗ 오답'; badgeColor = '#b85a4a'; }
+    // 문제 본문 박스
+    y = 50;
+    const pdata = (typeof PROBLEMS !== 'undefined' && PROBLEMS[problem.id]) || {};
+    const text = (pdata.text || problem.text || '')
+      .replace(/\$([^$]+)\$/g, '$1')
+      .replace(/\\square/g, '□')
+      .replace(/\\angle/g, '∠')
+      .replace(/\\overline\{([^}]+)\}/g, '$1')
+      .replace(/\\triangle/g, '△')
+      .replace(/\\parallel/g, '∥')
+      .replace(/\\text\{([^}]+)\}/g, '$1')
+      .replace(/\\pi/g, 'π')
+      .replace(/\^2/g, '²')
+      .replace(/\^3/g, '³');
 
-    doc.setFillColor(...this._hexToRgb(badgeColor));
-    doc.roundedRect(pageW - 50, y - 2, 35, 12, 2, 2, 'F');
-    this.addTextToPdf(doc, badgeText, pageW - 48, y + 1, {
-      fontSize: 13, fontWeight: '700', color: '#ffffff', textAlign: 'center', maxWidth: 200, widthMm: 31
-    });
+    // 본문 줄 수를 실제 측정해서 박스 높이를 계산.
+    // fontSize 28px, maxWidth 1120px → widthMm 180mm 비율을 이용.
+    const textFs = 28;
+    const textMaxWidthPx = 1120;
+    const textLineHeight = 1.45;
+    const textWidthMm = 180;
+    const measureCanvas = document.createElement('canvas');
+    const mctx = measureCanvas.getContext('2d');
+    mctx.font = `400 ${textFs}px 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif`;
+    const textLines = this._wrapText(mctx, text, textMaxWidthPx);
+    const textHpx = textLines.length * textFs * textLineHeight;
+    const textHmm = textHpx * (textWidthMm / textMaxWidthPx);  // 픽셀 비율 그대로 mm 변환
 
-    // 메타 정보 박스
-    y = 36;
-    doc.setDrawColor(200, 168, 122);
-    doc.setLineWidth(0.4);
-    doc.setFillColor(255, 248, 231);
-    doc.roundedRect(15, y, pageW - 30, 26, 3, 3, 'FD');
-
-    const meta = `종류: ${problem.kind}   |   주제: ${problem.topic}`;
-    this.addTextToPdf(doc, meta, 18, y + 3, {
-      fontSize: 12, color: '#5d4a30', maxWidth: 700, widthMm: pageW - 36
-    });
-    const meta2 = `난이도: ${problem.difficulty}   |   형식: ${problem.format}`;
-    this.addTextToPdf(doc, meta2, 18, y + 13, {
-      fontSize: 12, color: '#5d4a30', maxWidth: 700, widthMm: pageW - 36
-    });
-
-    // 획득 점수
-    if (result) {
-      y = 70;
-      const labels = { math: '수학력', wisdom: '지혜', insight: '통찰력', clues: '단서 카드' };
-      const gainedEntries = Object.entries(result.gainedStats || {})
-        .filter(([k, v]) => v !== 0 && v !== undefined);
-      const gained = gainedEntries
-        .map(([k, v]) => `${labels[k] || k} ${v > 0 ? '+' : ''}${v}`)
-        .join('  /  ');
-      const text = gained ? `획득: ${gained}` : '획득: 변동 없음';
-      this.addTextToPdf(doc, text, 15, y, {
-        fontSize: 13, fontWeight: '700', color: '#6b4423', maxWidth: 700, widthMm: pageW - 30
-      });
+    // 도형 크기 사전 계산 (있을 경우)
+    let figureUrl = null, figureDrawW = 0, figureDrawH = 0;
+    if (pdata.figure) {
+      try {
+        figureUrl = `problems/${pdata.figure}`;
+        const img = await this._loadImage(figureUrl);
+        const maxW = 130, maxH = 80;
+        const ratio = img.width / img.height;
+        figureDrawW = maxW; figureDrawH = maxW / ratio;
+        if (figureDrawH > maxH) { figureDrawH = maxH; figureDrawW = maxH * ratio; }
+      } catch (e) {
+        console.warn('도형 이미지 로드 실패:', e);
+        figureUrl = null;
+      }
     }
 
-    // 풀이 영역 라벨
-    y = 86;
-    this.addTextToPdf(doc, '학생 풀이', 15, y, {
-      fontSize: 16, fontWeight: '700', color: '#5d4a30', maxWidth: 300, widthMm: 50
+    // 본문 박스 = 텍스트 + (도형 있으면 도형 + 패딩) + 상하 여백
+    const padTop = 8, padBottom = 6, gapBetween = 6;
+    const textBoxH = padTop + textHmm + (figureUrl ? gapBetween + figureDrawH : 0) + padBottom;
+
+    doc.setDrawColor(200, 168, 122);
+    doc.setLineWidth(0.5);
+    doc.setFillColor(255, 248, 231);
+    doc.roundedRect(15, y, pageW - 30, textBoxH, 3, 3, 'FD');
+
+    // 본문 텍스트
+    this.addTextToPdf(doc, text, 22, y + padTop, {
+      fontSize: textFs, color: '#3a2818', maxWidth: textMaxWidthPx, widthMm: textWidthMm, lineHeight: textLineHeight
     });
 
-    // 풀이 박스
-    y = 100;
-    const solBoxH = 180;
+    // 도형 (본문 박스 안, 본문 아래 중앙 정렬)
+    if (figureUrl) {
+      const figureY = y + padTop + textHmm + gapBetween;
+      const offsetX = (pageW - figureDrawW) / 2;
+      doc.addImage(figureUrl, 'PNG', offsetX, figureY, figureDrawW, figureDrawH);
+    }
+
+    y += textBoxH + 8;
+
+    // 힌트 박스 (본문과 같은 시각 크기)
+    const hints = (pdata.hints || []).filter(Boolean);
+    if (hints.length) {
+      const hintText = (hints[0] || '')
+        .replace(/\$([^$]+)\$/g, '$1')
+        .replace(/\\angle/g, '∠')
+        .replace(/\\overline\{([^}]+)\}/g, '$1');
+      const fullHintText = `💡 Hint: ${hintText}`;
+      const hintLines = Math.max(1, Math.ceil(fullHintText.length / 17));
+      const hintBoxH = Math.max(18, hintLines * 14 + 10);
+      doc.setDrawColor(107, 139, 58);
+      doc.setLineWidth(0.4);
+      doc.setFillColor(231, 243, 216);
+      doc.roundedRect(15, y, pageW - 30, hintBoxH, 3, 3, 'FD');
+      this.addTextToPdf(doc, fullHintText, 22, y + 7, {
+        fontSize: 24, color: '#3a5a1a', maxWidth: 960, widthMm: 180, lineHeight: 1.45
+      });
+      y += hintBoxH + 6;
+    }
+
+    // 풀이 영역 헤더 — 헤더 톤(0.40 비율)에 맞춤
+    this.addTextToPdf(doc, '풀이', 15, y, {
+      fontSize: 14, fontWeight: '700', color: '#5d4a30', maxWidth: 120, widthMm: 22
+    });
+    this.addTextToPdf(doc, '※ 풀이 과정과 정답을 아래 빈 공간에 직접 적어주세요.', 42, y + 3, {
+      fontSize: 14, color: '#8b6f47', maxWidth: 560, widthMm: 145
+    });
+    y += 16;
+
+    // 풀이 빈 박스 (모눈 배경)
+    const solBoxBottom = pageH - 22;
+    const solBoxH = solBoxBottom - y;
     doc.setDrawColor(139, 111, 71);
     doc.setLineWidth(0.6);
     doc.setFillColor(255, 252, 245);
     doc.roundedRect(15, y, pageW - 30, solBoxH, 3, 3, 'FD');
 
-    if (solutionDataUrl) {
-      try {
-        // 풀이 PNG를 박스 안에 비율 유지하며 삽입
-        const padding = 4;
-        const innerW = pageW - 30 - padding * 2;
-        const innerH = solBoxH - padding * 2;
-        // 이미지 비율 계산을 위해 임시 Image로 로드
-        const img = await this._loadImage(solutionDataUrl);
-        const ratio = img.width / img.height;
-        let drawW = innerW, drawH = innerW / ratio;
-        if (drawH > innerH) { drawH = innerH; drawW = innerH * ratio; }
-        const offsetX = 15 + padding + (innerW - drawW) / 2;
-        const offsetY = y + padding + (innerH - drawH) / 2;
-        doc.addImage(solutionDataUrl, 'PNG', offsetX, offsetY, drawW, drawH);
-      } catch (e) {
-        console.warn('풀이 이미지 삽입 실패:', e);
-        this.addTextToPdf(doc, '(풀이 이미지를 불러올 수 없습니다)', pageW / 2 - 50, y + solBoxH / 2 - 5, {
-          fontSize: 14, color: '#888', textAlign: 'center', maxWidth: 500, widthMm: 100
-        });
-      }
-    } else {
-      this.addTextToPdf(doc, '필기 작성 없음', pageW / 2 - 40, y + solBoxH / 2 - 5, {
-        fontSize: 16, color: '#a0a0a0', textAlign: 'center', maxWidth: 500, widthMm: 80
-      });
+    // 모눈 (옅은 점선)
+    doc.setDrawColor(220, 200, 168);
+    doc.setLineWidth(0.15);
+    const gridStep = 8;
+    for (let gx = 15 + gridStep; gx < pageW - 15; gx += gridStep) {
+      doc.line(gx, y + 2, gx, y + solBoxH - 2);
+    }
+    for (let gy = y + gridStep; gy < y + solBoxH; gy += gridStep) {
+      doc.line(17, gy, pageW - 17, gy);
     }
 
-    // 페이지 푸터 — 학생 이름·날짜
-    this.addTextToPdf(doc, `${this.studentName} · ${this.todayStr()}`, pageW - 80, pageH - 12, {
-      fontSize: 10, color: '#8b6f47', textAlign: 'right', maxWidth: 400, widthMm: 70
+    // 푸터
+    this.addTextToPdf(doc, `${this.studentName} · ${this.todayStr()}`, pageW - 75, pageH - 14, {
+      fontSize: 16, color: '#8b6f47', textAlign: 'right', maxWidth: 400, widthMm: 60
     });
   },
 
@@ -2309,87 +4011,102 @@ const pdfReport = {
     return m.map(v => parseInt(v, 16));
   },
 
-  async addCoverPage(doc) {
+  async addCoverPage(doc, stats) {
+    const { total = 12, firstTryCorrect = 0, accuracy = 0, wrongCount = 0 } = stats || {};
     const pageW = 210, pageH = 297;  // A4 mm
 
-    // 배경 — 따뜻한 베이지
+    // 배경
     doc.setFillColor(245, 232, 211);
     doc.rect(0, 0, pageW, pageH, 'F');
-
-    // 상단 장식 띠
     doc.setFillColor(139, 111, 71);
     doc.rect(0, 0, pageW, 8, 'F');
-    doc.setFillColor(139, 111, 71);
     doc.rect(0, pageH - 8, pageW, 8, 'F');
 
-    // 메인 타이틀 (한국어 — 이미지로 렌더)
-    let y = 50;
-    y = this.addTextToPdf(doc, '시밀러의 학당', pageW / 2 - 80, y, {
-      fontSize: 48, fontWeight: '700', color: '#5d4a30', textAlign: 'center', maxWidth: 600, widthMm: 160
+    // 타이틀
+    let y = 28;
+    this.addTextToPdf(doc, '시밀러와 황금 비례판 — 도형의 닮음', pageW / 2 - 80, y, {
+      fontSize: 26, fontWeight: '700', color: '#5d4a30', textAlign: 'center', maxWidth: 600, widthMm: 160
+    });
+    y += 14;
+    this.addTextToPdf(doc, '재시행 리포트', pageW / 2 - 50, y, {
+      fontSize: 16, fontWeight: '500', color: '#8b6f47', textAlign: 'center', maxWidth: 400, widthMm: 100
     });
 
-    y += 8;
-    this.addTextToPdf(doc, '스테이지 1 — 닮음의 신전', pageW / 2 - 70, y, {
-      fontSize: 22, fontWeight: '500', color: '#8b6f47', textAlign: 'center', maxWidth: 500, widthMm: 140
-    });
-
-    y += 20;
-    this.addTextToPdf(doc, '중학교 2학년 5단원 · 도형의 닮음', pageW / 2 - 60, y, {
-      fontSize: 16, color: '#6b4423', textAlign: 'center', maxWidth: 400, widthMm: 120
-    });
-
-    // 학생 정보 박스
-    y = 110;
+    // 학생 정보
+    y = 62;
     doc.setDrawColor(139, 111, 71);
     doc.setLineWidth(0.6);
     doc.setFillColor(255, 248, 231);
-    doc.roundedRect(30, y, pageW - 60, 50, 4, 4, 'FD');
-
-    this.addTextToPdf(doc, `학생: ${this.studentName}`, 40, y + 8, {
-      fontSize: 20, fontWeight: '700', color: '#3a2818', maxWidth: 500, widthMm: 130
+    doc.roundedRect(20, y, pageW - 40, 24, 4, 4, 'FD');
+    this.addTextToPdf(doc, `학생: ${this.studentName}`, 28, y + 5, {
+      fontSize: 16, fontWeight: '700', color: '#3a2818', maxWidth: 500, widthMm: 90
     });
-    this.addTextToPdf(doc, `날짜: ${this.todayStr()}`, 40, y + 25, {
-      fontSize: 16, color: '#5d4a30', maxWidth: 500, widthMm: 100
-    });
-
-    // 결과 박스 — 스탯 4종
-    y = 175;
-    this.addTextToPdf(doc, '최종 점수', 30, y, {
-      fontSize: 20, fontWeight: '700', color: '#5d4a30', maxWidth: 300, widthMm: 60
+    this.addTextToPdf(doc, `날짜: ${this.todayStr()}`, pageW - 100, y + 5, {
+      fontSize: 14, color: '#5d4a30', maxWidth: 400, widthMm: 80
     });
 
-    y += 12;
-    const stats = game.stats;
-    const statItems = [
-      { label: '수학력 (Math)', value: stats.math, max: 32 },
-      { label: '지혜 (Wisdom)', value: stats.wisdom, max: 10 },
-      { label: '통찰력 (Insight)', value: stats.insight, max: 10 },
-      { label: '단서 카드 (Clues)', value: stats.clues, max: 5 },
-    ];
-    statItems.forEach((s, i) => {
-      const yi = y + i * 18;
-      doc.setDrawColor(200, 168, 122);
-      doc.setLineWidth(0.3);
-      doc.line(30, yi + 12, pageW - 30, yi + 12);
-      this.addTextToPdf(doc, s.label, 35, yi, {
-        fontSize: 14, color: '#5d4a30', maxWidth: 400, widthMm: 80
+    // 핵심 통계 박스
+    y = 100;
+    doc.setFillColor(255, 245, 214);
+    doc.setDrawColor(200, 168, 122);
+    doc.setLineWidth(0.8);
+    doc.roundedRect(20, y, pageW - 40, 64, 5, 5, 'FD');
+
+    this.addTextToPdf(doc, '첫 시도 결과', 28, y + 4, {
+      fontSize: 14, fontWeight: '700', color: '#8b6f47', maxWidth: 300, widthMm: 60
+    });
+
+    // 큰 정답률 표시
+    this.addTextToPdf(doc, `${firstTryCorrect} / ${total} 문제`, pageW / 2 - 60, y + 16, {
+      fontSize: 32, fontWeight: '700', color: '#3a6a1a', textAlign: 'center', maxWidth: 600, widthMm: 120
+    });
+    this.addTextToPdf(doc, `정답률 ${accuracy}%`, pageW / 2 - 50, y + 42, {
+      fontSize: 22, fontWeight: '700', color: '#5d4a30', textAlign: 'center', maxWidth: 400, widthMm: 100
+    });
+
+    // 안내 박스
+    y = 184;
+    if (wrongCount === 0) {
+      // 모두 첫시도 정답
+      doc.setFillColor(214, 240, 200);
+      doc.setDrawColor(90, 139, 58);
+      doc.setLineWidth(0.8);
+      doc.roundedRect(20, y, pageW - 40, 60, 5, 5, 'FD');
+      this.addTextToPdf(doc, '🎉 완벽합니다!', pageW / 2 - 40, y + 8, {
+        fontSize: 22, fontWeight: '700', color: '#2a5a1a', textAlign: 'center', maxWidth: 400, widthMm: 100
       });
-      this.addTextToPdf(doc, `${s.value} / ${s.max}`, pageW - 75, yi, {
-        fontSize: 16, fontWeight: '700', color: '#6b4423', textAlign: 'right', maxWidth: 200, widthMm: 40
+      this.addTextToPdf(doc, '모든 문제를 첫 시도에 맞혔습니다. 재시행이 필요한 문제가 없습니다.', pageW / 2 - 90, y + 28, {
+        fontSize: 14, color: '#3a2818', textAlign: 'center', maxWidth: 700, widthMm: 170, lineHeight: 1.6
       });
-    });
+    } else {
+      // 재시행 안내
+      doc.setFillColor(253, 224, 220);
+      doc.setDrawColor(184, 90, 74);
+      doc.setLineWidth(0.8);
+      doc.roundedRect(20, y, pageW - 40, 72, 5, 5, 'FD');
+      this.addTextToPdf(doc, '📝 다시 풀어서 제출해주세요', 28, y + 6, {
+        fontSize: 16, fontWeight: '700', color: '#6b2a1a', maxWidth: 500, widthMm: 130
+      });
+      this.addTextToPdf(doc,
+        `아래에 첫 시도에 맞히지 못한 ${wrongCount}개의 문제가 있습니다.`,
+        28, y + 22, {
+        fontSize: 13, color: '#3a2818', maxWidth: 700, widthMm: 170
+      });
+      this.addTextToPdf(doc,
+        '각 문제를 다시 풀고 풀이 과정과 정답을 빈 공간에 직접 적은 뒤 선생님께 제출해주세요.',
+        28, y + 36, {
+        fontSize: 13, color: '#3a2818', maxWidth: 700, widthMm: 170, lineHeight: 1.5
+      });
+      this.addTextToPdf(doc,
+        '※ 첫 시도에 맞힌 문제는 이 리포트에 포함되지 않습니다.',
+        28, y + 56, {
+        fontSize: 11, color: '#8b3a2a', maxWidth: 700, widthMm: 170
+      });
+    }
 
-    // 엔딩 정보
-    y = 255;
-    const s = game.stats;
-    let chosenEnding = ENDINGS.C;
-    if (ENDINGS.A.condition(s)) chosenEnding = ENDINGS.A;
-    else if (ENDINGS.B.condition(s)) chosenEnding = ENDINGS.B;
-
-    doc.setFillColor(245, 217, 154);
-    doc.roundedRect(30, y, pageW - 60, 22, 3, 3, 'F');
-    this.addTextToPdf(doc, `${chosenEnding.tag} — ${chosenEnding.title}`, pageW / 2 - 70, y + 6, {
-      fontSize: 16, fontWeight: '700', color: '#3a2818', textAlign: 'center', maxWidth: 600, widthMm: 140
+    // 하단 크레딧
+    this.addTextToPdf(doc, '2026 서울사대부중 2학년 수학B 허철호 선생님 © All rights reserved', pageW / 2 - 80, pageH - 18, {
+      fontSize: 10, color: '#8b6f47', textAlign: 'center', maxWidth: 700, widthMm: 170
     });
   },
 };

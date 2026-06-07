@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5단원 게임 — 최종 작업 계획 (작업 라인)</title>
+<style>
+  :root{
+    --terra:#b5642f; --terra-dark:#8a3f1a; --olive:#6b7a3a; --olive-dark:#4d5a28;
+    --paper:#fdf8ef; --ink:#3a2f22; --line:#e3d6bf; --gold:#c9a227; --blue:#3a6b8a;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:#efe6d4; color:var(--ink); font-family:'Noto Sans KR','Apple SD Gothic Neo',sans-serif; line-height:1.7;}
+  .wrap{max-width:960px; margin:0 auto; padding:32px 20px 80px;}
+  header.hero{background:linear-gradient(135deg,var(--olive),var(--olive-dark)); color:#fff8ec; border-radius:18px; padding:32px; margin-bottom:18px; box-shadow:0 8px 24px rgba(77,90,40,.25);}
+  header.hero h1{margin:0 0 8px; font-size:28px; font-weight:900;}
+  header.hero .sub{font-size:15px; opacity:.92;}
+  .principles{background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:18px 22px; margin-bottom:22px;}
+  .principles h2{font-size:17px; margin:0 0 10px; color:var(--olive-dark);}
+  .principles ul{margin:0; padding-left:20px;} .principles li{margin:5px 0; font-size:14px;}
+  .phase{background:var(--paper); border:1px solid var(--line); border-radius:16px; padding:0; margin-bottom:18px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,.05);}
+  .phase-head{display:flex; align-items:center; gap:14px; padding:16px 22px; color:#fff;}
+  .phase-head .pn{background:rgba(255,255,255,.25); width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:900; flex:0 0 auto;}
+  .phase-head h2{margin:0; font-size:19px; font-weight:800;}
+  .phase-head .meta{margin-left:auto; font-size:12.5px; opacity:.9; text-align:right;}
+  .p0 .phase-head{background:#7a6a52;} .p1 .phase-head{background:var(--terra);} .p2 .phase-head{background:#c0492b;}
+  .p3 .phase-head{background:var(--olive-dark);} .p4 .phase-head{background:var(--blue);} .p5 .phase-head{background:#7a3b8f;} .p6 .phase-head{background:#5a7a3a;}
+  .phase-body{padding:16px 22px;}
+  .steps{margin:0; padding:0; list-style:none;}
+  .steps li{padding:9px 0 9px 30px; position:relative; border-bottom:1px dashed var(--line); font-size:14.5px;}
+  .steps li:last-child{border-bottom:none;}
+  .steps li::before{content:"✔"; position:absolute; left:0; top:9px; color:var(--olive); font-weight:900;}
+  .steps li b{color:var(--terra-dark);}
+  .verify{background:#eef5e9; border-left:4px solid var(--olive); padding:8px 12px; border-radius:6px; margin-top:12px; font-size:13.5px;}
+  .verify b{color:var(--olive-dark);}
+  .why{background:#fbf3da; border-left:4px solid var(--gold); padding:8px 12px; border-radius:6px; margin-top:10px; font-size:13.5px;}
+  .dep{font-size:12.5px; color:#8a3f1a; background:#fde8e2; padding:2px 9px; border-radius:20px; display:inline-block; margin-top:8px;}
+  .done{background:#5a9c4a; color:#fff; font-size:11.5px; font-weight:800; padding:2px 9px; border-radius:20px;}
+  .flex-track{background:#e8eef3; border:2px dashed var(--blue); border-radius:14px; padding:18px 22px; margin:22px 0;}
+  .flex-track h2{color:var(--blue); font-size:18px; margin:0 0 10px;}
+  .flex-track p{font-size:14px; margin:6px 0;}
+  .timeline{background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:18px 22px; margin-top:8px;}
+  .timeline h2{font-size:18px; color:var(--terra-dark); margin:0 0 12px;}
+  .bar{display:flex; gap:4px; flex-wrap:wrap; font-size:12px; font-weight:700;}
+  .bar span{padding:7px 12px; border-radius:8px; color:#fff;}
+  footer{text-align:center; color:#7a6a52; font-size:13px; margin-top:30px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <h1>🛠️ 5단원 게임 — 최종 작업 계획</h1>
+    <div class="sub">기획서 confirm 이후, 버그 없이 가장 자연스러운 작업 순서</div>
+  </header>
+
+  <div class="principles">
+    <h2>🧭 이 순서를 짠 5가지 원칙</h2>
+    <ul>
+      <li><b>의존성 역순 금지</b> — 남이 참조하는 것(문제·캐릭터)을 먼저 만든다. scenario.js는 맨 나중.</li>
+      <li><b>데이터 먼저, 통합 나중</b> — problems.js(데이터) → scenario.js(흐름) → 엔진 통합 순. 데이터가 흔들리면 위가 다 무너짐.</li>
+      <li><b>검증 가능한 단위로 끊기</b> — 각 단계 끝에 "눈으로 볼 산출물"(스토리보드 HTML 등)을 둬서 버그를 일찍 잡음.</li>
+      <li><b>독립 작업은 유연 배치</b> — 사운드·배경처럼 의존 없는 건 별도 트랙. 메인 흐름을 막지 않음.</li>
+      <li><b>위험한 신규 기능은 작게 먼저 검증</b> — 황금비 인터랙션·사운드는 프로토타입으로 리스크부터 제거.</li>
+    </ul>
+  </div>
+
+  <!-- PHASE 0 -->
+  <div class="phase p0">
+    <div class="phase-head"><span class="pn">0</span><h2>확정 (기획서 confirm)</h2><span class="meta">선행 필수</span></div>
+    <div class="phase-body">
+      <ul class="steps">
+        <li>기획서 confirm + <b>미결정 4가지 확정</b>: 문제 개수 / 엔딩 분기 / 문제 배정 / 캐릭터 이미지</li>
+      </ul>
+      <div class="why">⚠️ 여기가 안 정해지면 뒤가 전부 흔들립니다. 특히 <b>문제 개수·배정</b>이 Phase 1의 입력값.</div>
+    </div>
+  </div>
+
+  <!-- PHASE 1 -->
+  <div class="phase p1">
+    <div class="phase-head"><span class="pn">1</span><h2>문제 데이터 확정 (problems.js)</h2><span class="meta">기반 데이터</span></div>
+    <div class="phase-body">
+      <ul class="steps">
+        <li>15문제 중 <b>스토리에 쓸 것 / 뺄 것</b> 분류</li>
+        <li>각 문제를 스토리 자재(벽돌·유리·점토 등)에 맞게 <b>수치·맥락 각색</b></li>
+        <li><b>황금비·A4(반닮음)</b> 신규 문제 2개 별도 작성</li>
+        <li>문제 정답 <b>전수 검수</b> (교과서 크롭과 대조 — 그림 라벨 의존 문제 주의)</li>
+        <li>problems.js 작성 (slot ID 확정 — 이게 scenario가 참조할 키)</li>
+      </ul>
+      <div class="dep">선행: Phase 0</div>
+      <div class="verify"><b>검증</b>: 단일 문제 테스트 페이지로 각 문제가 정답 판정·힌트까지 정상 작동하는지 확인.</div>
+      <div class="why">왜 먼저? scenario.js가 문제 ID를 참조하므로, ID·정답이 먼저 굳어야 함. 정답 검수를 여기서 끝내야 나중에 안 흔들림.</div>
+    </div>
+  </div>
+
+  <!-- PHASE 2 -->
+  <div class="phase p2">
+    <div class="phase-head"><span class="pn">2</span><h2>문제 도형 제작 (SVG)</h2><span class="meta">자산</span></div>
+    <div class="phase-body">
+      <ul class="steps">
+        <li>도형 필요한 문제의 <b>SVG 작도</b> (교과서 PNG 그대로 안 씀 — 저작권 + UI 통일)</li>
+        <li>게임 톤에 맞춘 색·선 스타일 적용</li>
+      </ul>
+      <div class="dep">선행: Phase 1 (어떤 문제를 쓸지 확정돼야 함)</div>
+      <div class="verify"><b>검증</b>: 도형이 문제 의도(수치·각도)와 일치하는지 대조.</div>
+      <div class="why">Phase 1과 살짝 겹쳐 진행 가능(문제 확정된 것부터 도형 착수). 단 "뺄 문제"의 도형을 그리는 헛수고를 막으려면 Phase 1 분류 후 시작.</div>
+    </div>
+  </div>
+
+  <!-- PHASE 3 -->
+  <div class="phase p3">
+    <div class="phase-head"><span class="pn">3</span><h2>스토리보드 작성 (scenario.js)</h2><span class="meta">흐름</span></div>
+    <div class="phase-body">
+      <ul class="steps">
+        <li>Scene 단위로 전체 흐름 작성 (도입→자재 퀘스트→탈레스 최종→결말)</li>
+        <li>확정된 <b>문제 slot ID</b>를 각 Scene에 배치</li>
+        <li><b>대사·클릭 줄이기 원칙</b> 적용 (2~3문장 묶기, step 30~40% 감축)</li>
+        <li>신규 캐릭터(테론·소폴로스) 대사·등장 연출</li>
+        <li>엔딩 분기 작성 (Phase 0에서 정한 방식대로)</li>
+      </ul>
+      <div class="dep">선행: Phase 1 (문제 ID), 캐릭터(완료 ✅)</div>
+      <div class="verify"><b>검증</b>: storyboard.html로 전체 스토리를 띄워 흐름·대사량 확인 (4단원처럼).</div>
+      <div class="why">문제 ID가 굳은 뒤 작성해야 "없는 문제 참조" 버그가 안 남. 도형(Phase 2)은 scenario와 독립이라 병행 가능.</div>
+    </div>
+  </div>
+
+  <!-- PHASE 4 -->
+  <div class="phase p4">
+    <div class="phase-head"><span class="pn">4</span><h2>황금비·A4 인터랙션 구현</h2><span class="meta">신규 기능</span></div>
+    <div class="phase-body">
+      <ul class="steps">
+        <li><b>먼저 프로토타입</b>: 슬라이더로 직사각형 비율 조절 + "닮은꼴 되는 순간" 감지 (단독 HTML로 리스크 제거)</li>
+        <li>비례식 빈칸 채우기 연동</li>
+        <li>검증 후 게임 엔진(탈레스 최종 관문 / A4 초반)에 통합</li>
+      </ul>
+      <div class="dep">선행: Phase 1 (황금비·A4 문제 정의)</div>
+      <div class="verify"><b>검증</b>: 프로토타입 단독 작동 → 그 다음 엔진 통합. 통째로 넣다 터지는 것 방지.</div>
+      <div class="why">기존 6유형(ox·choice…)에 없는 <b>새 인터랙션 타입</b>이라 가장 버그 위험 큼. 그래서 작게 먼저 검증하고 통합.</div>
+    </div>
+  </div>
+
+  <!-- PHASE 5 -->
+  <div class="phase p5">
+    <div class="phase-head"><span class="pn">5</span><h2>엔진 통합 &amp; 플레이 테스트</h2><span class="meta">통합</span></div>
+    <div class="phase-body">
+      <ul class="steps">
+        <li>index.html 엔진에 problems / scenario / 도형 / 인터랙션 전부 연결</li>
+        <li>4단원 엔진 재활용 부분 점검 (평가 시스템·PDF·세이브)</li>
+        <li><b>처음부터 끝까지 1회 완주 플레이 테스트</b> (모든 문제·분기·엔딩)</li>
+        <li>버그 수정</li>
+      </ul>
+      <div class="dep">선행: Phase 1~4 전부</div>
+      <div class="verify"><b>검증</b>: 풀 플레이 1회. 각 퀘스트 클리어→자재 획득→신전 단계 진행→엔딩까지.</div>
+    </div>
+  </div>
+
+  <!-- PHASE 6 -->
+  <div class="phase p6">
+    <div class="phase-head"><span class="pn">6</span><h2>배포 &amp; 허브 등록</h2><span class="meta">마무리</span></div>
+    <div class="phase-body">
+      <ul class="steps">
+        <li>hub.html(게임 진입 안내) 작성 (4단원 형식)</li>
+        <li>GitHub Pages 배포 + ai-labs games.json에 5단원 카드 추가</li>
+      </ul>
+      <div class="dep">선행: Phase 5</div>
+    </div>
+  </div>
+
+  <!-- FLEX TRACK -->
+  <div class="flex-track">
+    <h2>🔀 별도 트랙 (언제 해도 됨 — 메인 흐름과 독립)</h2>
+    <p><b>🔊 사운드 (BGM·SFX)</b> — 다른 작업에 의존하지 않음. <b>권장: Phase 5(통합) 즈음</b>에 넣는 게 가장 효율적.</p>
+    <ul class="steps">
+      <li>이유: 너무 일찍(Phase 1~3) 넣으면 Scene·이벤트가 바뀔 때마다 사운드 연결을 다시 만져야 함 → 헛수고·버그</li>
+      <li>이유: 너무 늦게(배포 후) 넣으면 통합 테스트를 또 돌려야 함</li>
+      <li>→ <b>Scene 구조가 굳은 Phase 5에서 "이벤트별 효과음 + 장면별 BGM"을 한 번에 매핑</b>하는 게 최적</li>
+      <li>4단원 엔진에 <code>playBgm()</code> 흔적 있음 → 재활용 가능한지 그때 점검</li>
+    </ul>
+    <p><b>🎨 배경 이미지</b> — 5단원에 이미 9장 있음(harbor·library·basement 등). 스토리 확정 후 <b>부족한 장면만 추가 생성</b>. Phase 3~5 사이 유연하게.</p>
+  </div>
+
+  <!-- TIMELINE -->
+  <div class="timeline">
+    <h2>📊 전체 흐름 한눈에</h2>
+    <div class="bar">
+      <span style="background:#7a6a52;">0. confirm</span>
+      <span style="background:var(--terra);">1. 문제 데이터</span>
+      <span style="background:#c0492b;">2. 도형 SVG</span>
+      <span style="background:var(--olive-dark);">3. 스토리보드</span>
+      <span style="background:var(--blue);">4. 황금비 인터랙션</span>
+      <span style="background:#7a3b8f;">5. 통합·테스트</span>
+      <span style="background:#5a7a3a;">6. 배포</span>
+    </div>
+    <p style="font-size:13.5px; margin-top:12px; color:#6a5a42;">
+      ※ Phase 2(도형)·4(인터랙션)는 Phase 1 확정분부터 <b>병행 착수</b> 가능. 사운드·배경은 별도 트랙으로 Phase 5 즈음 합류.<br>
+      ※ 핵심 직렬 경로(반드시 순서대로): <b>0 → 1 → 3 → 5 → 6</b>. 나머지는 이 뼈대에 붙는 가지.
+    </p>
+  </div>
+
+  <footer>
+    5단원 게임 최종 작업 계획 · 2026-06-06 · unit5_similarity/docs/WORK_PLAN.html
+  </footer>
+
+</div>
+</body>
+</html>

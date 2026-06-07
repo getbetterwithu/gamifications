@@ -1,339 +1,392 @@
-// ===== 시나리오 데이터 (Stage 1 — 닮음의 신전) =====
-// step types:
-//   { type: 'scene', name, bg, clearChars }
-//   { type: 'dialog', speaker, expression, position?, text, prop? }
-//   { type: 'choice', prompt, options: [{ label, effect, reactKey }] }
-//   { type: 'reaction', reactions: { A: {...}, B: {...}, C: {...} } }
-//   { type: 'enter', role, expression, position }    // 수동 등장(자동 시스템 우회)
-//   { type: 'problem', id, kind, topic, difficulty, format, onCorrect, onWrong,
-//     image?: 'M01.png',                       // 문제 이미지 파일 (problems/ 폴더, 없으면 placeholder)
-//     responseType?: 'choice' | 'shortAnswer', // 응답 형식. 비우면 format 문자열로 자동 추론
-//     choices?: ['①', '②', '③', '④'],        // 객관식 보기 (텍스트 또는 이미지 파일명)
-//     correctChoice?: 2,                       // 객관식 정답 인덱스 (0부터)
-//     acceptedAnswers?: ['3:5', '0.6'],        // 단답형 허용 답안 배열
-//   }
-//   { type: 'ending' }                                // 엔딩 분기 판정 트리거
+// ===== 시나리오 데이터 (5단원 Stage 1 — 시밀러와 황금 비례판) v2 =====
+// 작가: 허준성·허태욱 / 설계: project_unit5_final_design 메모리 + 4인 전문가 자문 반영
+// 4단원 「폴리곤의 학당」 직후. 신전 건축을 도우며 닮음·비례를 익히고 황금 비례판을 얻는 이야기.
+//
+// ★ v2 개정 핵심 (전문가 자문 + 사용자 확정):
+//   - 관통 미스터리: 테론 설계도의 "빈 칸(?)" = 황금비. Scene1 떡밥 → 6·8 상기 → 9 정체 → 10 회수.
+//   - 위기/목적: 자재마다 절박한 이유 (폭풍→벽돌, 햇빛→유리천창 등). 폭풍은 풀세트 1회.
+//   - 신전 진척: 자재 모을 때마다 신전이 자람 (터→벽→천창→기둥→골조→완성). 배경 자리 TODO 주석.
+//   - 상인 소폴로스: 넓이비·부피비를 몰라 싸게 팔려 함 → 폴리곤이 "제값 받게" 도와줌(따뜻 버전).
+//   - 캐릭터 아크: 소폴로스(고마운 단골) / 다이달로스(라이벌→인정) / 테론(결핍→완성).
+//
+// ★ 대사 원칙: 한 step 2~3문장 상한. 위기 순간은 1문장으로 쪼개 긴박감. 추임새 단독 최소.
+//
+// step types: scene / dialog / choice / reaction / enter / problem / ending
+// 캐릭터 키: apprentice(시밀러=폴리곤) pythagoras thales rival(다이달로스) companion(이리스)
+//            architect(테론) merchant(소폴로스) narrator
+// 문제 id는 problems.js의 PROBLEMS 키와 일치: A4 BRICK GLASS CLAY KEY TOOL1 TOOL2 MEASURE SHADOW GOLDEN
+//
+// ※ 신전 진척 배경 TODO: 아래 bg에 'yard'를 쓰되, 향후 진척 배경 생성 시 교체할 자리를
+//    [[진척:단계]] 주석으로 표기. (temple_site0~5 등으로 backgrounds.js에 추가 예정)
 
 const STEPS = [
+
   // ============================================================
-  // Scene 1 — 항구의 아침 (도입)
+  // Scene 1 — 신전, 그리고 빈 칸 하나 (도입 + 미스터리 떡밥)
   // ============================================================
-  { type: 'scene', name: 'Scene 1 — 항구의 아침', bg: 'harbor', clearChars: true },
-  { type: 'dialog', speaker: 'narrator', text: '드디어 도착했다. 피타고라스 학당이 있다는 케팔로니아 섬. 배에서 내리자마자 온 몸에 소금 냄새가 달라붙는다.' },
-  { type: 'dialog', speaker: 'thales', expression: 'smile', position: 'left',
-    text: '어이, 너 혹시 오늘 입학하는 견습생이야? 얼굴에 "나 길 잃음"이라고 쓰여 있거든.' },
-  { type: 'dialog', speaker: 'apprentice', expression: 'surprised', position: 'right',
-    text: '아, 네! 저 시밀러라고 해요. 탈레스 선생님이시죠?' },
-  { type: 'dialog', speaker: 'thales', expression: 'smile',
-    text: '맞아. 공식 직함은 "준 방문 학자"지만, 그냥 탈레스 아저씨라고 불러도 돼. 자, 학당까지 같이 가자고.' },
-  { type: 'dialog', speaker: 'thales', expression: 'thinking', prop: 'lighthouse',
-    text: '참, 걸어가는 동안 하나만 물어볼게. 지금 저기 보이는 등대탑 있지? 탑 그림자 길이를 알면 탑 높이를 구할 수 있어. 어떻게 하면 될 것 같아?' },
-  { type: 'choice',
-    prompt: '탈레스의 질문에 답하기',
-    options: [
-      { label: 'A. 내 그림자 길이와 비교하면 되지 않을까요?', effect: { wisdom: 2 }, reactKey: 'A' },
-      { label: 'B. 줄자로 탑에 올라가서 직접 재면 돼요.', effect: { math: -1 }, reactKey: 'B' },
-      { label: 'C. …모르겠어요. 그냥 어림잡아요?', effect: {}, reactKey: 'C' },
-    ]
+  // [[진척:0 터파기 — 설계도에 빈 칸(?) 보임]]
+  { type: 'scene', name: 'Scene 1 — 빈 칸 하나', bg: 'temple_site0', clearChars: true },
+  { type: 'dialog', speaker: 'narrator',
+    text: '사각형의 분쟁을 풀어낸 지 며칠. 학당 동편에 새 신전을 짓는 공사가 시작됐다. 폴리곤은 그 한가운데, 거대한 설계도 앞에 섰다.' },
+  // [top#6] 초반 후크 — 빼곡한 설계도 속 단 하나의 빈 칸으로 시선을 끈다
+  { type: 'dialog', speaker: 'narrator',
+    text: '빼곡한 도면 위, 단 한 칸만이 텅 비어 있었다. 마치 누군가 일부러 비워둔 것처럼.' },
+
+  { type: 'enter', role: 'architect', expression: 'neutral', position: 'left' },
+  { type: 'enter', role: 'apprentice', expression: 'surprised', position: 'right' },
+  { type: 'dialog', speaker: 'architect', expression: 'neutral',
+    text: '네가 폴리곤이군. 분쟁을 풀었다는 신입. 마침 잘 왔다 — 나는 이 신전을 맡은 건축가, 테론이다.' },
+  { type: 'dialog', speaker: 'architect', expression: 'smile',
+    text: '건축은 결국 "비율"의 싸움이지. 자재 하나, 기둥 하나가 다 비례로 정해진다. 도형 보는 눈이 좋다니, 나를 좀 도와다오.' },
+  { type: 'dialog', speaker: 'apprentice', expression: 'thinking',
+    text: '신전 건축을요…? 제가 할 수 있을까요.' },
+  // ── 미스터리 떡밥: 설계도의 빈 칸 ──
+  { type: 'dialog', speaker: 'architect', expression: 'thinking',
+    text: '다만 한 가지. 이 설계도, 거의 완벽한데 — 마지막 회당의 비율, 이 한 칸만은 나도 모른다. 스승님도 끝내 안 가르쳐주셨지.' },
+  // [top#6] '나중 일이다'(빈 칸 무게 깎임) → 평생 숙제 + 폴리곤에게 거는 기대
+  { type: 'dialog', speaker: 'architect', expression: 'thinking',
+    text: '이 한 칸을 못 채운 채로 벌써 십 년이다. …어쩌면 너라면, 하고 생각했다. 우선 네 실력부터 좀 보자.' },
+
+  // ============================================================
+  // Scene 2 — 양피지 한 장의 비밀 (워밍업)
+  // ============================================================
+  { type: 'dialog', speaker: 'architect', expression: 'smile',
+    text: '설계도를 그릴 양피지다. 이걸 반으로 자르면 — 신기하게도, 잘린 조각이 원래와 똑같은 비율이 돼. 왜 그런지 직접 찾아봐라.' },
+
+  { type: 'problem', id: 'A4', kind: '워밍업', topic: '반으로 잘라도 닮은 직사각형', difficulty: '하',
+    onCorrect: { stats: { math: 2, insight: 1 },
+      dialog: { speaker: 'architect', expression: 'smile',
+        text: '바로 그거다. 반으로 잘라도 닮은꼴이 되는 비 — 약 1:1.41. 닮음과 비례, 감이 오지? 이제 진짜 일을 시작하자.' } },
+    onWrong: { stats: { math: 0 },
+      dialog: { speaker: 'architect', expression: 'thinking',
+        text: '닮은꼴이면 대응하는 변의 비가 같다 — 그것만 기억하면 돼. 천천히 다시.' } },
   },
+
+  // ============================================================
+  // Scene 3 — 폭풍이 온다 (위기 풀세트: 벽돌 / 소폴로스 첫 등장)
+  // ============================================================
+  // [[진척:0 → 위기연출(폭풍, 어두운 톤)]] 아직 터파기 상태 — site0
+  // [top#3] storm 색보정 + 비/번개/구름 날씨효과 (CSS, 이미지 무관)
+  { type: 'scene', name: 'Scene 3 — 폭풍이 온다', bg: 'temple_site0', clearChars: true, mood: 'storm', weather: 'storm' },
+  { type: 'enter', role: 'architect', expression: 'surprised', position: 'left' },
+  { type: 'enter', role: 'apprentice', expression: 'surprised', position: 'right' },
+  { type: 'dialog', speaker: 'narrator',
+    text: '그때, 바람이 거칠어졌다. 멀리 먹구름이 몰려오고 있었다.' },
+  // 위기 — 짧은 대사로 긴박
+  { type: 'dialog', speaker: 'architect', expression: 'surprised', text: '폭풍이다.' },
+  { type: 'dialog', speaker: 'architect', expression: 'neutral',
+    text: '벽이 없으면 토대가 빗물에 쓸려간다. 벽돌을 쌓아야 해 — 지금 당장.' },
+  { type: 'dialog', speaker: 'apprentice', expression: 'surprised', text: '벽돌 크기는요…?!' },
+  { type: 'dialog', speaker: 'architect', expression: 'thinking',
+    text: '정확한 치수를 내가 몰라. 떠도는 상인 소폴로스, 그자가 안다. 서둘러 다녀와라!' },
+
+  // ── 상인 창고 ──
+  { type: 'scene', name: 'Scene 3 — 지혜를 파는 상인', bg: 'merchant_camp', clearChars: true },
+  { type: 'enter', role: 'merchant', expression: 'smile', position: 'left' },
+  { type: 'enter', role: 'apprentice', expression: 'neutral', position: 'right' },
+  { type: 'dialog', speaker: 'merchant', expression: 'smile',
+    text: '오호, 테론의 심부름꾼이로군. 나는 소폴로스 — 지혜를 파는 자다. 정보엔 값이 따르는 법, 돈 말고 머리로 치르거라.' },
+  { type: 'dialog', speaker: 'merchant', expression: 'neutral',
+    text: '이 신전 모형은 실제의 18분의 1로 줄인 것. 모형 치수로 실제 크기를 맞히면 벽돌 정보를 주지. 폭풍이 가깝다, 서둘러라.' },
+
+  { type: 'problem', id: 'BRICK', kind: '자재', topic: '사암 벽돌 — 축척', difficulty: '하',
+    onCorrect: { stats: { math: 3 },
+      dialog: { speaker: 'merchant', expression: 'smile',
+        text: '정확해! 축척을 제대로 다루는군. 자, 벽돌 치수다 — 어서 가서 벽을 쌓아!' } },
+    onWrong: { stats: { math: 0 },
+      // [top#2] 정답풀이 통째공개 제거 — 방향만, 떠먹이기는 hints[]에 위임
+      dialog: { speaker: 'merchant', expression: 'thinking',
+        text: '모형을 줄인 비율을 거꾸로 되짚어 봐. 줄인 만큼 다시 키우면 실제 치수가 나오지. 서둘러!' } },
+  },
+
+  // ── 신전 복귀: 벽 완성 (위기 해소) ──
+  // [[진척:1 벽돌 벽]]
+  { type: 'scene', name: 'Scene 3 — 벽이 서다', bg: 'temple_site1', clearChars: true },
+  { type: 'enter', role: 'architect', expression: 'smile', position: 'left' },
+  { type: 'enter', role: 'apprentice', expression: 'neutral', position: 'right' },
+  { type: 'dialog', speaker: 'narrator',
+    text: '폴리곤이 가져온 치수로 벽이 세워졌다. 빗방울이 벽을 두드렸지만, 토대는 무사했다.' },
+  { type: 'dialog', speaker: 'architect', expression: 'smile',
+    text: '해냈군. 네 계산이 정확해서 벽이 버텼다. …쓸 만한 신입이야.' },
+
+  // ============================================================
+  // Scene 4 — 빛이 드는 천창 (유리 / 상인 "제값 받게" 돕기 ①)
+  // ============================================================
+  { type: 'dialog', speaker: 'architect', expression: 'neutral',
+    text: '벽은 섰다. 한데 신전 안이 너무 어두워. 신께 바치는 곳엔 빛이 들어야지 — 천장에 유리를 끼우자.' },
+  // [top#5] 동선 변주: 매번 폴리곤이 가지 않고, 이번엔 상인이 신전으로 찾아온다
+  { type: 'dialog', speaker: 'narrator',
+    text: '말이 끝나기 무섭게, 짐수레 바퀴 소리가 들렸다. 소폴로스가 유리 견본을 한 아름 안고 신전 마당으로 들어서고 있었다.' },
+  { type: 'enter', role: 'merchant', expression: 'smile', position: 'left' },
+  { type: 'enter', role: 'apprentice', expression: 'surprised', position: 'right' },
+  { type: 'dialog', speaker: 'merchant', expression: 'smile',
+    text: '하하, 공사 소문 듣고 지나는 길에 들렀지. 유리가 필요할 것 같아서 말야. 작은 견본과 큰 유리는 닮은꼴 — 크기가 좀 더 크니 값도 그만큼만 더 받으면 되겠고—' },
+  { type: 'dialog', speaker: 'apprentice', expression: 'surprised',
+    text: '잠깐만요. 그렇게 받으시면… 손해 보세요.' },
+  { type: 'dialog', speaker: 'merchant', expression: 'surprised', text: '손해? 내가?' },
+  // [top#1] 정답(16:25) 미리말하기 제거 — 의문만 남기고 결론은 onCorrect로
+  { type: 'dialog', speaker: 'apprentice', expression: 'smile',
+    text: '변의 길이만 더 크다고 값도 딱 그만큼만 오르는 게 아니에요. 유리는 넓이로 값을 매기잖아요 — 그게 함정이에요.' },
+
+  { type: 'problem', id: 'GLASS', kind: '자재', topic: '유리 — 닮음비와 넓이비', difficulty: '중',
+    onCorrect: { stats: { math: 3, insight: 1 },
+      dialog: { speaker: 'merchant', expression: 'surprised',
+        text: '…허. 하마터면 헐값에 넘길 뻔했군. 넓이는 닮음비의 제곱이라 — 이 꼬마가 나를 살렸어. 유리 정보, 제대로 쳐서 가져가라.' } },
+    onWrong: { stats: { math: 0 },
+      // [top#2] 정답비(16:25) 통째공개 제거 — 넓이는 제곱이라는 관점만
+      dialog: { speaker: 'merchant', expression: 'thinking',
+        text: '길이의 비를 그대로 넓이에 쓰면 안 돼. 넓이는 가로·세로가 둘 다 늘어나니, 길이의 비를 한 번 더 곱해야 한다. 다시 세워봐.' } },
+  },
+
+  // ── 신전 복귀: 유리 천창 ──
+  // [[진척:2 유리 천창 — 빛이 듦]]
+  { type: 'scene', name: 'Scene 4 — 빛이 들다', bg: 'temple_site2', clearChars: true },
+  { type: 'enter', role: 'architect', expression: 'smile', position: 'left' },
+  { type: 'enter', role: 'apprentice', expression: 'smile', position: 'right' },
+  { type: 'dialog', speaker: 'narrator',
+    text: '유리 천창 사이로 첫 햇빛이 회당 바닥에 내려앉았다.' },
+  { type: 'dialog', speaker: 'architect', expression: 'smile',
+    text: '빛이 들어오는군. …그 영감, 하마터면 헐값에 넘길 뻔한 걸 네가 막아줬다지. 덕분에 좋은 유리를 제값에 들였어. 네 덕이 크다.' },
+
+  // ============================================================
+  // Scene 5 — 점토와 잠긴 대장간 (부피비 돕기 ② + 피타고라스 관문)
+  // ============================================================
+  { type: 'dialog', speaker: 'architect', expression: 'neutral',
+    text: '다음은 기둥이다. 속을 점토로 채워야 단단해져. 한데 점토는 구워야 쓸 수 있지.' },
+  { type: 'dialog', speaker: 'architect', expression: 'thinking',
+    text: '가마는 북쪽 대장간에 있는데 — 잠겨 있다. 열쇠는 교장 피타고라스 선생이 쥐고 계셔. 먼저 점토 양을 소폴로스에게 확인하고, 열쇠를 받아오너라.' },
+
+  { type: 'scene', name: 'Scene 5 — 점토의 양', bg: 'merchant_camp', clearChars: true },
+  { type: 'enter', role: 'merchant', expression: 'smile', position: 'left' },
+  { type: 'enter', role: 'apprentice', expression: 'thinking', position: 'right' },
+  { type: 'dialog', speaker: 'merchant', expression: 'smile',
+    text: '점토? 항아리 두 개가 닮은꼴인데… 또 내가 대충 값을 부르면 자네가 바로잡겠군. 어디 해보게.' },
+  // [top#1] 정답(27:64) 미리말하기 제거 — 넓이보다 더 벌어진다는 방향만
+  { type: 'dialog', speaker: 'apprentice', expression: 'thinking',
+    text: '이번엔 넓이가 아니라 부피예요. 항아리가 닮은꼴이면 — 부피 차이는 넓이 때보다 훨씬 더 크게 벌어져요. 또 손해 보실 뻔했어요.' },
+
+  { type: 'problem', id: 'CLAY', kind: '자재', topic: '점토 — 닮음비와 부피비', difficulty: '중',
+    onCorrect: { stats: { math: 3, insight: 1 },
+      dialog: { speaker: 'merchant', expression: 'smile',
+        text: '세제곱이라…! 점토 양이 이렇게나 차이가 나는군. 또 살았어. 자네, 아예 내 가게에 눌러앉지 그래?' } },
+    onWrong: { stats: { math: 0 },
+      // [top#2] 정답비(27:64) 통째공개 제거 — 넓이→부피로 차원이 하나 더라는 관점만
+      dialog: { speaker: 'merchant', expression: 'thinking',
+        text: '넓이가 길이를 두 번 곱한 거라면, 부피는 한 번 더 — 길이의 비를 세 번 곱해야 한다. 차원이 하나 늘었지. 다시.' } },
+  },
+
+  // ── 피타고라스: 대장간 열쇠 관문 ──
+  { type: 'scene', name: 'Scene 5 — 교장의 열쇠', bg: 'library', clearChars: true },
+  { type: 'enter', role: 'pythagoras', expression: 'neutral', position: 'left' },
+  { type: 'enter', role: 'apprentice', expression: 'surprised', position: 'right' },
+  { type: 'dialog', speaker: 'pythagoras', expression: 'neutral',
+    text: '대장간 열쇠라. 신전을 위해서라면 내주마. 단, 학당의 규칙 — 아는 만큼 얻는 법이지. 이 여섯 삼각형 중 닮은 것끼리 짝짓고, 그 까닭을 답하라.' },
+
+  { type: 'problem', id: 'KEY', kind: '관문', topic: '삼각형 닮음 조건 (SSS·SAS·AA)', difficulty: '중',
+    onCorrect: { stats: { math: 4 },
+      dialog: { speaker: 'pythagoras', expression: 'smile',
+        text: '세 가지 닮음 조건을 정확히 구분하는군. 열쇠다. 가마를 잘 쓰거라.' } },
+    onWrong: { stats: { math: 0 },
+      dialog: { speaker: 'pythagoras', expression: 'neutral',
+        text: '세 변의 비가 같으면 SSS, 두 변과 끼인각이면 SAS, 두 각이면 AA. 표시된 것을 다시 보아라.' } },
+  },
+
+  // ── 신전 복귀: 기둥 + 가마 ──
+  // [[진척:3 기둥 + 점토(가마 불빛)]]
+  { type: 'scene', name: 'Scene 5 — 기둥이 서다', bg: 'temple_site3', clearChars: true },
+  { type: 'dialog', speaker: 'narrator',
+    text: '잠긴 대장간이 열렸다. 점토를 구워 채운 기둥이 신전을 떠받쳤다.' },
+
+  // ============================================================
+  // Scene 6 — 빌려간 도구, 그리고 라이벌 (다이달로스)
+  // ============================================================
+  { type: 'scene', name: 'Scene 6 — 빌려간 도구', bg: 'classroom', clearChars: true },
+  { type: 'dialog', speaker: 'narrator',
+    text: '테론의 설계 도구 — 눈금 없는 자와 컴퍼스 — 를 며칠 전 다이달로스가 빌려갔다. 순순히 돌려줄 자가 아니었다.' },
+  { type: 'enter', role: 'rival', expression: 'neutral', position: 'left' },
+  { type: 'enter', role: 'apprentice', expression: 'neutral', position: 'right' },
+  { type: 'dialog', speaker: 'rival', expression: 'neutral',
+    text: '테론의 자랑 컴퍼스를 돌려달라? 흥. 그냥은 안 되지. 두 문제 다 맞히면 생각해보지. 첫 번째 — 이 도면에서 CD의 길이.' },
+  // [top#7] 합류형 선택지 (엔딩 영향 없음)
+  { type: 'choice', prompt: '어떻게 응수할까?',
+    options: [
+      { label: '괜한 신경전은 됐고 바로 푼다.', reactKey: 'A', effect: { wisdom: 1 } },
+      { label: '그쪽이야말로 풀 수는 있고요?', reactKey: 'B', effect: { insight: 1 } },
+    ] },
   { type: 'reaction', reactions: {
-    A: { speaker: 'thales', expression: 'smile', prop: 'shadow_similarity',
-         text: '정확해! 그게 바로 "닮음"의 핵심이야. 내 키:내 그림자 = 탑:탑 그림자. 비가 같으면 닮음이거든. 나도 이집트에서 피라미드 높이를 딱 그렇게 쟀지.' },
-    B: { speaker: 'thales', expression: 'thinking',
-         text: '하하, 현실적이네. 그런데 탑이 100미터면? 닮음을 쓰면 발 하나 안 움직여도 돼.' },
-    C: { speaker: 'thales', expression: 'neutral',
-         text: '괜찮아, 오늘 배우면 되지. "닮음"이라는 개념이 그 답이야.' },
+      A: { speaker: 'apprentice', expression: 'neutral', text: '(말을 아끼고 도면에 집중한다.)' },
+      B: { speaker: 'rival', expression: 'surprised', text: '…뭐? 건방진 신입이군. 어디 풀어나 보고 입을 놀려.' },
   } },
 
-  // ============================================================
-  // Scene 2 — 피타고라스 학당 첫 수업 (닮음 정의 + M01)
-  // ============================================================
-  { type: 'scene', name: 'Scene 2 — 학당 첫 수업', bg: 'classroom', clearChars: true },
-  { type: 'dialog', speaker: 'pythagoras', expression: 'neutral', position: 'center',
-    text: '모두 앉아라. 오늘 첫 수업의 주제는 "닮음"이다. 합동은 알겠지? 완전히 같은 도형. 닮음은 그 확장이다 — 크기는 달라도 모양은 같은 것.' },
-  { type: 'dialog', speaker: 'pythagoras', expression: 'thinking', prop: 'correspondence_notation',
-    text: '기호로는 ∽를 쓴다. "ΔABC∽ΔDEF"라고 쓰면 삼각형 ABC와 DEF가 닮음이라는 뜻이지. 여기서 중요한 건 — 꼭짓점 순서가 대응 관계를 나타낸다.' },
-  { type: 'dialog', speaker: 'rival', expression: 'neutral', position: 'left',
-    text: '(낮은 목소리로) 이런 거 당연히 알지 않나? 나는 다섯 살 때 이미 이거 알았는데.' },
-  { type: 'dialog', speaker: 'companion', expression: 'neutral', position: 'right',
-    text: '(작게) 괜찮아. 지금부터 집중하면 돼.' },
-
-  { type: 'problem',
-    id: 'M01', kind: '메인 (수학)', topic: '닮음의 정의 / 기호 표기 (∽)', difficulty: '하',
-    format: '객관식 4지선다',
-    // === 데모 응답 데이터 (선생님이 실제 문제로 교체) ===
-    image: 'M01.png',  // problems/M01.png — 없으면 자동으로 안내 표시
-    responseType: 'choice',
-    choices: ['① 합동', '② 닮음', '③ 평행', '④ 대칭'],
-    correctChoice: 1,  // ② 닮음 (0-based index)
-    onCorrect: { stats: { math: 3 }, dialog: { speaker: 'pythagoras', expression: 'smile',
-      text: '옳다. 닮음은 확대·축소해도 모양이 보존된다는 것. 합동은 닮음의 특별한 경우 — 닮음비가 1:1인 것이지.' } },
-    onWrong: { stats: { math: 1 }, dialog: { speaker: 'pythagoras', expression: 'neutral',
-      text: '틀렸다고 좌절할 필요 없다. 합동은 "같음", 닮음은 "비가 같음"이다. 다시 새기거라.' } },
-  },
-
-  // ============================================================
-  // Scene 3 — 황금 비례판 실종 사건 (M02)
-  // ============================================================
-  { type: 'scene', name: 'Scene 3 — 사라진 비례판', bg: 'classroom', clearChars: true },
-  { type: 'dialog', speaker: 'npc', prop: 'proportion_plate',
-    text: '선생님! 큰일 났습니다! 황금 비례판이 창고에서 없어졌어요!' },
-  { type: 'dialog', speaker: 'pythagoras', expression: 'surprised', position: 'center',
-    text: '무엇?!' },
-  { type: 'dialog', speaker: 'thales', expression: 'thinking', position: 'left',
-    text: '황금 비례판… 신전 설계에 쓰이는 그 유물 말이오? 도시 전체가 필요로 하는 것인데.' },
-  { type: 'dialog', speaker: 'pythagoras', expression: 'neutral',
-    text: '좋다. 이것이 오늘의 실전 시험이 될 것이다. 견습생들, 들어라. 닮음 원리를 이용해 단서를 추적한다. 탈레스, 방법을 설명해주게.' },
-  { type: 'dialog', speaker: 'thales', expression: 'smile', prop: 'academy_map',
-    text: '알겠소. 먼저 창고 바닥에 남겨진 발자국과 오래된 학당 지도를 비교해야 해. 지도는 축척 1:200이거든. 지도에서 발자국 흔적까지의 거리를 재면, 실제 거리를 닮음비로 구할 수 있지.' },
-  { type: 'dialog', speaker: 'apprentice', expression: 'thinking', position: 'right',
-    text: '잠깐, 지도에서 대응하는 꼭짓점이나 방향을 정확히 써야 하지 않나요? 표기 순서가 중요하다고 하셨잖아요.' },
-  { type: 'dialog', speaker: 'companion', expression: 'smile',
-    text: '맞아. 대응 꼭짓점 순서가 틀리면 엉뚱한 방향을 찾아가게 돼.' },
-
-  { type: 'problem',
-    id: 'M02', kind: '메인 (수학)', topic: '대응 꼭짓점·변·각 표기 순서', difficulty: '중',
-    format: '단답형 / 객관식',
-    onCorrect: { stats: { math: 3, insight: 1, clues: 1 },
-      dialog: { speaker: 'thales', expression: 'smile',
-        text: '역시! 단서 카드를 하나 획득했다. 이 단서를 들고 현장으로 가보자고.' } },
-    onWrong: { stats: { math: 1 },
-      dialog: { speaker: 'thales', expression: 'neutral',
-        text: '괜찮아. 대응 순서는 헷갈리기 쉬워. 지금 한 번 더 새겨두자.' } },
-  },
-
-  // ============================================================
-  // Scene 4 — 탈레스의 역사 강의 (S01)
-  // ============================================================
-  { type: 'scene', name: 'Scene 4 — 복도 이동', bg: 'corridor', clearChars: true },
-  { type: 'dialog', speaker: 'thales', expression: 'smile', position: 'left', prop: 'pyramid_thales',
-    text: '이동하는 동안 심심할 테니 이야기 하나 해줄게. 내가 이집트에서 피라미드 높이를 쟀을 때 말이야 — 직접 올라가지 않고도 쟀거든. 어떻게 했을 것 같아?' },
-  { type: 'dialog', speaker: 'rival', expression: 'neutral', position: 'right',
-    text: '그림자 길이로요? 내 키:내 그림자 = 피라미드:피라미드 그림자.' },
-  { type: 'dialog', speaker: 'thales', expression: 'surprised',
-    text: '오, 바로 맞히네. 그게 바로 닮음비야. 내 키와 그림자의 비가 피라미드와 그림자의 비와 같다는 것.' },
-  { type: 'dialog', speaker: 'apprentice', expression: 'thinking', position: 'center',
-    text: '그럼 그림자가 생기지 않는 날이나 각도가 특이한 날이면 못 쓰겠네요.' },
-  { type: 'dialog', speaker: 'thales', expression: 'smile',
-    text: '하하, 맞아. 그래서 나는 그림자와 키가 똑같이 길어지는 딱 한 순간을 기다렸지. 그러면 닮음비가 1:1이 되니까 계산이 아주 쉬워지거든!' },
-
-  { type: 'problem',
-    id: 'S01', kind: '사이드 (역사·상식)', topic: '탈레스의 피라미드 측정 일화', difficulty: '하',
-    format: 'OX 퀴즈',
-    onCorrect: { stats: { wisdom: 2 },
-      dialog: { speaker: 'thales', expression: 'smile',
-        text: '잘 알고 있구나. 고대 수학은 이렇게 실생활에 직결돼 있었다고.' } },
-    onWrong: { stats: { wisdom: 1 },
-      dialog: { speaker: 'thales', expression: 'thinking',
-        text: '괜찮아. 옛날 이야기라 헷갈릴 수 있지. 다음에 또 들으면 돼.' } },
-  },
-
-  // ============================================================
-  // Scene 5 — 창고 현장 조사 (M03 + M04)
-  // ============================================================
-  { type: 'scene', name: 'Scene 5 — 창고 현장', bg: 'warehouse', clearChars: true },
-  { type: 'dialog', speaker: 'companion', expression: 'thinking', position: 'right',
-    text: '여기 바닥에 두 개의 발자국 문양이 있어. 하나는 크고 하나는 작아. 닮음인지 아닌지 확인해보자.' },
-  { type: 'dialog', speaker: 'rival', expression: 'neutral', position: 'left',
-    text: '대응변의 비가 일정하고 대응각이 같으면 닮음이지. 당연한 거잖아.' },
-  { type: 'dialog', speaker: 'apprentice', expression: 'thinking', position: 'center', prop: 'footprints_pair',
-    text: '일단 비를 구해봐야 알겠는데. 작은 발자국의 길이가 15cm, 큰 발자국이 25cm라고 하면…' },
-
-  { type: 'problem',
-    id: 'M03', kind: '메인 (수학)', topic: '닮음비 계산', difficulty: '중',
-    format: '단답형 (수치 입력)',
-    // === 데모 응답 데이터 (단답형 시연용 — 15:25 = 3:5) ===
-    image: 'M03.png',
-    responseType: 'shortAnswer',
-    acceptedAnswers: ['3:5', '3 : 5'],
-    onCorrect: { stats: { math: 3, clues: 1 },
-      dialog: { speaker: 'companion', expression: 'smile',
-        text: '잘했어! 단서 카드가 하나 더 늘었어.' } },
-    onWrong: { stats: { math: 1 },
-      dialog: { speaker: 'companion', expression: 'thinking',
-        text: '비를 가장 간단한 자연수의 비로 나타내야 해. 다시 한 번 천천히.' } },
-  },
-
-  { type: 'dialog', speaker: 'thales', expression: 'smile', position: 'left',
-    text: '닮음이라는 게 확인됐지? 그럼 이번엔 넓이로 가보자. 큰 발자국 면적이 작은 것의 몇 배인지 알 수 있어?' },
-  { type: 'dialog', speaker: 'rival', expression: 'thinking', position: 'right', prop: 'area_volume_ratio',
-    text: '닮음비가 m:n이면 넓이 비는 m²:n²이고, 부피 비는 m³:n³이잖아…' },
-
-  { type: 'problem',
-    id: 'M04', kind: '메인 (수학)', topic: '평면도형 닮음 성질 (대응변·대응각)', difficulty: '중',
-    format: '객관식 4지선다',
-    onCorrect: { stats: { math: 3, insight: 1 },
+  { type: 'problem', id: 'TOOL1', kind: '관문', topic: '공통각 AA — 길이 구하기', difficulty: '상',
+    onCorrect: { stats: { math: 4, insight: 1 },
+      dialog: { speaker: 'rival', expression: 'surprised',
+        text: '…공통각으로 닮음을 잡았다고? 제법인데. 다음.' } },
+    onWrong: { stats: { math: 0 },
       dialog: { speaker: 'rival', expression: 'neutral',
-        text: '뭐야… 너 잘 하잖아. (작게)' } },
-    onWrong: { stats: { math: 1 },
-      dialog: { speaker: 'thales', expression: 'thinking',
-        text: '대응변의 비는 일정하고, 대응각은 모두 같다는 게 핵심이야.' } },
+        text: '∠A가 공통, ∠C=∠ABD다. 두 삼각형이 닮았다는 뜻이지. 비례식을 세워봐.' } },
   },
 
-  { type: 'dialog', speaker: 'companion', expression: 'thinking', position: 'right',
-    text: '발자국 두 개가 닮음이라면… 같은 사람의 신발이라는 뜻이잖아. 그런데 왜 크기가 다르지?' },
-  { type: 'dialog', speaker: 'apprentice', expression: 'surprised', position: 'center',
-    text: '혹시 지도와 현실처럼, 같은 물건의 축소판이랑 원본이 둘 다 있었던 건 아닐까요?' },
-  { type: 'dialog', speaker: 'thales', expression: 'surprised', position: 'left',
-    text: '오, 그거 흥미로운 추리인걸!' },
+  // [scene_flow#3] TOOL1↔2 사이 경계유지 비트 (surprised→부정→인정 빌드업)
+  { type: 'dialog', speaker: 'rival', expression: 'neutral',
+    text: '…첫 문제를 그렇게 깔끔히. 흠, 운이겠지. 두 번째다 — 막대 두 개가 X자로 교차할 때 DE의 길이. 이것도 풀면 도구는 네 거다.' },
+  // [learning#5] 둘째 문제가 '운 아님'을 증명하는 한 방 — 다이달로스 혼잣말
+  { type: 'dialog', speaker: 'rival', expression: 'thinking',
+    text: '(혼잣말) …이번 건 나도 한참 걸렸던 건데. 흥, 운인지 실력인지 보자고.' },
 
-  // ============================================================
-  // Scene 6 — 잠깐의 휴식 + 시사 퀴즈 (S02)
-  // ============================================================
-  { type: 'scene', name: 'Scene 6 — 정원에서 휴식', bg: 'garden', clearChars: true },
-  { type: 'dialog', speaker: 'thales', expression: 'smile', position: 'left',
-    text: '잠깐 쉬면서 머리를 식히자. 수학만 하면 뇌가 굳는다고!' },
-  { type: 'dialog', speaker: 'companion', expression: 'smile', position: 'right',
-    text: '선생님, 또 재밌는 거 물어보실 거죠?' },
-  { type: 'dialog', speaker: 'thales', expression: 'smile',
-    text: '맞아. 오늘의 세상 이야기 하나 해볼게.' },
-
-  { type: 'problem',
-    id: 'S02', kind: '사이드 (시사·경제·상식)', topic: '비율·비례 관련 실생활 상식', difficulty: '하',
-    format: 'OX 또는 객관식',
-    onCorrect: { stats: { wisdom: 2 },
-      dialog: { speaker: 'thales', expression: 'smile',
-        text: '훌륭해! 닮음은 사실 우리 주변 어디에나 있다고.' } },
-    onWrong: { stats: { wisdom: 1 },
-      dialog: { speaker: 'thales', expression: 'thinking',
-        text: '비율이라는 건 알고 보면 별거 없어. 다음에 또 보면 알게 될 거야.' } },
-  },
-
-  // ============================================================
-  // Scene 7 — 도서관의 단서 (M05 + M06)
-  // ============================================================
-  { type: 'scene', name: 'Scene 7 — 학당 도서관', bg: 'library', clearChars: true },
-  { type: 'dialog', speaker: 'rival', expression: 'neutral', position: 'left',
-    text: '도서관에 비례판 관련 기록이 있을 거야. 찾아봐야지.' },
-  { type: 'dialog', speaker: 'companion', expression: 'thinking', position: 'right', prop: 'scroll_pattern',
-    text: '여기 기록에 비례판이 "정삼각형과 원을 닮음으로 연결한 문양"으로 제작됐다고 나와 있어.' },
-  { type: 'dialog', speaker: 'apprentice', expression: 'thinking', position: 'center',
-    text: '정삼각형과 원은 항상 닮음이잖아. 그럼 비례판의 모양이 특정되는 건가?' },
-  { type: 'dialog', speaker: 'rival', expression: 'neutral', prop: 'always_similar_shapes',
-    text: '항상 닮음인 도형들 외우고 있어? 나는 다 외웠는데.' },
-
-  { type: 'problem',
-    id: 'M05', kind: '메인 (수학)', topic: '항상 닮음인 도형 판별', difficulty: '중',
-    format: '객관식 (다답형)',
-    onCorrect: { stats: { math: 3, clues: 1 },
-      dialog: { speaker: 'companion', expression: 'smile',
-        text: '맞아! 두 이등변삼각형은 항상 닮음이 아니라는 게 함정이지.' } },
-    onWrong: { stats: { math: 1 },
-      dialog: { speaker: 'pythagoras', expression: 'neutral',
-        text: '주의하거라. "두 이등변삼각형은 항상 닮음"이라는 것은 거짓이다. 정삼각형과 혼동하지 말 것.' } },
-  },
-
-  { type: 'dialog', speaker: 'companion', expression: 'thinking', position: 'right',
-    text: '또 다른 기록에는 원본 비례판과 모형 비례판의 닮음비가 2:5라고 나와 있어. 모형은 창고에 있었는데…' },
-  { type: 'dialog', speaker: 'apprentice', expression: 'thinking', position: 'center',
-    text: '그럼 원본의 넓이는 모형의 몇 배지?' },
-
-  { type: 'problem',
-    id: 'M06', kind: '메인 (수학)', topic: '넓이의 비·부피의 비 (닮음비 m:n)', difficulty: '상',
-    format: '단답형 (수치 입력)',
-    onCorrect: { stats: { math: 4, insight: 2 },
-      dialog: { speaker: 'pythagoras', expression: 'smile',
-        text: '(조교 전달) 잘 했다. 닮음비의 제곱과 세제곱 — 그것이 차원의 본질이다.' } },
-    onWrong: { stats: { math: 1 },
-      dialog: { speaker: 'companion', expression: 'thinking',
-        text: '닮음비가 m:n이면 넓이 비는 m²:n², 부피 비는 m³:n³. 다시 시도해보자.' } },
-  },
-
-  // ============================================================
-  // Scene 8 — 라이벌과의 추리 대결 (M07)
-  // ============================================================
-  { type: 'scene', name: 'Scene 8 — 토론 광장', bg: 'yard', clearChars: true },
-  { type: 'dialog', speaker: 'rival', expression: 'thinking', position: 'left', prop: 'two_triangles_compare',
-    text: '나는 창고 근처에서 두 삼각형 모양의 흔적을 발견했어. 둘 다 비례판 문양 조각이야. 이 둘이 닮음인지 확인하면 범인이 같은 사람인지 알 수 있어.' },
-  { type: 'dialog', speaker: 'apprentice', expression: 'thinking', position: 'right',
-    text: '삼각형 닮음 조건으로 확인하는 거지? SSS, SAS, AA 중 어떤 걸 쓰면 될까?' },
-  { type: 'dialog', speaker: 'rival', expression: 'neutral', prop: 'similarity_conditions',
-    text: '세 변의 비가 모두 같으면 SSS. 두 변의 비와 그 끼인각이 같으면 SAS. 두 각이 같으면 AA.' },
-  { type: 'dialog', speaker: 'pythagoras', expression: 'neutral', position: 'center',
-    text: '잘 설명했다, 다이달로스. 그럼 실제로 판단해보아라.' },
-
-  { type: 'problem',
-    id: 'M07', kind: '메인 (수학)', topic: 'SSS·SAS·AA 닮음 조건 판별', difficulty: '중',
-    format: '객관식 4지선다',
-    onCorrect: { stats: { math: 3, clues: 1 },
+  { type: 'problem', id: 'TOOL2', kind: '관문', topic: '맞꼭지각 SAS — 길이 구하기', difficulty: '상',
+    onCorrect: { stats: { math: 4 },
+      // [dialogue#4] 호감 농담 삭제, 가시 남기기 (라이벌 인정은 다음 단원용으로 아낌)
+      dialog: { speaker: 'rival', expression: 'surprised',
+        text: '맞꼭지각에 두 변의 비까지… 잡았군. (잠시) 가져가라. 잘못 봤다는 말은 안 한다. 다만 — 다음엔 내가 푸는 쪽이야.' } },
+    onWrong: { stats: { math: 0 },
       dialog: { speaker: 'rival', expression: 'neutral',
-        text: '…나도 맞혔어. 이번엔 무승부다.' } },
-    onWrong: { stats: { math: 1 },
-      dialog: { speaker: 'pythagoras', expression: 'neutral',
-        text: '세 조건을 다시 정리해두거라. 어떤 정보가 주어졌느냐에 따라 적용할 조건이 다르다.' } },
+        text: '맞꼭지각은 크기가 같아. 양쪽 변의 비를 확인하면 SAS 닮음이 보인다.' } },
   },
 
-  { type: 'dialog', speaker: 'companion', expression: 'smile', position: 'right',
-    text: '둘 다 맞혔으니까 같이 다음 단서로 가면 되잖아.' },
+  // ── 신전 복귀: 골조 (회당만 빈 칸 — 미스터리 상기) ──
+  // [[진척:4 골조 완성, 회당만 빔 — 설계도 ?칸 강조]]
+  { type: 'scene', name: 'Scene 6 — 골조가 서다', bg: 'temple_site4', clearChars: true },
+  { type: 'enter', role: 'architect', expression: 'smile', position: 'left' },
+  { type: 'enter', role: 'apprentice', expression: 'neutral', position: 'right' },
+  { type: 'dialog', speaker: 'architect', expression: 'smile',
+    text: '도구가 돌아왔군. 골조가 다 섰다 — 이제 회당만 남았어.' },
+  { type: 'dialog', speaker: 'architect', expression: 'thinking',
+    text: '…저 마지막 칸만. 아직도 나는 그 비율을 모른다.' },
 
   // ============================================================
-  // Scene 9 — 학당 마당의 수선 (M08 + S03)
+  // Scene 7 — 닿지 않는 높이 (이리스, 협동)
   // ============================================================
-  { type: 'scene', name: 'Scene 9 — 마당의 수선', bg: 'yard', clearChars: true },
-  { type: 'dialog', speaker: 'thales', expression: 'thinking', position: 'left', prop: 'right_triangle_perpendicular',
-    text: '여기 마당에 정체불명의 선 두 개가 그어져 있어. 삼각형 모양을 이루는데, 빗변에서 직각으로 내린 수선처럼 보여.' },
-  { type: 'dialog', speaker: 'apprentice', expression: 'thinking', position: 'center',
-    text: '빗변에서 꼭짓점에 내린 수선이요? 그러면 세 삼각형이 생기는데… 혹시 다 닮음인가요?' },
-  { type: 'dialog', speaker: 'thales', expression: 'thinking',
-    text: '스스로 찾아봐. AA 닮음을 쓰면 증명할 수 있어.' },
-
-  { type: 'problem',
-    id: 'M08', kind: '메인 (수학)', topic: 'SSS·SAS·AA 닮음 조건 적용', difficulty: '상',
-    format: '객관식 (단계 선택형)',
-    onCorrect: { stats: { math: 4, insight: 2 },
-      dialog: { speaker: 'pythagoras', expression: 'neutral',
-        text: '가능성이 보이는 제자로다. 닮음 조건의 적용 — 그것이 기하의 핵심이지.' } },
-    onWrong: { stats: { math: 1 },
-      dialog: { speaker: 'companion', expression: 'thinking',
-        text: '두 각이 같으면 나머지 한 각도 자동으로 같아져. AA 닮음을 떠올려봐.' } },
-  },
-
-  { type: 'problem',
-    id: 'S03', kind: '사이드 (상식)', topic: '현실 속 닮음 활용 (건축·지도·사진)', difficulty: '하',
-    format: '객관식',
-    onCorrect: { stats: { insight: 2 },
-      dialog: { speaker: 'thales', expression: 'smile',
-        text: '맞아! 닮음은 우리가 사는 세상의 거의 모든 곳에 있다고.' } },
-    onWrong: { stats: { insight: 1 },
-      dialog: { speaker: 'thales', expression: 'thinking',
-        text: '주변을 잘 보면 닮음 천지야. 다음 번엔 더 잘 보일 거야.' } },
-  },
-
-  // ============================================================
-  // Scene 10 — 최후의 추론 (M09 + 클라이맥스)
-  // ============================================================
-  { type: 'scene', name: 'Scene 10 — 지하 보관고', bg: 'basement', clearChars: true },
-  { type: 'dialog', speaker: 'apprentice', expression: 'thinking', position: 'center', prop: 'clue_cards',
-    text: '단서 카드를 다 모았어. 지도의 닮음비, 발자국의 닮음비, 도형 조각들의 닮음 조건… 이걸 전부 연결하면—' },
-  { type: 'dialog', speaker: 'companion', expression: 'smile', position: 'right',
-    text: '비례판이 숨겨진 장소가 나와!' },
-  { type: 'dialog', speaker: 'rival', expression: 'surprised', position: 'left',
-    text: '잠깐, 진짜로?! 나도 같은 결론이 나왔어. 지하 보관고 동쪽 세 번째 칸.' },
-  { type: 'dialog', speaker: 'thales', expression: 'smile',
-    text: '두 사람 모두 정확해. 가보자!' },
-
-  { type: 'problem',
-    id: 'M09', kind: '메인 (수학)', topic: '직각삼각형 수선과 AA 닮음', difficulty: '상',
-    format: '객관식 / 빈칸 채우기',
-    onCorrect: { stats: { math: 5, clues: 1 },
-      dialog: { speaker: 'pythagoras', expression: 'smile',
-        text: '이 학당의 정식 제자로 인정한다. 닮음의 문이 너에게 열렸구나.' } },
-    onWrong: { stats: { math: 2 },
-      dialog: { speaker: 'thales', expression: 'thinking',
-        text: '직각삼각형에서 빗변에 내린 수선은 세 닮은 삼각형을 만들어. 천천히 다시 봐.' } },
-  },
-
-  { type: 'dialog', speaker: 'pythagoras', expression: 'smile', position: 'center', prop: 'proportion_plate',
-    text: '있구나. 시밀러, 다이달로스. 닮음 하나로 실종 유물을 찾아냈다. 수학이란 이런 것이다 — 보이지 않는 것을 보이게 하는 언어.' },
-  { type: 'dialog', speaker: 'apprentice', expression: 'smile', position: 'right',
-    text: '선생님… 닮음이 이렇게 강력한 도구인 줄 몰랐어요.' },
-  { type: 'dialog', speaker: 'rival', expression: 'neutral', position: 'left',
-    text: '(작게) …나도 생각보다 재밌었다. 절대 말 못 하지만.' },
+  { type: 'scene', name: 'Scene 7 — 닿지 않는 높이', bg: 'yard', clearChars: true },
+  // [scene_flow#4] 브리지 내레이션 + 이리스 재소개
+  { type: 'dialog', speaker: 'narrator',
+    text: '테론이 설계도의 빈 칸을 들여다보는 사이, 폴리곤은 새로 세운 기둥들을 점검하러 갔다. 거기, 긴 줄자를 든 낯익은 얼굴이 있었다.' },
+  { type: 'enter', role: 'companion', expression: 'smile', position: 'left' },
+  { type: 'enter', role: 'apprentice', expression: 'neutral', position: 'right' },
   { type: 'dialog', speaker: 'companion', expression: 'smile',
-    text: '(웃으며) 다 들렸어, 다이달로스.' },
+    text: '폴리곤! 사각형 사건 이후로 오랜만이네요.' },
+  { type: 'dialog', speaker: 'companion', expression: 'thinking',
+    text: '마침 잘 왔어요. 이 기둥이 규격대로 섰는지 재야 하는데 — 너무 높아서 줄자가 닿질 않아요.' },
+  // [top#4] 통찰 주체를 폴리곤으로. 이리스는 문제제기만.
+  { type: 'dialog', speaker: 'apprentice', expression: 'thinking',
+    text: '닿지 않아도 괜찮아요. …직각삼각형의 빗변에 수선을 내리면, 큰 삼각형과 닮은 작은 삼각형이 생기거든요.' },
+  { type: 'dialog', speaker: 'companion', expression: 'surprised',
+    text: '아…! 닮음을 쓰면 직접 안 닿아도 잴 수 있다는 거네요. 좋아요, 그 관계로 x를 구해봐요. 같이.' },
+
+  { type: 'problem', id: 'MEASURE', kind: '관문', topic: '직각삼각형 빗변 수선', difficulty: '상',
+    onCorrect: { stats: { math: 4, insight: 1 },
+      dialog: { speaker: 'companion', expression: 'smile',
+        text: '맞아요. 닿지 않아도 닮음이면 잴 수 있어요. …당신, 정말 보는 눈이 좋네요.' } },
+    onWrong: { stats: { math: 0 },
+      // [top#2][dialogue#5] 기호 낭독(AC²=CB×CD) 제거, 관점만
+      dialog: { speaker: 'companion', expression: 'thinking',
+        text: '빗변에 수선을 내리면 큰 삼각형 안에 닮은 작은 삼각형 둘이 숨어 있어요. 어느 삼각형끼리 닮았는지부터 찾아봐요.' } },
+  },
 
   // ============================================================
-  // 엔딩 분기 판정
+  // Scene 8 — 탈레스의 그림자 (클라이맥스 도입)
+  // ============================================================
+  { type: 'scene', name: 'Scene 8 — 그림자로 재는 법', bg: 'garden', clearChars: true },
+  { type: 'dialog', speaker: 'narrator',
+    text: '자재도, 도구도, 측정법도 모였다. 마지막 지붕돌을 깎으려면 첨탑의 높이를 정확히 알아야 했다. 폴리곤은 멘토 탈레스를 찾았다.' },
+  { type: 'enter', role: 'thales', expression: 'smile', position: 'left' },
+  { type: 'enter', role: 'apprentice', expression: 'thinking', position: 'right' },
+  // [learning#2] '못잰다→닮음으로 잰다' 반복 대신 난이도 상승으로 차별화
+  { type: 'dialog', speaker: 'thales', expression: 'smile',
+    text: '기둥은 이리스와 잘 쟀다 들었다. 한데 저건 사다리도 줄자도 닿을 길이 없지. 닿을 수 없는 걸 재는 마지막 방법 — 땅에 드리운 그림자.' },
+  // [dialogue#6] 일화를 두 노드로 분할해 전설에 무게
+  { type: 'dialog', speaker: 'thales', expression: 'smile',
+    text: '…나는 막대기 하나를 모래에 꽂아두고 그 그림자만으로 피라미드의 키를 알아냈다. 사람들이 못 믿더군.' },
+  { type: 'dialog', speaker: 'thales', expression: 'neutral',
+    text: '비밀은 단 하나, 닮음이었지. 막대와 첨탑이 같은 햇빛 아래 같은 삼각형을 그린다는 것 — 자, 그 눈을 너도 빌려보겠나?' },
+
+  { type: 'problem', id: 'SHADOW', kind: '관문', topic: '그림자로 높이 측정', difficulty: '상',
+    onCorrect: { stats: { math: 4, wisdom: 2 },
+      // [learning#2] 황금비로 가는 다리
+      dialog: { speaker: 'thales', expression: 'smile',
+        text: '훌륭하다. 닿지 않는 것까지 비로 잡아냈다면 — 이제 누구도 가르쳐줄 수 없는 그 비를 볼 자격이 있다.' } },
+    onWrong: { stats: { math: 0 },
+      // [top#2] 수치비 삭제, 방향만 환기
+      dialog: { speaker: 'thales', expression: 'thinking',
+        text: '막대가 만든 삼각형과 피라미드가 만든 삼각형 — 햇빛이 같으니 두 삼각형의 비도 같다. 그 두 비를 나란히 놓으면 답이 보일 게야.' } },
+  },
+
+  // ============================================================
+  // Scene 9 — 빈 칸의 정체 (미스터리 회수: 황금비)  [scene_flow#5 독립씬 승격]
+  // ============================================================
+  { type: 'scene', name: 'Scene 9 — 빈 칸의 정체', bg: 'garden', clearChars: false },
+  { type: 'dialog', speaker: 'narrator',
+    text: '테론이 평생 비워둔 칸. 스승조차 입을 닫았던 그 비율이 — 지금, 폴리곤 앞에 놓였다.' },
+  { type: 'dialog', speaker: 'thales', expression: 'neutral',
+    text: '이제 마지막이다. 그 빈 칸 — 회당의 비율. 다른 비는 상인도 알지만, 이 비만은 누구도 그냥 가르쳐줄 수 없어. 스스로 깨우쳐야만 얻는 비지.' },
+  { type: 'dialog', speaker: 'apprentice', expression: 'surprised',
+    text: '스스로… 깨우친다고요?' },
+  { type: 'dialog', speaker: 'thales', expression: 'smile',
+    text: '이 직사각형에서 정사각형을 떼어내 봐라. 남은 부분이 원래와 닮은꼴이 되는 순간 — 그 비가 바로 황금비다. 테론의 빈 칸을 채울 단 하나의 비.' },
+  // [PX#1] 마지막 비 하나에 이름이 달렸다는 목표 심기
+  { type: 'dialog', speaker: 'narrator',
+    text: '폴리곤은 주먹을 쥐었다. 닮음을 통달하면 어울리는 이름을 주겠다던 그 약속 — 이 마지막 비 하나에 달려 있었다.' },
+
+  { type: 'problem', id: 'GOLDEN', kind: '최종', topic: '황금비 — 자기닮음과 비례식', difficulty: '최상',
+    onCorrect: { stats: { math: 5, wisdom: 2, insight: 2 },
+      dialog: { speaker: 'thales', expression: 'smile',
+        text: '…해냈구나. 누구도 가르쳐줄 수 없는 비를, 네 손으로 찾아냈어. 받아라 — 이것이 황금 비례판이다.' } },
+    onWrong: { stats: { math: 0 },
+      // [learning#7] 슬라이더 동작 + 비례식 빈칸 명시
+      dialog: { speaker: 'thales', expression: 'thinking',
+        text: '슬라이더를 천천히 움직여 봐라. 정사각형을 떼어낸 작은 직사각형이 원래와 똑같은 비율로 겹쳐지는 순간이 딱 한 번 있다. 그 순간 (전체):(긴 변) = (긴 변):(짧은 변)의 빈칸을 채우면 된다.' } },
+  },
+  // [scene_flow#5] 보상 컷
+  { type: 'dialog', speaker: 'narrator',
+    text: '✦ 황금 비례판 획득 ✦  손바닥 위에서 황금빛 비율이 천천히 빛났다.' },
+
+  // ============================================================
+  // Scene 10 — 채워진 칸, 그리고 새 이름 (결말 + 미스터리 회수 완결)
+  // ============================================================
+  // [[진척:5 완성 신전 (노을) — 빈 칸이 황금비로 채워짐]]
+  // [top#3] sunset 색보정 (temple_site5가 이미 노을 — 약하게 중첩 강조)
+  { type: 'scene', name: 'Scene 10 — 시밀러', bg: 'temple_site5', clearChars: true, mood: 'sunset' },
+  { type: 'dialog', speaker: 'narrator',
+    text: '폴리곤은 황금 비례판으로 회당의 가로와 세로를 맞췄다. 마지막 돌이 제자리에 놓이고 — 비어 있던 칸이, 황금비로 채워졌다. 노을 아래 신전이 완성됐다.' },
+
+  { type: 'enter', role: 'architect', expression: 'smile', position: 'left' },
+  { type: 'enter', role: 'apprentice', expression: 'smile', position: 'center' },
+  { type: 'dialog', speaker: 'architect', expression: 'smile',
+    text: '…채워졌어. 내가 평생 비워둔 그 칸이. 네 손으로.' },
+  // [PX#2] sad(고백)→smile(해소) 분할
+  { type: 'dialog', speaker: 'architect', expression: 'sad',
+    text: '솔직히 말하지. 나는 저 비를 끝내 못 찾을까 두려웠다.' },
+  { type: 'dialog', speaker: 'architect', expression: 'smile',
+    text: '고맙다, 폴리곤. 자재부터 이 마지막 비까지 — 전부 네가 풀어냈어.' },
+
+  { type: 'enter', role: 'pythagoras', expression: 'neutral', position: 'right' },
+  // [PX#1] 4단원 의존 줄이고 자기완결형으로
+  { type: 'dialog', speaker: 'pythagoras', expression: 'smile',
+    text: '폴리곤. 닮음을 통달하는 날 어울리는 이름을 주겠다고 했었지. 너는 닮음을, 비례를, 그리고 황금비를 꿰뚫었다.' },
+  // [PX#3] 호명 직전 정적 한 박자
+  { type: 'dialog', speaker: 'narrator',
+    text: '신전 마당에 잠시 정적이 흘렀다.' },
+  { type: 'dialog', speaker: 'pythagoras', expression: 'smile',
+    text: '오늘부터 너를 "시밀러"라 부르마. 닮음의 전문가라는 뜻이다.' },
+  // [dialogue#7] 단조 복창 제거, 정서적 페이오프
+  { type: 'dialog', speaker: 'apprentice', expression: 'surprised',
+    text: '시밀러…… (작게 되뇌고) 닮음의 전문가. ……좋아요. 이제 이 이름값, 제대로 해볼게요.' },
+  // [scene_flow#6] 슬롯 정리 후 스승·제자 마지막 투샷
+  { type: 'scene', name: 'Scene 10 — 마지막 투샷', bg: 'temple_site5', clearChars: true, mood: 'sunset' },
+  { type: 'enter', role: 'thales', expression: 'smile', position: 'left' },
+  { type: 'enter', role: 'apprentice', expression: 'smile', position: 'right' },
+  { type: 'dialog', speaker: 'thales', expression: 'smile',
+    text: '잘 어울린다, 시밀러. 비례를 보는 너의 눈은 더 멀리 갈 거다. 다음 이야기에서 또 보자.' },
+  { type: 'dialog', speaker: 'narrator',
+    text: '노을빛 신전 위로, 황금 비례판이 마지막으로 반짝였다. 폴리곤 — 아니, 시밀러의 새로운 여정이 시작된다.' },
+
+  // ============================================================
+  // 엔딩 분기 (첫시도 정답 개수 기준 — 엔진 ENDINGS 처리)
   // ============================================================
   { type: 'ending' },
 ];
+
+// 엔딩 분기 기준: problemResults에서 firstCorrect===true 개수
+//   A (8개 이상): 황금의 깨달음
+//   B (5~7개):    착실한 건축가
+//   C (4개 이하): 다시 쌓는 비례

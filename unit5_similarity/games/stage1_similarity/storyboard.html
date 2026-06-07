@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>스토리보드 — 시밀러의 학당 Stage 1</title>
+<title>스토리보드 — 시밀러와 황금 비례판 (5단원 닮음)</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -258,7 +258,7 @@
 </head>
 <body>
 
-<h1>📜 스토리보드 — 시밀러의 학당 Stage 1</h1>
+<h1>📜 스토리보드 — 시밀러와 황금 비례판 (5단원 닮음)</h1>
 <div class="subtitle">대사 비트별 흐름 검토용 (게임 실행 없이 전체 흐름 확인)</div>
 
 <div class="toolbar">
@@ -275,11 +275,13 @@
 <script src="scenario.js"></script>
 <script>
 const CHAR_NAMES = {
-  apprentice: '시밀러',
+  apprentice: '폴리곤/시밀러',
   pythagoras: '피타고라스',
   thales: '탈레스',
   rival: '다이달로스',
   companion: '이리스',
+  architect: '테론(건축가)',
+  merchant: '소폴로스(상인)',
   narrator: '나레이션',
   npc: '조교 (NPC)',
 };
@@ -287,7 +289,7 @@ const CHAR_NAMES = {
 const CHAR_PATH = (role, expr) => `characters/split_transparent/${role}_${expr || 'neutral'}.png`;
 const BG_PATH   = (name) => `backgrounds/${name}.png`;
 
-const hasCharImage = (role) => ['apprentice','pythagoras','thales','rival','companion'].includes(role);
+const hasCharImage = (role) => ['apprentice','pythagoras','thales','rival','companion','architect','merchant'].includes(role);
 
 function renderPortrait(role, expression) {
   const div = document.createElement('div');

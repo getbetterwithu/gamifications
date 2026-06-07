@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>게임 초기화</title>
+<style>
+  body { font-family: sans-serif; background:#1a0f08; color:#f0e0c0;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    height:100vh; margin:0; text-align:center; gap:20px; }
+  .card { background:rgba(255,250,240,0.06); border:2px solid #c08a4a;
+    border-radius:16px; padding:32px 40px; max-width:420px; }
+  h1 { color:#e8c895; font-size:24px; margin:0 0 12px; }
+  ul { text-align:left; color:#c8a87a; font-size:14px; line-height:1.7; }
+  a.btn { display:inline-block; margin-top:16px; background:#5a8b3a; color:#fff;
+    text-decoration:none; padding:12px 28px; border-radius:10px; font-weight:700; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>✅ 게임이 초기화되었습니다</h1>
+    <ul id="log"></ul>
+    <a class="btn" href="index.html">게임으로 돌아가기 →</a>
+  </div>
+<script>
+  const log = document.getElementById('log');
+  function add(msg){ const li=document.createElement('li'); li.textContent=msg; log.appendChild(li); }
+
+  // 1) 진행상황
+  if (localStorage.getItem('game_progress')) { localStorage.removeItem('game_progress'); add('진행상황(game_progress) 삭제'); }
+  else add('진행상황 없음');
+
+  // 2) 필기 솔루션 (solution_*)
+  const solKeys = [];
+  for (let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k && k.startsWith('solution_')) solKeys.push(k); }
+  solKeys.forEach(k=>localStorage.removeItem(k));
+  add('필기 솔루션 ' + solKeys.length + '개 삭제');
+
+  // 3) 세션 표식
+  sessionStorage.removeItem('session_alive');
+  add('세션 표식 삭제');
+</script>
+</body>
+</html>
