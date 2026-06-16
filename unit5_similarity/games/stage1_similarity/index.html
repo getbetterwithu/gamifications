@@ -143,19 +143,28 @@
   #dialog-box.narration {
     top: 50%; bottom: auto; left: 50%;
     transform: translate(-50%, -50%);
-    width: 64%; max-width: 880px; min-height: 0;
-    background: rgba(28, 18, 8, 0.82);
+    width: 68%; max-width: 980px; min-height: 0;
+    background: rgba(28, 18, 8, 0.84);
     border: 2px solid rgba(200, 168, 122, 0.55);
     border-radius: 14px;
-    padding: 30px 44px;
+    padding: 48px 56px;  /* 여백 키워 '장면 전환' 무게 */
     box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+    animation: narrFadeIn 0.55s ease both;  /* 페이드+살짝 떠오르기 */
+  }
+  @keyframes narrFadeIn {
+    from { opacity: 0; transform: translate(-50%, -46%); }
+    to   { opacity: 1; transform: translate(-50%, -50%); }
   }
   #dialog-box.narration #speaker-name { display: none; }  /* '나레이션' 라벨 숨김 */
   #dialog-box.narration #dialog-text {
     color: #f3e6cf;
     font-style: italic;
     text-align: center;
-    line-height: 1.7;
+    font-size: 40px;        /* 대사(36)보다 크게 */
+    line-height: 1.85;      /* 행간 넉넉히 */
+    letter-spacing: 0.3px;
+    font-weight: 400;
+    min-height: 0;
   }
   /* 나레이션일 때 다음/이전 버튼 숨김 — 화면 클릭으로만 진행 */
   #dialog-box.narration #next-btn,
@@ -174,6 +183,9 @@
   #dialog-text {
     font-size: 36px; line-height: 1.55; color: #3a2818;
     min-height: 110px; letter-spacing: -0.3px; font-weight: 500;
+    white-space: pre-wrap;       /* 작가 의도 \n 보존 */
+    word-break: keep-all;        /* 한글 어절 단위 줄바꿈 — 단어 중간 안 꺾임 */
+    overflow-wrap: break-word;   /* 아주 긴 토큰만 예외적으로 분할 */
   }
   #dialog-text .caret {
     display: inline-block; width: 3px; height: 38px; background: #8b6f47;
@@ -1859,7 +1871,7 @@ const game = {
     if (!entry) return;
     // 대사창에 직접 표시 (타이핑 없이 즉시)
     document.getElementById('speaker-name').textContent = entry.speaker || '';
-    document.getElementById('dialog-text').textContent = entry.text || '';
+    document.getElementById('dialog-text').textContent = this.formatLineBreaks(entry.text || '');
     this._updatePrevBtn();
   },
 
@@ -1869,7 +1881,7 @@ const game = {
     const entry = this.log[this.log.length - 1];
     if (!entry) return;
     document.getElementById('speaker-name').textContent = entry.speaker || '';
-    document.getElementById('dialog-text').textContent = entry.text || '';
+    document.getElementById('dialog-text').textContent = this.formatLineBreaks(entry.text || '');
     this._updatePrevBtn();
   },
 
@@ -2196,9 +2208,16 @@ const game = {
     this.startTyping(text);
   },
 
+  // 줄바꿈은 CSS(word-break: keep-all)가 어절 단위로 자연 처리.
+  // 여기선 원문을 그대로 두고 기존 \n(작가 의도)만 보존한다.
+  formatLineBreaks(text) {
+    return text || '';
+  },
+
   startTyping(text) {
     if (this.typingTimer) clearInterval(this.typingTimer);
     const el = document.getElementById('dialog-text');
+    text = this.formatLineBreaks(text);
     this.fullText = text;
     this.isTyping = true;
     let i = 0;

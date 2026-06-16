@@ -262,8 +262,13 @@
 <div class="subtitle">대사 비트별 흐름 검토용 (게임 실행 없이 전체 흐름 확인)</div>
 
 <div class="toolbar">
-  💡 어색한 부분 발견 시 카드 우상단의 비트 번호 (예: <code>S3 · B5</code>) 와 함께 메모해두세요.
-  S = Scene, B = Beat 순번. 게임에는 영향 없음 (이 페이지는 검토 전용).
+  <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+    <span>💡 어색한 부분 발견 시 카드 우상단의 비트 번호 (예: <code>S3 · B5</code>) 와 함께 메모해두세요.</span>
+    <button id="dl-btn" onclick="downloadScript()"
+      style="background:#5d3a1a; color:#fff8ec; border:none; border-radius:6px; padding:8px 16px; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap;">
+      📄 대사 전체 다운로드 (.txt)
+    </button>
+  </div>
 </div>
 
 <div id="board">로딩 중...</div>
@@ -454,6 +459,75 @@ function renderSceneHeader(step, sceneNum) {
   text.innerHTML = `<h2>${step.name}</h2><div class="bg-label">배경: ${step.bg}.png · Scene #${sceneNum}</div>`;
   div.appendChild(text);
   return div;
+}
+
+// ===== 대사 전체를 비트번호 포함 텍스트로 추출 → .txt 다운로드 =====
+function buildScriptText() {
+  const L = [];
+  L.push('스토리보드 — 시밀러와 황금 비례판 (5단원 닮음)');
+  L.push('현재 게임(scenario.js) 대사 전체 · 검수용');
+  L.push('수정 메모: "S2·B5 → ○○" 식으로 비트 번호와 함께 적어주세요.');
+  L.push('='.repeat(60));
+  L.push('');
+
+  let sceneNum = 0, beatNum = 0;
+  const nm = (r) => CHAR_NAMES[r] || r;
+  for (const step of STEPS) {
+    if (step.type === 'scene') {
+      sceneNum++; beatNum = 0;
+      L.push('');
+      L.push('─'.repeat(60));
+      const tags = [step.bg, step.mood, step.bgmKey ? `BGM:${step.bgmKey}` : ''].filter(Boolean).join(' · ');
+      L.push(`【 ${step.name} 】  (${tags})`);
+      L.push('─'.repeat(60));
+    } else if (step.type === 'dialog') {
+      beatNum++;
+      const exp = step.expression ? ` (${step.expression})` : '';
+      L.push(`S${sceneNum}·B${beatNum}  ${nm(step.speaker)}${exp}`);
+      L.push(`    ${step.text}`);
+      L.push('');
+    } else if (step.type === 'choice') {
+      beatNum++;
+      L.push(`S${sceneNum}·B${beatNum}  🔀 선택지: ${step.prompt}`);
+      for (const opt of step.options) L.push(`    [${opt.reactKey}] ${opt.label}`);
+      L.push('');
+    } else if (step.type === 'reaction') {
+      L.push('    ↩️ 선택별 반응:');
+      for (const [key, r] of Object.entries(step.reactions)) {
+        L.push(`      [${key}] ${nm(r.speaker)} (${r.expression || 'neutral'}): ${r.text}`);
+      }
+      L.push('');
+    } else if (step.type === 'problem') {
+      L.push(`📝 문제 ${step.id}  (${step.kind} · ${step.topic} · ${step.difficulty})`);
+      if (step.onCorrect && step.onCorrect.dialog) {
+        const d = step.onCorrect.dialog;
+        L.push(`    ✅ 정답 → ${nm(d.speaker)} (${d.expression || 'neutral'}): ${d.text}`);
+      }
+      if (step.onWrong && step.onWrong.dialog) {
+        const d = step.onWrong.dialog;
+        L.push(`    ❌ 오답 → ${nm(d.speaker)} (${d.expression || 'neutral'}): ${d.text}`);
+      }
+      L.push('');
+    } else if (step.type === 'ending') {
+      L.push('');
+      L.push('🏁 엔딩 (돌파 모드 단일 엔딩 — 전 문제 완주 = 도달)');
+    }
+  }
+  return L.join('\n');
+}
+
+function downloadScript() {
+  const text = buildScriptText();
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const today = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `시밀러_5단원_대사전체_${today}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 function render() {

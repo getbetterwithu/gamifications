@@ -16,7 +16,12 @@
   - desc: 피타고라스 학당 신입 폴리곤이 되어 평행사변형·마름모·직사각형·정사각형을 판별하며 분쟁을 해결한다.
   - url: https://getbetterwithu.github.io/gamifications/unit4_tri_quad/games/stage1_quadrilaterals/hub.html
   - cta: 게임 시작 →
-- **도형의 닮음 (5단원)** — 재구성 대기 중. 완성·배포 시 `games.json`에 추가할 것.
+- **시밀러와 황금 비례판 (5단원)** — 배포 완료 (2026-06-17 허브 등록)
+  - id: `similar-golden` / column: `novel` / tag: 중2 · 5단원 닮음
+  - title: 📐 시밀러와 황금 비례판 — 도형의 닮음
+  - desc: 사각형의 시험을 통과한 폴리곤이 '시밀러'가 되어, 도형의 닮음과 닮음비로 황금 비례판의 비밀을 풀어간다.
+  - url: https://getbetterwithu.github.io/gamifications/unit5_similarity/games/stage1_similarity/index.html
+  - cta: 게임 시작 →
 
 ## 진입 프로토콜
 
